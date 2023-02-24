@@ -6,4 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+sim_run = { path = "../sim-run", package = "sim_run" }
 sim_draw = { path = "../sim-draw", package = "sim_draw" }
+sim_input = { path = "../sim-input", package = "sim_input" }

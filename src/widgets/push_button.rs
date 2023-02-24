@@ -1,7 +1,9 @@
 use crate::widgets::Label;
 use sim_draw::color::Rgba;
-use sim_draw::m::{Point2, Rect};
+use sim_draw::m::Rect;
 use sim_draw::Canvas;
+use sim_input::mouse::{MouseButton, MouseState};
+use sim_run::{MouseButtonsEvent, MouseMoveEvent};
 use std::borrow::Cow;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -92,15 +94,18 @@ impl PushButton {
    /// Return `true` if mouse is over.
    #[inline]
    #[must_use]
-   pub fn on_mouse_move(&mut self, pos: Point2<f32>) -> bool {
-      self.is_hover = self.rect.is_inside(pos.x, pos.y);
+   pub fn on_mouse_move(&mut self, event: MouseMoveEvent) -> bool {
+      self.is_hover = self.rect.is_inside(event.input.x, event.input.y);
       self.is_hover
    }
 
    /// Return `true` if click is detected.
    #[inline]
    #[must_use]
-   pub fn on_mouse_button(&mut self, down: bool) -> bool {
+   pub fn on_mouse_button(&mut self, event: MouseButtonsEvent) -> bool {
+      let down =
+         event.input.state == MouseState::Pressed && event.input.button == MouseButton::Left;
+
       let is_click = !down && self.is_hover && self.is_down;
       self.is_down = down && self.is_hover;
       if is_click {
