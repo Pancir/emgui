@@ -30,6 +30,7 @@ impl ToggleButton {
 impl ToggleButton {
    /// Return `true` if mouse is over.
    #[inline]
+   #[must_use]
    pub fn on_mouse_move(&mut self, pos: Point2<f32>) -> bool {
       self.is_hover = self.rect.is_inside(pos.x, pos.y);
       self.is_hover
@@ -37,6 +38,7 @@ impl ToggleButton {
 
    /// Return `true` if toggled (not a toggle state!).
    #[inline]
+   #[must_use]
    pub fn on_mouse_button(&mut self, down: bool) -> bool {
       let is_click = !down && self.is_hover && self.is_down;
       self.is_down = down && self.is_hover;
