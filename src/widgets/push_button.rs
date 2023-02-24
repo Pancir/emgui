@@ -1,106 +1,53 @@
-use crate::core::ctx::{DrawCtx, MouseButtonsCtx, MouseMoveCtx};
-use crate::core::{Geometry, IWidget, Point, Rect, Size, WidgetPodHandle};
-use crate::widgets::state::IState;
-use input::mouse::{MouseButton, MouseState};
-use layout::{AlignH, AlignV};
+use crate::widgets::Label;
+use sim_draw::color::Rgba;
+use sim_draw::m::{Point2, Rect};
+use sim_draw::Canvas;
 use std::borrow::Cow;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/// Base trait for all states of text buttons.
-pub trait ITextButtonState: IState {
-   fn on_click(&mut self);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/// Default state for text buttons
-#[derive(Default)]
-pub struct TextButtonState {
-   on_click: Option<Box<dyn FnMut()>>,
-}
-
-impl TextButtonState {
-   pub fn do_on_click(mut self, cb: impl FnMut() + 'static) -> Self {
-      self.on_click = Some(Box::new(cb));
-      self
-   }
-}
-
-impl ITextButtonState for TextButtonState {
-   fn on_click(&mut self) {
-      if let Some(f) = self.on_click.as_mut() {
-         (*f)()
-      }
-   }
-}
-
-impl IState for TextButtonState {}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-pub struct TextButton<State = TextButtonState>
-where
-   State: 'static + ITextButtonState,
-{
-   handle: WidgetPodHandle,
-   state: State,
-   text: Cow<'static, str>,
-   geom: Geometry,
+pub struct PushButton {
+   label: Option<Label>,
+   rect: Rect<f32>,
    is_toggle: bool,
    is_hover: bool,
    is_down: bool,
-   v_on_draw: fn(&mut Self, &mut DrawCtx),
-   v_on_mouse_move: fn(&mut Self, &mut MouseMoveCtx),
-   v_on_mouse_button: fn(&mut Self, &mut MouseButtonsCtx),
+   v_on_draw: fn(&mut Self, &mut Canvas),
 }
 
-impl Default for TextButton {
+impl Default for PushButton {
    fn default() -> Self {
-      Self {
-         handle: WidgetPodHandle::empty(),
-         state: TextButtonState::default(),
-         text: Cow::Owned(String::default()),
-         geom: Geometry::default(),
-         is_toggle: false,
-         is_hover: false,
-         is_down: false,
-         v_on_draw: Self::on_draw,
-         v_on_mouse_move: Self::on_mouse_move,
-         v_on_mouse_button: Self::on_mouse_button,
-      }
+      Self::new(Rect::new(0.0, 0.0, 100.0, 100.0), None)
    }
 }
 
-impl<State> TextButton<State>
-where
-   State: 'static + ITextButtonState,
-{
-   pub fn state(&self) -> &State {
-      &self.state
+impl PushButton {
+   pub fn new(rect: Rect<f32>, label: Option<Label>) -> Self {
+      Self { label, rect, is_toggle: false, is_hover: false, is_down: false, v_on_draw: Self::draw }
    }
 
-   pub fn state_mut(&mut self) -> &mut State {
-      &mut self.state
+   pub fn label(&self) -> &Option<Label> {
+      &self.label
    }
 
-   pub fn set_text(&mut self, text: impl Into<Cow<'static, str>>) {
-      self.text = text.into()
+   pub fn rect(&self) -> Rect<f32> {
+      self.rect
+   }
+
+   pub fn set_text<TXT>(&mut self, text: TXT)
+   where
+      TXT: Into<Cow<'static, str>>,
+   {
+      if let Some(l) = self.label.as_mut() {
+         l.text = text.into()
+      }
    }
 
    pub fn text(&self) -> &str {
-      self.text.as_ref()
-   }
-
-   pub fn set_max_size(&mut self, size: Size) {
-      if self.geom.set_max_size(size) {
-         self.handle.request_draw();
-      }
-   }
-
-   pub fn set_min_size(&mut self, size: Size) {
-      if self.geom.set_min_size(size) {
-         self.handle.request_draw();
+      if let Some(l) = self.label.as_ref() {
+         l.text.as_ref()
+      } else {
+         ""
       }
    }
 
@@ -117,88 +64,49 @@ where
    }
 }
 
-impl<State> TextButton<State>
-where
-   State: 'static + ITextButtonState,
-{
-   fn on_draw(w: &mut Self, ctx: &mut DrawCtx) {
-      let theme = &ctx.env.theme();
-      let canvas = &mut ctx.canvas;
-      let color = if w.is_down {
-         theme.button.presses_color
-      } else {
-         if w.is_hover {
-            theme.button.hover_color
-         } else {
-            theme.button.color
-         }
-      };
-      canvas.set_color(color);
-      canvas.set_white_texture();
-      canvas.tris(&w.geom.rect);
+impl PushButton {
+   fn draw(w: &mut Self, canvas: &mut Canvas) {
+      canvas.set_color(Rgba::GRAY.with_alpha(0.5));
 
-      canvas.set_font(None);
-      canvas.set_color(theme.button.text_color);
-      canvas.text_aligned(
-         &w.text,
-         Point::from(w.geom.rect.center()),
-         AlignH::Center,
-         AlignV::Center,
-      )
-   }
-
-   fn on_mouse_move(w: &mut Self, ctx: &mut MouseMoveCtx) {
-      let is_inside = w.geom.rect.is_inside(ctx.input.x, ctx.input.y);
-      if w.is_hover != is_inside {
-         w.handle.request_draw();
-         w.is_hover = is_inside;
-      }
-   }
-
-   fn on_mouse_button(w: &mut Self, ctx: &mut MouseButtonsCtx) {
-      let is_down = w.is_hover
-         && ctx.input.button == MouseButton::Left
-         && ctx.input.state == MouseState::Pressed;
-
-      if w.is_toggle {
-         unimplemented!()
+      if w.is_hover() {
+         canvas.set_color(Rgba::GRAY);
       }
 
-      if w.is_down != is_down {
-         w.handle.request_draw();
-         w.is_down = is_down;
+      if w.is_down() {
+         canvas.set_color(Rgba::GRAY_LIGHT);
+      }
+
+      canvas.fill(&w.rect);
+      if let Some(l) = w.label() {
+         l.draw(canvas);
       }
    }
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-impl IWidget for TextButton {
-   fn set_pod_handle(&mut self, handle: WidgetPodHandle) {
-      debug_assert!(self.handle.is_empty(), "Pod handle has already been set");
-      self.handle = handle;
+impl PushButton {
+   #[inline]
+   pub fn on_draw(w: &mut Self, canvas: &mut Canvas) {
+      (w.v_on_draw)(w, canvas);
    }
 
-   fn geometry(&self) -> &Geometry {
-      &self.geom
+   /// Return `true` if mouse is over.
+   #[inline]
+   #[must_use]
+   pub fn on_mouse_move(&mut self, pos: Point2<f32>) -> bool {
+      self.is_hover = self.rect.is_inside(pos.x, pos.y);
+      self.is_hover
    }
 
-   fn set_rect(&mut self, rect: Rect) {
-      if self.geom.set_rect(rect) {
-         self.handle.request_draw();
+   /// Return `true` if click is detected.
+   #[inline]
+   #[must_use]
+   pub fn on_mouse_button(&mut self, down: bool) -> bool {
+      let is_click = !down && self.is_hover && self.is_down;
+      self.is_down = down && self.is_hover;
+      if is_click {
+         self.is_toggle = !self.is_toggle;
       }
-   }
-
-   fn on_draw(&mut self, ctx: &mut DrawCtx) {
-      (self.v_on_draw)(self, ctx)
-   }
-
-   fn on_mouse_move(&mut self, ctx: &mut MouseMoveCtx) {
-      (self.v_on_mouse_move)(self, ctx)
-   }
-
-   fn on_mouse_button(&mut self, ctx: &mut MouseButtonsCtx) {
-      (self.v_on_mouse_button)(self, ctx)
+      is_click
    }
 }
 
