@@ -30,7 +30,7 @@ impl Label {
       Self { pos, text: text.into(), paint, align }
    }
 
-   pub fn draw(&self, canvas: &mut Canvas) -> Box2<f32> {
+   pub fn on_draw(&self, canvas: &mut Canvas) -> Box2<f32> {
       canvas.set_text_paint(self.paint.clone());
       canvas.text_line(self.text.as_ref(), self.pos, self.align)
    }

@@ -1,7 +1,7 @@
 use crate::widgets::Label;
 use sim_draw::color::Rgba;
 use sim_draw::m::Rect;
-use sim_draw::Canvas;
+use sim_draw::{Canvas, TextAlign, TextPaint};
 use sim_input::mouse::{MouseButton, MouseState};
 use sim_run::{MouseButtonsEvent, MouseMoveEvent};
 use std::borrow::Cow;
@@ -9,7 +9,7 @@ use std::borrow::Cow;
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub struct PushButton {
-   label: Option<Label>,
+   label: Label,
    rect: Rect<f32>,
    is_toggle: bool,
    is_hover: bool,
@@ -19,16 +19,26 @@ pub struct PushButton {
 
 impl Default for PushButton {
    fn default() -> Self {
-      Self::new(Rect::new(0.0, 0.0, 100.0, 100.0), None)
+      Self::new(Rect::new(0.0, 0.0, 100.0, 100.0), "", TextPaint::default())
    }
 }
 
 impl PushButton {
-   pub fn new(rect: Rect<f32>, label: Option<Label>) -> Self {
+   pub fn new<TXT>(rect: Rect<f32>, label: TXT, text_patin: TextPaint) -> Self
+   where
+      TXT: Into<Cow<'static, str>>,
+   {
+      let align = TextAlign::new().center().middle();
+      let label = Label::new(label, rect.center(), text_patin, align);
+
       Self { label, rect, is_toggle: false, is_hover: false, is_down: false, v_on_draw: Self::draw }
    }
 
-   pub fn label(&self) -> &Option<Label> {
+   pub fn set_text_patin(&mut self, paint: TextPaint) {
+      self.label.paint = paint;
+   }
+
+   pub fn label(&self) -> &Label {
       &self.label
    }
 
@@ -40,17 +50,11 @@ impl PushButton {
    where
       TXT: Into<Cow<'static, str>>,
    {
-      if let Some(l) = self.label.as_mut() {
-         l.text = text.into()
-      }
+      self.label.text = text.into();
    }
 
    pub fn text(&self) -> &str {
-      if let Some(l) = self.label.as_ref() {
-         l.text.as_ref()
-      } else {
-         ""
-      }
+      self.label.text.as_ref()
    }
 
    pub fn set_toggle(&mut self, state: bool) {
@@ -79,22 +83,22 @@ impl PushButton {
       }
 
       canvas.fill(&w.rect);
-      if let Some(l) = w.label() {
-         l.draw(canvas);
+      if !w.label().text.is_empty() {
+         w.label().on_draw(canvas);
       }
    }
 }
 
 impl PushButton {
    #[inline]
-   pub fn on_draw(w: &mut Self, canvas: &mut Canvas) {
-      (w.v_on_draw)(w, canvas);
+   pub fn on_draw(&mut self, canvas: &mut Canvas) {
+      (self.v_on_draw)(self, canvas);
    }
 
    /// Return `true` if mouse is over.
    #[inline]
    #[must_use]
-   pub fn on_mouse_move(&mut self, event: MouseMoveEvent) -> bool {
+   pub fn on_mouse_move(&mut self, event: &MouseMoveEvent) -> bool {
       self.is_hover = self.rect.is_inside(event.input.x, event.input.y);
       self.is_hover
    }
@@ -102,7 +106,7 @@ impl PushButton {
    /// Return `true` if click is detected.
    #[inline]
    #[must_use]
-   pub fn on_mouse_button(&mut self, event: MouseButtonsEvent) -> bool {
+   pub fn on_mouse_button(&mut self, event: &MouseButtonsEvent) -> bool {
       let down =
          event.input.state == MouseState::Pressed && event.input.button == MouseButton::Left;
 
