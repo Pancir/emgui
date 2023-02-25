@@ -255,7 +255,7 @@ where
       CB: FnOnce(&mut WidgetVt<Self>) -> D,
    {
       let mut out = Self {
-         id: WidgetId::new(),
+         id: WidgetId::new::<Self>(),
          derive: unsafe { std::mem::zeroed() },
          vtable: WidgetVt {
             on_lifecycle: |_, _| {},
@@ -439,6 +439,10 @@ pub fn emit_lifecycle(child: &Rc<RefCell<dyn IWidget>>, event: &LifecycleEvent) 
       let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e));
       let id = bor.id();
       bor.children_mut().set(children, id);
+   } else {
+      let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e));
+      let id = bor.id();
+      bor.children_mut().set(children, id);
    }
 }
 
@@ -467,6 +471,10 @@ pub fn emit_layout(child: &Rc<RefCell<dyn IWidget>>, event: &LayoutEvent) {
       let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e));
       let id = bor.id();
       bor.children_mut().set(children, id);
+   } else {
+      let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e));
+      let id = bor.id();
+      bor.children_mut().set(children, id);
    }
 }
 
@@ -492,6 +500,10 @@ pub fn emit_update(child: &Rc<RefCell<dyn IWidget>>, event: &UpdateEvent) {
 
    if !children.is_empty() {
       emit_update_children(&mut children, event);
+      let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e));
+      let id = bor.id();
+      bor.children_mut().set(children, id);
+   } else {
       let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e));
       let id = bor.id();
       bor.children_mut().set(children, id);
@@ -525,6 +537,10 @@ pub fn emit_draw(child: &Rc<RefCell<dyn IWidget>>, canvas: &mut Canvas, force: b
 
    if !children.is_empty() {
       emit_draw_children(&mut children, canvas, force);
+      let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e));
+      let id = bor.id();
+      bor.children_mut().set(children, id);
+   } else {
       let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e));
       let id = bor.id();
       bor.children_mut().set(children, id);
