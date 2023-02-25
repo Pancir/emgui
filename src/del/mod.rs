@@ -3,39 +3,37 @@ use std::rc::{Rc, Weak};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub trait SetupDerive<REF> {
+pub trait SetupDerive<REF, VT> {
    fn set_self_ref(&mut self, r: Weak<RefCell<REF>>);
-   fn setup_derive(&mut self, vt: &mut REF);
+   fn setup_vt(&mut self, vt: &mut VT);
 }
 
-impl<REF> SetupDerive<REF> for () {
+impl<REF, VT> SetupDerive<REF, VT> for () {
    fn set_self_ref(&mut self, _vt: Weak<RefCell<REF>>) {}
-   fn setup_derive(&mut self, _vt: &mut REF) {}
+   fn setup_vt(&mut self, _vt: &mut VT) {}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub struct BaseVTable<D> {
-   pub on_test: fn(&mut D),
+pub struct BaseWidgetVT<D> {
+   pub on_click: fn(&mut D),
 }
 
-pub struct Base<D>
+pub struct BaseWidget<D>
 where
-   D: SetupDerive<Self>,
+   D: SetupDerive<Self, BaseWidgetVT<Self>>,
 {
    pub derive: D,
-   vtable: BaseVTable<Self>,
+   vtable: BaseWidgetVT<Self>,
 }
 
-impl<D> Base<D>
+impl<D> BaseWidget<D>
 where
-   D: SetupDerive<Self>,
+   D: SetupDerive<Self, BaseWidgetVT<Self>>,
 {
    pub fn new(derive: D) -> Rc<RefCell<Self>> {
-      let mut out = Self { derive, vtable: BaseVTable { on_test: Self::on_test } };
-      let force = &mut out as *mut Self;
-
-      unsafe { (*force).derive.setup_derive(&mut out) };
+      let mut out = Self { derive, vtable: BaseWidgetVT { on_click: Self::on_click } };
+      out.derive.setup_vt(&mut out.vtable);
 
       let out = Rc::new(RefCell::new(out));
       let w = Rc::downgrade(&out);
@@ -47,61 +45,62 @@ where
       out
    }
 
-   pub fn run_test(&mut self) {
-      (self.vtable.on_test)(self)
+   pub fn emit_on_click(&mut self) {
+      (self.vtable.on_click)(self)
    }
 
-   fn on_test(_b: &mut Self) {
-      println!("b")
+   fn on_click(_b: &mut Self) {
+      println!("[{}] on_click", std::any::type_name::<Self>());
    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub struct DeriveGavVTable<D> {
-   pub on_test2: fn(&mut D),
+pub struct AbstractButtonVT<D> {
+   pub on_down: fn(&mut D),
 }
 
-pub struct DeriveGav<D>
+pub struct AbstractButton<D>
 where
-   D: SetupDerive<Self>,
+   D: SetupDerive<BaseWidget<Self>, AbstractButtonVT<Self>>,
 {
    pub derive: D,
-   self_ref: Option<Weak<RefCell<Base<Self>>>>,
-   vtable: DeriveGavVTable<Self>,
+   self_ref: Option<Weak<RefCell<BaseWidget<Self>>>>,
+   vtable: AbstractButtonVT<Self>,
 }
 
-impl<D> DeriveGav<D>
+impl<D> AbstractButton<D>
 where
-   D: SetupDerive<Self>,
+   D: SetupDerive<BaseWidget<Self>, AbstractButtonVT<Self>>,
 {
-   pub fn new(derive: D) -> Rc<RefCell<Base<Self>>> {
-      Base::new(Self {
+   pub fn new(derive: D) -> Rc<RefCell<BaseWidget<Self>>> {
+      BaseWidget::new(Self {
          derive,
          self_ref: None,
-         vtable: DeriveGavVTable { on_test2: Self::on_test2 },
+         vtable: AbstractButtonVT { on_down: Self::on_down },
       })
    }
 
-   fn on_test(_b: &mut Base<Self>) {
-      println!("gav")
+   fn on_click(b: &mut BaseWidget<Self>) {
+      println!("[{}] on_click", std::any::type_name::<Self>());
+      Self::on_down(&mut b.derive);
    }
 
-   fn on_test2(_b: &mut Self) {
-      println!("gav")
+   fn on_down(_b: &mut Self) {
+      println!("[{}] on_down", std::any::type_name::<Self>());
    }
 }
 
-impl<D> SetupDerive<Base<Self>> for DeriveGav<D>
+impl<D> SetupDerive<BaseWidget<Self>, BaseWidgetVT<BaseWidget<Self>>> for AbstractButton<D>
 where
-   D: SetupDerive<Self>,
+   D: SetupDerive<BaseWidget<Self>, AbstractButtonVT<Self>>,
 {
-   fn set_self_ref(&mut self, base: Weak<RefCell<Base<Self>>>) {
+   fn set_self_ref(&mut self, base: Weak<RefCell<BaseWidget<Self>>>) {
       self.self_ref = Some(base);
    }
 
-   fn setup_derive(&mut self, vt: &mut Base<Self>) {
-      vt.vtable.on_test = Self::on_test;
+   fn setup_vt(&mut self, vt: &mut BaseWidgetVT<BaseWidget<Self>>) {
+      vt.on_click = Self::on_click;
    }
 }
 
@@ -150,15 +149,15 @@ mod tests {
    #[test]
    fn test() {
       {
-         let b = Base::<()>::new(());
+         let b = BaseWidget::new(());
          let mut bor = b.borrow_mut();
-         bor.run_test();
+         bor.emit_on_click();
       }
 
       {
-         let b = DeriveGav::<()>::new(());
+         let b = AbstractButton::new(());
          let mut bor = b.borrow_mut();
-         bor.run_test();
+         bor.emit_on_click();
       }
       //
       // {
