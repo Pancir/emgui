@@ -1,5 +1,5 @@
 use crate::elements::BaseState;
-use crate::widgets::events::{LifecycleEvent, MouseButtonsEvent, MouseMoveEvent};
+use crate::widgets::events::{MouseButtonsEvent, MouseMoveEvent};
 use crate::widgets::IWidget;
 use sim_draw::m::{Point2, Rect};
 use sim_draw::Canvas;
@@ -247,7 +247,7 @@ where
       self.state.base.geometry.set_rect(rect);
    }
 
-   fn on_lifecycle(&mut self, parent: Option<Weak<dyn IWidget>>, _event: &mut LifecycleEvent) {
+   fn set_parent(&mut self, parent: Option<Weak<dyn IWidget>>) {
       self.state.base.parent = parent
    }
 

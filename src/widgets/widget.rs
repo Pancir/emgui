@@ -30,6 +30,8 @@ pub trait IWidget: Any + 'static {
    /// Access to base widget data.
    fn base_state(&self) -> &BaseState;
 
+   fn set_parent(&mut self, parent: Option<Weak<dyn IWidget>>);
+
    /// Access to base widget data.
    fn parent(&self) -> &Option<Weak<dyn IWidget>>;
 
@@ -48,7 +50,7 @@ pub trait IWidget: Any + 'static {
 
    //---------------------------------------
 
-   fn on_lifecycle(&mut self, parent: Option<Weak<dyn IWidget>>, _event: &mut LifecycleEvent);
+   fn on_lifecycle(&mut self, _event: &mut LifecycleEvent) {}
 
    fn on_layout(&mut self, _event: &LayoutEvent) {}
 
