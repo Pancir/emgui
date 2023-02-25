@@ -6,7 +6,7 @@ use std::ops::Range;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub trait Slider1DHandler {
+pub trait ISlider1DHandler {
    /// This is called  when [Slider1DState::is_down] is `true` and the slider moves.
    ///
    /// This usually happens when the user is dragging the slider.
@@ -35,7 +35,7 @@ pub trait Slider1DHandler {
 }
 
 #[derive(Default)]
-pub struct DefaultSlider1DHandler {
+pub struct Slider1DHandler {
    on_slider_moved: Option<Box<dyn FnMut(&Slider1DState)>>,
    on_range_changed: Option<Box<dyn FnMut(&Slider1DState)>>,
    on_slider_pressed: Option<Box<dyn FnMut(&Slider1DState)>>,
@@ -43,7 +43,7 @@ pub struct DefaultSlider1DHandler {
    on_draw: Option<Box<dyn FnMut(&mut Canvas, &Slider1DState)>>,
 }
 
-impl DefaultSlider1DHandler {
+impl Slider1DHandler {
    /// Construct new.
    pub fn new() -> Self {
       Self::default()
@@ -90,7 +90,7 @@ impl DefaultSlider1DHandler {
    }
 }
 
-impl Slider1DHandler for DefaultSlider1DHandler {
+impl ISlider1DHandler for Slider1DHandler {
    fn slider_moved(&mut self, state: &Slider1DState) {
       if let Some(h) = &mut self.on_slider_moved {
          (h)(state)
@@ -158,9 +158,9 @@ pub struct Slider1DState {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub struct Slider1D<HDL = DefaultSlider1DHandler>
+pub struct Slider1D<HDL = Slider1DHandler>
 where
-   HDL: Slider1DHandler,
+   HDL: ISlider1DHandler,
 {
    pub state: Slider1DState,
    pub handler: HDL,
@@ -168,7 +168,7 @@ where
 
 impl<HDL> Slider1D<HDL>
 where
-   HDL: Slider1DHandler,
+   HDL: ISlider1DHandler,
 {
    #[inline]
    pub fn new(handler: HDL) -> Self {
@@ -202,7 +202,7 @@ where
 
 impl<HDL> Slider1D<HDL>
 where
-   HDL: Slider1DHandler,
+   HDL: ISlider1DHandler,
 {
    #[inline]
    pub fn set_rect(&mut self, rect: Rect<f32>) {
