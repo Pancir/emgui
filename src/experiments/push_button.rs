@@ -6,19 +6,12 @@ use std::rc::{Rc, Weak};
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub struct PushButton {
-   self_ref: Option<Weak<RefCell<Widget<Self>>>>,
+   self_ref: Weak<RefCell<Widget<Self>>>,
 }
 
 impl PushButton {
    pub fn new() -> Rc<RefCell<Widget<Self>>> {
-      let s = Self { self_ref: None };
-
-      let mut out = Widget::new(s, |vt| {});
-
-      let self_ref = Rc::downgrade(&out);
-      out.borrow_mut().derive.self_ref = Some(self_ref);
-
-      out
+      Widget::new(|_vt, self_ref| Self { self_ref })
    }
 }
 
@@ -27,8 +20,8 @@ impl Derive for PushButton {
       self
    }
 
-   fn set_ref(&mut self, self_ref: Weak<RefCell<Widget<Self>>>) {
-      self.self_ref = Some(self_ref);
+   fn as_any_mut(&mut self) -> &mut dyn Any {
+      self
    }
 }
 
