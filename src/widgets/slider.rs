@@ -1,9 +1,10 @@
 use crate::elements::BaseState;
-use crate::widgets::events::{MouseButtonsEvent, MouseMoveEvent};
+use crate::widgets::events::{LifecycleEvent, MouseButtonsEvent, MouseMoveEvent};
 use crate::widgets::IWidget;
 use sim_draw::m::{Point2, Rect};
 use sim_draw::Canvas;
 use std::ops::Range;
+use std::rc::Weak;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -238,8 +239,16 @@ where
       &self.state.base
    }
 
+   fn parent(&self) -> &Option<Weak<dyn IWidget>> {
+      &self.state.base.parent
+   }
+
    fn set_rect(&mut self, rect: Rect<f32>) {
       self.state.base.geometry.set_rect(rect);
+   }
+
+   fn on_lifecycle(&mut self, parent: Option<Weak<dyn IWidget>>, _event: &mut LifecycleEvent) {
+      self.state.base.parent = parent
    }
 
    fn on_draw(&mut self, canvas: &mut Canvas) {

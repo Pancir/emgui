@@ -6,6 +6,7 @@ use crate::widgets::events::{
 use sim_draw::m::Rect;
 use sim_draw::Canvas;
 use std::any::Any;
+use std::rc::Weak;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -29,12 +30,25 @@ pub trait IWidget: Any + 'static {
    /// Access to base widget data.
    fn base_state(&self) -> &BaseState;
 
+   /// Access to base widget data.
+   fn parent(&self) -> &Option<Weak<dyn IWidget>>;
+
    /// Set new rectangle to the widget.
    fn set_rect(&mut self, rect: Rect<f32>);
 
+   /// Request draw event.
+   fn request_draw(&self) {
+      self.base_state().needs_draw.set(true);
+      if let Some(p) = self.parent() {
+         if let Some(o) = p.upgrade() {
+            o.request_draw();
+         }
+      }
+   }
+
    //---------------------------------------
 
-   fn on_lifecycle(&mut self, _event: &mut LifecycleEvent) {}
+   fn on_lifecycle(&mut self, parent: Option<Weak<dyn IWidget>>, _event: &mut LifecycleEvent);
 
    fn on_layout(&mut self, _event: &LayoutEvent) {}
 

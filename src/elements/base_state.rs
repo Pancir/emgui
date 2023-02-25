@@ -1,11 +1,18 @@
 use crate::core::Geometry;
+use crate::widgets::IWidget;
+use std::cell::Cell;
+use std::rc::Weak;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /// Common data for all widgets.
 #[derive(Default)]
 pub struct BaseState {
+   /// Element geometry.
    pub geometry: Geometry,
+
+   /// Element's parent.
+   pub parent: Option<Weak<dyn IWidget>>,
 
    /// `True` if mouse over slider.
    pub is_hover: bool,
@@ -20,7 +27,7 @@ pub struct BaseState {
    pub has_focus: bool,
 
    /// `True` if element want draw event.
-   pub needs_draw: bool,
+   pub needs_draw: Cell<bool>,
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
