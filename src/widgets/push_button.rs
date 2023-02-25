@@ -23,7 +23,7 @@ impl PushButton {
    where
       TXT: Into<Cow<'static, str>>,
    {
-      let out = Widget::new(move |vt| {
+      let out = Widget::new(|vt| {
          vt.on_draw = Self::on_draw;
          vt.on_mouse_move = Self::on_mouse_move;
          vt.on_mouse_button = Self::on_mouse_button;

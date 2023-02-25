@@ -75,8 +75,19 @@ pub fn cast<T: Derive>(_input: Weak<RefCell<&dyn IWidget>>) -> Weak<RefCell<Widg
    unimplemented!()
 }
 
+pub fn add_children<const NUM: usize>(
+   parent: &Rc<RefCell<dyn IWidget>>,
+   children: [Rc<RefCell<dyn IWidget>>; NUM],
+) {
+   // TODO swap implementation with add_child, it will be faster as we can only once borrow.
+
+   for c in children {
+      add_child(&parent, c);
+   }
+}
+
 pub fn add_child(
-   parent: Rc<RefCell<dyn IWidget>>,
+   parent: &Rc<RefCell<dyn IWidget>>,
    child: Rc<RefCell<dyn IWidget>>,
 ) -> Weak<RefCell<dyn IWidget>> {
    let w = Rc::downgrade(&child);
