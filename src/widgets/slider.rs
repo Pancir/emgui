@@ -1,6 +1,6 @@
+use crate::elements::BaseState;
 use sim_draw::m::{Point2, Rect};
 use sim_draw::Canvas;
-use sim_input::mouse::{MouseButton, MouseState};
 use sim_run::{MouseButtonsEvent, MouseMoveEvent};
 use std::ops::Range;
 
@@ -34,44 +34,204 @@ pub trait Slider1DHandler {
    fn draw(&mut self, _canvas: &mut Canvas, _state: &Slider1DState) {}
 }
 
-pub struct DefaultSlider1DHandler {}
+#[derive(Default)]
+pub struct DefaultSlider1DHandler {
+   on_slider_moved: Option<Box<dyn FnMut(&Slider1DState)>>,
+   on_range_changed: Option<Box<dyn FnMut(&Slider1DState)>>,
+   on_slider_pressed: Option<Box<dyn FnMut(&Slider1DState)>>,
+   on_slider_released: Option<Box<dyn FnMut(&Slider1DState)>>,
+   on_draw: Option<Box<dyn FnMut(&mut Canvas, &Slider1DState)>>,
+}
 
-impl Slider1DHandler for DefaultSlider1DHandler {}
+impl DefaultSlider1DHandler {
+   /// Construct new.
+   pub fn new() -> Self {
+      Self::default()
+   }
+
+   /// Set callback.
+   ///
+   /// It allocates memory in heap for the closure.
+   pub fn on_slider_moved(mut self, cb: impl FnMut(&Slider1DState) + 'static) -> Self {
+      self.on_slider_moved = Some(Box::new(cb));
+      self
+   }
+
+   /// Set callback.
+   ///
+   /// It allocates memory in heap for the closure.
+   pub fn on_range_changed(mut self, cb: impl FnMut(&Slider1DState) + 'static) -> Self {
+      self.on_range_changed = Some(Box::new(cb));
+      self
+   }
+
+   /// Set callback.
+   ///
+   /// It allocates memory in heap for the closure.
+   pub fn on_slider_pressed(mut self, cb: impl FnMut(&Slider1DState) + 'static) -> Self {
+      self.on_slider_pressed = Some(Box::new(cb));
+      self
+   }
+
+   /// Set callback.
+   ///
+   /// It allocates memory in heap for the closure.
+   pub fn on_slider_released(mut self, cb: impl FnMut(&Slider1DState) + 'static) -> Self {
+      self.on_slider_released = Some(Box::new(cb));
+      self
+   }
+
+   /// Set callback.
+   ///
+   /// It allocates memory in heap for the closure.
+   pub fn on_draw(mut self, cb: impl FnMut(&mut Canvas, &Slider1DState) + 'static) -> Self {
+      self.on_draw = Some(Box::new(cb));
+      self
+   }
+}
+
+impl Slider1DHandler for DefaultSlider1DHandler {
+   fn slider_moved(&mut self, state: &Slider1DState) {
+      if let Some(h) = &mut self.on_slider_moved {
+         (h)(state)
+      }
+   }
+
+   fn range_changed(&mut self, state: &Slider1DState) {
+      if let Some(h) = &mut self.on_range_changed {
+         (h)(state)
+      }
+   }
+
+   fn slider_pressed(&mut self, state: &Slider1DState) {
+      if let Some(h) = &mut self.on_slider_pressed {
+         (h)(state)
+      }
+   }
+
+   fn slider_released(&mut self, state: &Slider1DState) {
+      if let Some(h) = &mut self.on_slider_released {
+         (h)(state)
+      }
+   }
+
+   fn draw(&mut self, canvas: &mut Canvas, state: &Slider1DState) {
+      if let Some(h) = &mut self.on_draw {
+         (h)(canvas, state)
+      } else {
+         default_draw(canvas, state)
+      }
+   }
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#[derive(Default)]
 pub struct Slider1DState {
+   /// Base data.
+   pub base: BaseState,
+   //---------------------------------
+   /// Rectangle.
    pub rect: Rect<f32>,
 
+   /// Value range.
    pub range: Range<i32>,
+
+   /// Current values within the [Self::range].
    pub value: i32,
 
+   /// `True` if horizon orientation, false for vertical.
+   pub is_horizon: bool,
+
+   /// Geometry of the handle.
    pub handle_rect: Rect<f32>,
+
+   /// Position of the handle.
    pub handle_position: Point2<f32>,
 
-   pub has_focus: bool,
+   /// `True` if mouse pressed over handle.
    pub is_down: bool,
-   pub is_hover: bool,
-   pub is_disabled: bool,
+
+   //---------------------------------
+   needs_draw: bool,
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub struct Slider1D<PROC = DefaultSlider1DHandler>
+pub struct Slider1D<HDL = DefaultSlider1DHandler>
 where
-   PROC: Slider1DHandler,
+   HDL: Slider1DHandler,
 {
    pub state: Slider1DState,
-   pub handler: PROC,
+   pub handler: HDL,
 }
 
-impl Slider1D {
-   pub fn set_disabled(&mut self, state: bool) {
-      unimplemented!()
+impl<HDL> Slider1D<HDL>
+where
+   HDL: Slider1DHandler,
+{
+   #[inline]
+   pub fn new(handler: HDL) -> Self {
+      Self { state: Slider1DState::default(), handler }
+   }
+
+   #[inline]
+   pub fn with_rect(mut self, rect: Rect<f32>) -> Self {
+      self.state.rect = rect;
+      self
+   }
+
+   #[inline]
+   pub fn with_range(mut self, range: Range<i32>) -> Self {
+      self.state.range = range;
+      self
+   }
+
+   #[inline]
+   pub fn with_value(mut self, value: i32) -> Self {
+      self.state.value = value;
+      self
+   }
+
+   #[inline]
+   pub fn disabled(mut self) -> Self {
+      self.state.base.is_enabled = false;
+      self
+   }
+}
+
+impl<HDL> Slider1D<HDL>
+where
+   HDL: Slider1DHandler,
+{
+   #[inline]
+   pub fn set_rect(&mut self, rect: Rect<f32>) {
+      self.state.rect = rect;
+   }
+
+   #[inline]
+   pub fn set_range(&mut self, range: Range<i32>) {
+      self.state.range = range;
+   }
+
+   #[inline]
+   pub fn set_value(&mut self, value: i32) {
+      self.state.value = value;
+   }
+
+   #[inline]
+   pub fn set_enabled(&mut self, state: bool) {
+      self.state.needs_draw = self.state.base.is_enabled != state;
+      self.state.base.is_enabled = state;
    }
 }
 
 impl Slider1D {
+   #[inline]
+   pub fn needs_draw_event(&self) -> bool {
+      self.state.needs_draw
+   }
+
    #[inline]
    pub fn on_draw(&mut self, canvas: &mut Canvas) {
       self.handler.draw(canvas, &self.state);
@@ -81,13 +241,13 @@ impl Slider1D {
    #[inline]
    #[must_use]
    pub fn on_mouse_move(&mut self, event: &MouseMoveEvent) -> bool {
-      self.state.is_hover = self.state.rect.is_inside(event.input.x, event.input.y);
-      self.state.is_hover
+      self.state.base.is_hover = self.state.rect.is_inside(event.input.x, event.input.y);
+      self.state.base.is_hover
    }
 
    #[inline]
    #[must_use]
-   pub fn on_mouse_button(&mut self, event: &MouseButtonsEvent) -> bool {
+   pub fn on_mouse_button(&mut self, _event: &MouseButtonsEvent) -> bool {
       // let down =
       //    event.input.state == MouseState::Pressed && event.input.button == MouseButton::Left;
       //
@@ -100,5 +260,9 @@ impl Slider1D {
       false
    }
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+pub fn default_draw(_canvas: &mut Canvas, _state: &Slider1DState) {}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
