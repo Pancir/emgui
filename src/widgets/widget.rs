@@ -10,6 +10,24 @@ use std::rc::Weak;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+/// Unique within application instance widget id.
+#[derive(Default, Copy, Clone, Debug, Hash, PartialEq)]
+pub struct WidgetId(usize);
+
+impl WidgetId {
+   pub fn new() -> Self {
+      static WIDGET_ID_COUNTER: std::sync::atomic::AtomicUsize =
+         std::sync::atomic::AtomicUsize::new(1);
+      WidgetId(WIDGET_ID_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed))
+   }
+
+   pub fn is_valid(self) -> bool {
+      self.0 != 0
+   }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 pub trait IWidget: Any + 'static {
    /// Get the widget type name for debugging purposes.
    /// Developers should not override this method.
@@ -29,6 +47,10 @@ pub trait IWidget: Any + 'static {
 
    /// Access to base widget data.
    fn base_state(&self) -> &BaseState;
+
+   fn id(&self) -> WidgetId {
+      self.base_state().id
+   }
 
    fn set_parent(&mut self, parent: Option<Weak<dyn IWidget>>);
 
