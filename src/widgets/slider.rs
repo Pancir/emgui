@@ -1,8 +1,9 @@
 use crate::elements::BaseState;
-use crate::widgets::events::{MouseButtonsEvent, MouseMoveEvent};
+use crate::widgets::events::{LifecycleEvent, MouseButtonsEvent, MouseMoveEvent};
 use crate::widgets::IWidget;
+use sim_draw::color::Rgba;
 use sim_draw::m::{Point2, Rect};
-use sim_draw::Canvas;
+use sim_draw::{Canvas, Paint};
 use std::ops::Range;
 use std::rc::Weak;
 
@@ -239,16 +240,16 @@ where
       &self.state.base
    }
 
-   fn parent(&self) -> &Option<Weak<dyn IWidget>> {
-      &self.state.base.parent
+   fn set_parent(&mut self, parent: Option<Weak<dyn IWidget>>) {
+      self.state.base.parent = parent
    }
 
    fn set_rect(&mut self, rect: Rect<f32>) {
       self.state.base.geometry.set_rect(rect);
    }
 
-   fn set_parent(&mut self, parent: Option<Weak<dyn IWidget>>) {
-      self.state.base.parent = parent
+   fn on_lifecycle(&mut self, event: &mut LifecycleEvent) {
+      self.state.base.self_ref = event.self_ref.clone()
    }
 
    fn on_draw(&mut self, canvas: &mut Canvas) {
@@ -256,8 +257,11 @@ where
    }
 
    fn on_mouse_move(&mut self, event: &MouseMoveEvent) -> bool {
-      self.state.base.is_hover =
-         self.state.base.geometry.rect().is_inside(event.input.x, event.input.y);
+      let is_over = self.state.base.geometry.rect().is_inside(event.input.x, event.input.y);
+      if self.state.base.is_hover != is_over {
+         self.request_draw();
+      }
+      self.state.base.is_hover = is_over;
       self.state.base.is_hover
    }
 
@@ -277,6 +281,9 @@ where
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub fn default_draw(_canvas: &mut Canvas, _state: &Slider1DState) {}
+pub fn default_draw(canvas: &mut Canvas, state: &Slider1DState) {
+   canvas.set_paint(Paint::new_color(Rgba::GRAY));
+   canvas.fill(&state.base.geometry.rect());
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

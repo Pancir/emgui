@@ -32,21 +32,17 @@ pub trait IWidget: Any + 'static {
 
    fn set_parent(&mut self, parent: Option<Weak<dyn IWidget>>);
 
-   /// Access to base widget data.
-   fn parent(&self) -> &Option<Weak<dyn IWidget>>;
-
-   /// Set new rectangle to the widget.
-   fn set_rect(&mut self, rect: Rect<f32>);
+   fn parent(&self) -> &Option<Weak<dyn IWidget>> {
+      &self.base_state().parent
+   }
 
    /// Request draw event.
    fn request_draw(&self) {
-      self.base_state().needs_draw.set(true);
-      if let Some(p) = self.parent() {
-         if let Some(o) = p.upgrade() {
-            o.request_draw();
-         }
-      }
+      self.base_state().request_draw();
    }
+
+   /// Set new rectangle to the widget.
+   fn set_rect(&mut self, rect: Rect<f32>);
 
    //---------------------------------------
 
