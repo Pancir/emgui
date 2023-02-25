@@ -190,14 +190,9 @@ where
    D: Derive,
 {
    /// Construct new.
-   ///
-   /// # Safety
-   /// The self_ref (second) parameter of the callback
-   /// MUST NOT be used int the closure body, because it is
-   /// not properly initialized yet.
-   pub unsafe fn new<CB>(cb: CB) -> Rc<RefCell<Self>>
+   pub fn new<CB>(cb: CB) -> Rc<RefCell<Self>>
    where
-      CB: FnOnce(&mut WidgetVt<Self>, Weak<RefCell<Widget<D>>>) -> D,
+      CB: FnOnce(&mut WidgetVt<Self>) -> D,
    {
       let out = Self {
          id: WidgetId::new(),
@@ -222,9 +217,8 @@ where
 
       let out = Rc::new(RefCell::new(out));
       {
-         let self_ref = Rc::downgrade(&out);
          let mut bor = out.borrow_mut();
-         let derive = cb(&mut bor.vtable, self_ref);
+         let derive = cb(&mut bor.vtable);
          bor.derive.write(derive);
       }
 

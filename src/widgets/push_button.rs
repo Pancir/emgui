@@ -12,7 +12,7 @@ use std::rc::{Rc, Weak};
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub struct PushButton {
-   self_ref: Weak<RefCell<Widget<Self>>>,
+   self_ref: Option<Weak<RefCell<Widget<Self>>>>,
 
    label: Label,
    is_toggle: bool,
@@ -25,29 +25,24 @@ impl PushButton {
    where
       TXT: Into<Cow<'static, str>>,
    {
-      let out = unsafe {
-         Widget::new(move |vt, self_ref| {
-            vt.on_draw = Self::on_draw;
-            vt.on_mouse_move = Self::on_mouse_move;
-            vt.on_mouse_button = Self::on_mouse_button;
+      let out = Widget::new(move |vt| {
+         vt.on_draw = Self::on_draw;
+         vt.on_mouse_move = Self::on_mouse_move;
+         vt.on_mouse_button = Self::on_mouse_button;
 
-            Self {
-               self_ref,
-               label: Label::new(
-                  label,
-                  rect.center(),
-                  text_patin,
-                  TextAlign::new().center().middle(),
-               ),
-               is_toggle: false,
-               is_hover: false,
-               is_down: false,
-            }
-         })
-      };
+         Self {
+            self_ref: None,
+            label: Label::new(label, rect.center(), text_patin, TextAlign::new().center().middle()),
+            is_toggle: false,
+            is_hover: false,
+            is_down: false,
+         }
+      });
 
+      let weak = Rc::downgrade(&out);
       match out.try_borrow_mut() {
          Ok(mut w) => {
+            w.derive_mut().self_ref = Some(weak);
             w.set_rect(rect);
          }
          Err(_) => {
