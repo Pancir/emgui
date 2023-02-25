@@ -1,11 +1,10 @@
 use crate::elements::BaseState;
 use crate::widgets::events::{LifecycleEvent, MouseButtonsEvent, MouseMoveEvent};
-use crate::widgets::IWidget;
+use crate::widgets::{IWidget, WidgetRef};
 use sim_draw::color::Rgba;
 use sim_draw::m::{Point2, Rect};
 use sim_draw::{Canvas, Paint};
 use std::ops::Range;
-use std::rc::Weak;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -240,7 +239,7 @@ where
       &self.state.base
    }
 
-   fn set_parent(&mut self, parent: Option<Weak<dyn IWidget>>) {
+   fn set_parent(&mut self, parent: Option<WidgetRef>) {
       self.state.base.parent = parent
    }
 

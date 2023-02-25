@@ -6,6 +6,7 @@ use crate::widgets::events::{
 use sim_draw::m::Rect;
 use sim_draw::Canvas;
 use std::any::Any;
+use std::cell::RefCell;
 use std::rc::Weak;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -15,6 +16,10 @@ use std::rc::Weak;
 pub struct WidgetId(usize);
 
 impl WidgetId {
+   pub const INVALID: Self = Self(0);
+}
+
+impl WidgetId {
    pub fn new() -> Self {
       static WIDGET_ID_COUNTER: std::sync::atomic::AtomicUsize =
          std::sync::atomic::AtomicUsize::new(1);
@@ -22,9 +27,13 @@ impl WidgetId {
    }
 
    pub fn is_valid(self) -> bool {
-      self.0 != 0
+      self != Self::INVALID
    }
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+pub type WidgetRef = Weak<RefCell<dyn IWidget>>;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -52,9 +61,9 @@ pub trait IWidget: Any + 'static {
       self.base_state().id
    }
 
-   fn set_parent(&mut self, parent: Option<Weak<dyn IWidget>>);
+   fn set_parent(&mut self, parent: Option<WidgetRef>);
 
-   fn parent(&self) -> &Option<Weak<dyn IWidget>> {
+   fn parent(&self) -> &Option<WidgetRef> {
       &self.base_state().parent
    }
 
