@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use std::cell::RefCell;
 use std::rc::{Rc, Weak};
 
@@ -106,13 +108,13 @@ where
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// pub struct DeriveGavGav {
-//    self_ref: Option<Weak<RefCell<Base<Self>>>>,
+// pub struct PushButton {
+//    self_ref: Option<Weak<RefCell<BaseWidget<Self>>>>,
 // }
 //
-// impl DeriveGavGav {
-//    pub fn new() -> Rc<RefCell<Base<Self>>> {
-//       Base::new(DeriveGav::new(Self { self_ref: None }))
+// impl PushButton {
+//    pub fn new() -> Rc<RefCell<BaseWidget<Self>>> {
+//       BaseWidget::new(AbstractButton::new(Self { self_ref: None }))
 //    }
 //
 //    fn on_test(_b: &mut Base<Self>) {
@@ -120,7 +122,7 @@ where
 //    }
 // }
 //
-// impl SetupDerive<Base<Self>> for DeriveGavGav {
+// impl SetupDerive<Base<Self>> for PushButton {
 //    fn setup_derive(&mut self, base: Weak<RefCell<Base<Self>>>) {
 //       self.self_ref = Some(base);
 //       if let Some(s) = self.self_ref.upgrade() {
@@ -130,7 +132,7 @@ where
 //    }
 // }
 //
-// impl SetupDerive<DeriveGav<Self>> for DeriveGavGav {
+// impl SetupDerive<DeriveGav<Self>> for PushButton {
 //    fn setup_derive(&mut self, base: Weak<RefCell<DeriveGav<Self>>>) {
 //       self.self_ref = Some(base);
 //       if let Some(s) = self.self_ref.upgrade() {
