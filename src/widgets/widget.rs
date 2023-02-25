@@ -40,6 +40,16 @@ pub fn derive<T: 'static>(derive: &dyn Derive) -> Option<&T> {
    None
 }
 
+impl Derive for () {
+   fn as_any(&self) -> &dyn Any {
+      self
+   }
+
+   fn as_any_mut(&mut self) -> &mut dyn Any {
+      self
+   }
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #[derive(Default)]

@@ -7,13 +7,11 @@ use sim_input::mouse::{MouseButton, MouseState};
 use std::any::Any;
 use std::borrow::Cow;
 use std::cell::RefCell;
-use std::rc::{Rc, Weak};
+use std::rc::Rc;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub struct PushButton {
-   self_ref: Option<Weak<RefCell<Widget<Self>>>>,
-
    label: Label,
    is_toggle: bool,
    is_hover: bool,
@@ -31,7 +29,6 @@ impl PushButton {
          vt.on_mouse_button = Self::on_mouse_button;
 
          Self {
-            self_ref: None,
             label: Label::new(label, rect.center(), text_patin, TextAlign::new().center().middle()),
             is_toggle: false,
             is_hover: false,
@@ -39,10 +36,8 @@ impl PushButton {
          }
       });
 
-      let weak = Rc::downgrade(&out);
       match out.try_borrow_mut() {
          Ok(mut w) => {
-            w.derive_mut().self_ref = Some(weak);
             w.set_rect(rect);
          }
          Err(_) => {
