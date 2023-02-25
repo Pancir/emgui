@@ -5,6 +5,7 @@ use crate::widgets::events::{
 };
 use crate::widgets::WidgetId;
 use sim_draw::color::Rgba;
+use sim_draw::m::Rect;
 use sim_draw::{Canvas, Paint};
 use std::any::Any;
 use std::cell::RefCell;
@@ -101,6 +102,14 @@ pub trait IWidget: Any + 'static {
 
    fn children(&self) -> &Children;
 
+   fn geometry(&self) -> &Geometry;
+
+   fn set_geometry(&mut self, g: Geometry);
+
+   fn set_rect(&mut self, r: Rect<f32>);
+
+   //---------------------------------------
+
    fn is_visible(&self) -> bool;
 
    fn is_enabled(&self) -> bool;
@@ -156,7 +165,7 @@ where
 {
    pub fn new<CB>(cb: CB) -> Rc<RefCell<Self>>
    where
-      CB: Fn(&mut WidgetVt<Self>, Weak<RefCell<Widget<D>>>) -> D,
+      CB: FnOnce(&mut WidgetVt<Self>, Weak<RefCell<Widget<D>>>) -> D,
    {
       let out = Self {
          id: WidgetId::new(),
@@ -262,15 +271,29 @@ where
       &self.children
    }
 
-   fn is_visible(&self) -> bool {
-      true
+   fn geometry(&self) -> &Geometry {
+      &self.geometry
+   }
+
+   fn set_geometry(&mut self, g: Geometry) {
+      self.geometry = g;
+   }
+
+   fn set_rect(&mut self, r: Rect<f32>) {
+      self.geometry.set_rect(r);
    }
 
    //---------------------------------------
 
+   fn is_visible(&self) -> bool {
+      true
+   }
+
    fn is_enabled(&self) -> bool {
       true
    }
+
+   //---------------------------------------
 
    fn emit_lifecycle(&mut self, event: &LifecycleEvent) {
       (self.vtable.on_lifecycle)(self, event);
@@ -314,7 +337,7 @@ where
    D: Derive,
 {
    fn on_draw(&mut self, canvas: &mut Canvas) {
-      canvas.set_paint(Paint::new_color(Rgba::GRAY));
+      canvas.set_paint(Paint::new_color(Rgba::RED));
       canvas.fill(&self.geometry.rect());
    }
 }
