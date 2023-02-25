@@ -50,12 +50,17 @@ impl Derive for () {
    }
 }
 
+/// Cast dyn [IWidget] to specified type.
+pub fn cast<T: Derive>(_input: Weak<RefCell<&dyn IWidget>>) -> Weak<RefCell<Widget<T>>> {
+   unimplemented!()
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #[derive(Default)]
 pub struct Children {
    parent: RefCell<Option<Weak<RefCell<dyn IWidget>>>>,
-   children: RefCell<Vec<Rc<RefCell<dyn IWidget>>>>,
+   children: Cell<Vec<Rc<RefCell<dyn IWidget>>>>,
 }
 
 impl Children {
@@ -77,20 +82,13 @@ impl Children {
       }
    }
 
-   fn take(&mut self) -> Vec<Rc<RefCell<dyn IWidget>>> {
-      std::mem::take(self.children.get_mut())
+   fn take(&self) -> Vec<Rc<RefCell<dyn IWidget>>> {
+      self.children.take()
    }
 
-   fn set(&mut self, mut ch: Vec<Rc<RefCell<dyn IWidget>>>) {
-      *self.children.get_mut() = std::mem::take(&mut ch);
+   fn set(&self, ch: Vec<Rc<RefCell<dyn IWidget>>>) {
+      self.children.set(ch);
    }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/// Cast dyn [IWidget] to specified type.
-pub fn cast<T: Derive>(_input: Weak<RefCell<&dyn IWidget>>) -> Weak<RefCell<Widget<T>>> {
-   unimplemented!()
 }
 
 pub fn add_children<const NUM: usize>(
