@@ -1,6 +1,5 @@
-use crate::elements::BaseState;
 use crate::widgets::events::{LifecycleEvent, MouseButtonsEvent, MouseMoveEvent};
-use crate::widgets::{IWidget, WidgetRef};
+use crate::widgets::IWidget;
 use sim_draw::color::Rgba;
 use sim_draw::m::{Point2, Rect};
 use sim_draw::{Canvas, Paint};

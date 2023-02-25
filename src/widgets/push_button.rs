@@ -1,119 +1,111 @@
-use crate::widgets::Label;
+use crate::widgets::events::{MouseButtonsEvent, MouseMoveEvent};
+use crate::widgets::{Derive, IWidget, Label, Widget};
 use sim_draw::color::Rgba;
 use sim_draw::m::Rect;
 use sim_draw::{Canvas, TextAlign, TextPaint};
 use sim_input::mouse::{MouseButton, MouseState};
-use sim_run::{MouseButtonsEvent, MouseMoveEvent};
+use std::any::Any;
 use std::borrow::Cow;
+use std::cell::RefCell;
+use std::rc::{Rc, Weak};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub struct PushButton {
+   self_ref: Weak<RefCell<Widget<Self>>>,
+
    label: Label,
-   rect: Rect<f32>,
    is_toggle: bool,
    is_hover: bool,
    is_down: bool,
-   v_on_draw: fn(&mut Self, &mut Canvas),
 }
 
-impl Default for PushButton {
-   fn default() -> Self {
-      Self::new(Rect::new(0.0, 0.0, 100.0, 100.0), "", TextPaint::default())
+impl PushButton {
+   pub fn new<TXT>(rect: Rect<f32>, label: TXT, text_patin: TextPaint) -> Rc<RefCell<Widget<Self>>>
+   where
+      TXT: Into<Cow<'static, str>>,
+   {
+      let out = unsafe {
+         Widget::new(move |vt, self_ref| {
+            vt.on_draw = Self::on_draw;
+            vt.on_mouse_move = Self::on_mouse_move;
+            vt.on_mouse_button = Self::on_mouse_button;
+
+            Self {
+               self_ref,
+               label: Label::new(
+                  label,
+                  rect.center(),
+                  text_patin,
+                  TextAlign::new().center().middle(),
+               ),
+               is_toggle: false,
+               is_hover: false,
+               is_down: false,
+            }
+         })
+      };
+
+      match out.try_borrow_mut() {
+         Ok(mut w) => {
+            w.set_rect(rect);
+         }
+         Err(_) => {
+            unreachable!()
+         }
+      }
+
+      out
+   }
+}
+
+impl Derive for PushButton {
+   fn as_any(&self) -> &dyn Any {
+      self
+   }
+
+   fn as_any_mut(&mut self) -> &mut dyn Any {
+      self
    }
 }
 
 impl PushButton {
-   pub fn new<TXT>(rect: Rect<f32>, label: TXT, text_patin: TextPaint) -> Self
-   where
-      TXT: Into<Cow<'static, str>>,
-   {
-      let align = TextAlign::new().center().middle();
-      let label = Label::new(label, rect.center(), text_patin, align);
+   fn on_draw(w: &mut Widget<PushButton>, canvas: &mut Canvas) {
+      let d = w.derive_ref();
 
-      Self { label, rect, is_toggle: false, is_hover: false, is_down: false, v_on_draw: Self::draw }
-   }
-
-   pub fn set_text_patin(&mut self, paint: TextPaint) {
-      self.label.paint = paint;
-   }
-
-   pub fn label(&self) -> &Label {
-      &self.label
-   }
-
-   pub fn rect(&self) -> Rect<f32> {
-      self.rect
-   }
-
-   pub fn set_text<TXT>(&mut self, text: TXT)
-   where
-      TXT: Into<Cow<'static, str>>,
-   {
-      self.label.text = text.into();
-   }
-
-   pub fn text(&self) -> &str {
-      self.label.text.as_ref()
-   }
-
-   pub fn set_toggle(&mut self, state: bool) {
-      self.is_toggle = state;
-   }
-
-   pub fn is_down(&self) -> bool {
-      self.is_down
-   }
-
-   pub fn is_hover(&self) -> bool {
-      self.is_hover
-   }
-}
-
-impl PushButton {
-   fn draw(w: &mut Self, canvas: &mut Canvas) {
       canvas.set_color(Rgba::GRAY.with_alpha(0.5));
 
-      if w.is_hover() {
+      if d.is_hover {
          canvas.set_color(Rgba::GRAY);
       }
 
-      if w.is_down() {
+      if d.is_down {
          canvas.set_color(Rgba::GRAY_LIGHT);
       }
 
-      canvas.fill(&w.rect);
-      if !w.label().text.is_empty() {
-         w.label().on_draw(canvas);
+      canvas.fill(&w.geometry().rect());
+      if !d.label.text.is_empty() {
+         d.label.on_draw(canvas);
       }
    }
-}
 
-impl PushButton {
-   #[inline]
-   pub fn on_draw(&mut self, canvas: &mut Canvas) {
-      (self.v_on_draw)(self, canvas);
+   pub fn on_mouse_move(w: &mut Widget<PushButton>, event: &MouseMoveEvent) -> bool {
+      let rect = w.geometry().rect();
+      let mut d = w.derive_mut();
+      d.is_hover = rect.is_inside(event.input.x, event.input.y);
+      d.is_hover
    }
 
-   /// Return `true` if mouse is over.
-   #[inline]
-   #[must_use]
-   pub fn on_mouse_move(&mut self, event: &MouseMoveEvent) -> bool {
-      self.is_hover = self.rect.is_inside(event.input.x, event.input.y);
-      self.is_hover
-   }
-
-   /// Return `true` if click is detected.
-   #[inline]
-   #[must_use]
-   pub fn on_mouse_button(&mut self, event: &MouseButtonsEvent) -> bool {
+   pub fn on_mouse_button(w: &mut Widget<PushButton>, event: &MouseButtonsEvent) -> bool {
       let down =
          event.input.state == MouseState::Pressed && event.input.button == MouseButton::Left;
 
-      let is_click = !down && self.is_hover && self.is_down;
-      self.is_down = down && self.is_hover;
+      let mut d = w.derive_mut();
+
+      let is_click = !down && d.is_hover && d.is_down;
+      d.is_down = down && d.is_hover;
       if is_click {
-         self.is_toggle = !self.is_toggle;
+         d.is_toggle = !d.is_toggle;
       }
       is_click
    }
