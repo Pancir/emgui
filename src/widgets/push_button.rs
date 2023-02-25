@@ -11,15 +11,89 @@ use std::rc::Rc;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub struct PushButton {
-   label: Label,
-   is_toggle: bool,
-   is_hover: bool,
-   is_down: bool,
+pub trait IPushButtonHandler {
+   /// This is called  when [Slider1DState::is_down] is `true` and the slider moves.
+   ///
+   /// This usually happens when the user is dragging the slider.
+   /// The [Slider1DState::value] is the new slider position.
+   fn click(&mut self, _state: &PushButtonState) {}
+
+   fn toggle(&mut self, _state: &PushButtonState) {}
 }
 
-impl PushButton {
-   pub fn new<TXT>(rect: Rect<f32>, label: TXT, text_patin: TextPaint) -> Rc<RefCell<Widget<Self>>>
+#[derive(Default)]
+pub struct PushButtonHandler {
+   on_click: Option<Box<dyn FnMut(&PushButtonState)>>,
+   on_toggle: Option<Box<dyn FnMut(&PushButtonState)>>,
+}
+
+impl PushButtonHandler {
+   /// Construct new.
+   pub fn new() -> Self {
+      Self::default()
+   }
+
+   /// Set callback.
+   ///
+   /// It allocates memory in heap for the closure.
+   pub fn on_click(mut self, cb: impl FnMut(&PushButtonState) + 'static) -> Self {
+      self.on_click = Some(Box::new(cb));
+      self
+   }
+
+   /// Set callback.
+   ///
+   /// It allocates memory in heap for the closure.
+   pub fn on_toggle(mut self, cb: impl FnMut(&PushButtonState) + 'static) -> Self {
+      self.on_toggle = Some(Box::new(cb));
+      self
+   }
+}
+
+impl IPushButtonHandler for PushButtonHandler {
+   fn click(&mut self, state: &PushButtonState) {
+      if let Some(h) = &mut self.on_click {
+         (h)(state)
+      }
+   }
+
+   fn toggle(&mut self, state: &PushButtonState) {
+      if let Some(h) = &mut self.on_toggle {
+         (h)(state)
+      }
+   }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#[derive(Default)]
+pub struct PushButtonState {
+   pub label: Label,
+   pub is_toggle: bool,
+   pub is_hover: bool,
+   pub is_down: bool,
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+pub struct PushButton<HDL>
+where
+   HDL: IPushButtonHandler,
+{
+   state: PushButtonState,
+   handler: HDL,
+}
+
+impl<HDL> PushButton<HDL>
+where
+   HDL: IPushButtonHandler + 'static,
+{
+   pub fn new<TXT>(
+      handler: HDL,
+      rect: Rect<f32>,
+      label: TXT,
+      text_patin: TextPaint,
+   ) -> Rc<RefCell<Widget<Self>>>
    where
       TXT: Into<Cow<'static, str>>,
    {
@@ -29,10 +103,18 @@ impl PushButton {
          vt.on_mouse_button = Self::on_mouse_button;
 
          Self {
-            label: Label::new(label, rect.center(), text_patin, TextAlign::new().center().middle()),
-            is_toggle: false,
-            is_hover: false,
-            is_down: false,
+            handler,
+            state: PushButtonState {
+               label: Label::new(
+                  label,
+                  rect.center(),
+                  text_patin,
+                  TextAlign::new().center().middle(),
+               ),
+               is_toggle: false,
+               is_hover: false,
+               is_down: false,
+            },
          }
       });
 
@@ -49,7 +131,10 @@ impl PushButton {
    }
 }
 
-impl Derive for PushButton {
+impl<HDL> Derive for PushButton<HDL>
+where
+   HDL: IPushButtonHandler + 'static,
+{
    fn as_any(&self) -> &dyn Any {
       self
    }
@@ -59,43 +144,48 @@ impl Derive for PushButton {
    }
 }
 
-impl PushButton {
-   fn on_draw(w: &mut Widget<PushButton>, canvas: &mut Canvas) {
+impl<HDL> PushButton<HDL>
+where
+   HDL: IPushButtonHandler + 'static,
+{
+   fn on_draw(w: &mut Widget<PushButton<HDL>>, canvas: &mut Canvas) {
       let d = w.derive_ref();
 
       canvas.set_color(Rgba::GRAY.with_alpha(0.5));
 
-      if d.is_hover {
+      if d.state.is_hover {
          canvas.set_color(Rgba::GRAY);
       }
 
-      if d.is_down {
+      if d.state.is_down {
          canvas.set_color(Rgba::GRAY_LIGHT);
       }
 
       canvas.fill(&w.geometry().rect());
-      if !d.label.text.is_empty() {
-         d.label.on_draw(canvas);
+      if !d.state.label.text.is_empty() {
+         d.state.label.on_draw(canvas);
       }
    }
 
-   pub fn on_mouse_move(w: &mut Widget<PushButton>, event: &MouseMoveEvent) -> bool {
+   pub fn on_mouse_move(w: &mut Widget<PushButton<HDL>>, event: &MouseMoveEvent) -> bool {
       let rect = w.geometry().rect();
       let mut d = w.derive_mut();
-      d.is_hover = rect.is_inside(event.input.x, event.input.y);
-      d.is_hover
+      d.state.is_hover = rect.is_inside(event.input.x, event.input.y);
+      d.state.is_hover
    }
 
-   pub fn on_mouse_button(w: &mut Widget<PushButton>, event: &MouseButtonsEvent) -> bool {
+   pub fn on_mouse_button(w: &mut Widget<PushButton<HDL>>, event: &MouseButtonsEvent) -> bool {
       let down =
          event.input.state == MouseState::Pressed && event.input.button == MouseButton::Left;
 
       let mut d = w.derive_mut();
 
-      let is_click = !down && d.is_hover && d.is_down;
-      d.is_down = down && d.is_hover;
+      let is_click = !down && d.state.is_hover && d.state.is_down;
+      d.state.is_down = down && d.state.is_hover;
       if is_click {
-         d.is_toggle = !d.is_toggle;
+         d.state.is_toggle = !d.state.is_toggle;
+         d.handler.click(&d.state);
+         d.handler.toggle(&d.state);
       }
       is_click
    }
