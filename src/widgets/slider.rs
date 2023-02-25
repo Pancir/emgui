@@ -1,4 +1,5 @@
 use crate::elements::BaseState;
+use crate::widgets::IWidget;
 use sim_draw::m::{Point2, Rect};
 use sim_draw::Canvas;
 use sim_run::{MouseButtonsEvent, MouseMoveEvent};
@@ -131,9 +132,6 @@ pub struct Slider1DState {
    /// Base data.
    pub base: BaseState,
    //---------------------------------
-   /// Rectangle.
-   pub rect: Rect<f32>,
-
    /// Value range.
    pub range: Range<i32>,
 
@@ -177,7 +175,7 @@ where
 
    #[inline]
    pub fn with_rect(mut self, rect: Rect<f32>) -> Self {
-      self.state.rect = rect;
+      self.state.base.geometry.set_rect(rect);
       self
    }
 
@@ -198,6 +196,12 @@ where
       self.state.base.is_enabled = false;
       self
    }
+
+   #[inline]
+   pub fn visible(mut self) -> Self {
+      self.state.base.is_visible = true;
+      self
+   }
 }
 
 impl<HDL> Slider1D<HDL>
@@ -206,7 +210,7 @@ where
 {
    #[inline]
    pub fn set_rect(&mut self, rect: Rect<f32>) {
-      self.state.rect = rect;
+      self.state.base.geometry.set_rect(rect);
    }
 
    #[inline]
@@ -226,28 +230,29 @@ where
    }
 }
 
-impl Slider1D {
-   #[inline]
-   pub fn needs_draw_event(&self) -> bool {
-      self.state.needs_draw
+impl<HDL> IWidget for Slider1D<HDL>
+where
+   HDL: ISlider1DHandler + 'static,
+{
+   fn base_state(&self) -> &BaseState {
+      &self.state.base
    }
 
-   #[inline]
-   pub fn on_draw(&mut self, canvas: &mut Canvas) {
+   fn set_rect(&mut self, rect: Rect<f32>) {
+      self.state.base.geometry.set_rect(rect);
+   }
+
+   fn on_draw(&mut self, canvas: &mut Canvas) {
       self.handler.draw(canvas, &self.state);
    }
 
-   /// Return `true` if mouse is over.
-   #[inline]
-   #[must_use]
-   pub fn on_mouse_move(&mut self, event: &MouseMoveEvent) -> bool {
-      self.state.base.is_hover = self.state.rect.is_inside(event.input.x, event.input.y);
+   fn on_mouse_move(&mut self, event: &MouseMoveEvent) -> bool {
+      self.state.base.is_hover =
+         self.state.base.geometry.rect().is_inside(event.input.x, event.input.y);
       self.state.base.is_hover
    }
 
-   #[inline]
-   #[must_use]
-   pub fn on_mouse_button(&mut self, _event: &MouseButtonsEvent) -> bool {
+   fn on_mouse_button(&mut self, _event: &MouseButtonsEvent) -> bool {
       // let down =
       //    event.input.state == MouseState::Pressed && event.input.button == MouseButton::Left;
       //
