@@ -1,8 +1,8 @@
 use crate::elements::BaseState;
+use crate::widgets::events::{MouseButtonsEvent, MouseMoveEvent};
 use crate::widgets::IWidget;
 use sim_draw::m::{Point2, Rect};
 use sim_draw::Canvas;
-use sim_run::{MouseButtonsEvent, MouseMoveEvent};
 use std::ops::Range;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

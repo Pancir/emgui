@@ -1,8 +1,10 @@
 use crate::elements::BaseState;
-use crate::widgets::events::LayoutEvent;
+use crate::widgets::events::{
+   KeyboardEvent, LayoutEvent, LifecycleEvent, MouseButtonsEvent, MouseMoveEvent, MouseWheelEvent,
+   UpdateEvent,
+};
 use sim_draw::m::Rect;
 use sim_draw::Canvas;
-use sim_run::{KeyboardEvent, MouseButtonsEvent, MouseMoveEvent, MouseWheelEvent, UpdateEvent};
 use std::any::Any;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -31,6 +33,8 @@ pub trait IWidget: Any + 'static {
    fn set_rect(&mut self, rect: Rect<f32>);
 
    //---------------------------------------
+
+   fn on_lifecycle(&mut self, _event: &mut LifecycleEvent) {}
 
    fn on_layout(&mut self, _event: &LayoutEvent) {}
 
