@@ -60,7 +60,9 @@ pub fn cast<T: Derive>(_input: Weak<RefCell<&dyn IWidget>>) -> Weak<RefCell<Widg
 #[derive(Default)]
 pub struct Children {
    parent: RefCell<Option<Weak<RefCell<dyn IWidget>>>>,
-   children: Cell<Vec<Rc<RefCell<dyn IWidget>>>>,
+
+   children_busy: Cell<WidgetId>,
+   children: RefCell<Vec<Rc<RefCell<dyn IWidget>>>>,
 }
 
 impl Children {
@@ -68,7 +70,7 @@ impl Children {
       let bor = self.parent.borrow_mut();
       if let Some(p) = bor.deref() {
          if let Some(o) = p.upgrade() {
-            o.borrow_mut().request_draw();
+            o.borrow().request_draw();
          }
       }
    }
@@ -77,17 +79,34 @@ impl Children {
       let bor = self.parent.borrow_mut();
       if let Some(p) = bor.deref() {
          if let Some(o) = p.upgrade() {
-            o.borrow_mut().request_update();
+            o.borrow().request_update();
          }
       }
    }
 
-   fn take(&self) -> Vec<Rc<RefCell<dyn IWidget>>> {
-      self.children.take()
+   #[track_caller]
+   fn take(&self, id: WidgetId) -> Vec<Rc<RefCell<dyn IWidget>>> {
+      debug_assert!(
+         !self.children_busy.get().is_valid(),
+         "[{:?}] children taken by [{:?}]",
+         id,
+         self.children_busy.get()
+      );
+      if !self.children_busy.get().is_valid() {
+         self.children_busy.set(id);
+      }
+      std::mem::take(self.children.borrow_mut().deref_mut())
    }
 
-   fn set(&self, ch: Vec<Rc<RefCell<dyn IWidget>>>) {
-      self.children.set(ch);
+   #[track_caller]
+   fn set(&self, mut ch: Vec<Rc<RefCell<dyn IWidget>>>, id: WidgetId) {
+      debug_assert!(
+         self.children_busy.get().is_valid(),
+         "[{:?}] attempt to set children into non free slot",
+         id
+      );
+      *self.children.borrow_mut().deref_mut() = std::mem::take(&mut ch);
+      self.children_busy.set(WidgetId::INVALID);
    }
 }
 
@@ -107,34 +126,26 @@ pub fn add_child(
    child: Rc<RefCell<dyn IWidget>>,
 ) -> Weak<RefCell<dyn IWidget>> {
    let w = Rc::downgrade(&child);
-   let mut p = parent.borrow_mut();
-
    {
-      let pch = p.children_mut();
-      let bor_ch = pch.children.get_mut();
+      let bor = parent.borrow();
+      let pch = bor.children();
+
+      debug_assert!(!pch.children_busy.get().is_valid());
+
+      let mut bor_ch = pch.children.borrow_mut();
       bor_ch.push(child.clone());
    }
 
    {
-      let mut c = child.borrow_mut();
-      let cch = c.children_mut();
-      let mut bor_p = cch.parent.get_mut();
+      let bor = child.borrow();
+      let c = bor.children();
+
+      let mut bor_p = c.parent.borrow_mut();
       debug_assert!(bor_p.is_none());
       *bor_p.deref_mut() = Some(Rc::downgrade(&parent));
    }
 
    w
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-pub trait IWidgetControl {
-   fn request_draw(&self);
-   fn request_delete(&self);
-   fn request_update(&self);
-
-   fn widget(&self) -> &dyn IWidget;
-   fn widget_mut(&mut self) -> &mut dyn IWidget;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -161,11 +172,11 @@ pub trait IWidget: Any + 'static {
 
    //---------------------------------------
 
-   fn request_draw(&mut self);
+   fn request_draw(&self);
 
-   fn request_delete(&mut self);
+   fn request_delete(&self);
 
-   fn request_update(&mut self);
+   fn request_update(&self);
 
    //---------------------------------------
 
@@ -243,7 +254,7 @@ where
    where
       CB: FnOnce(&mut WidgetVt<Self>) -> D,
    {
-      let out = Self {
+      let mut out = Self {
          id: WidgetId::new(),
          derive: unsafe { std::mem::zeroed() },
          vtable: WidgetVt {
@@ -264,14 +275,9 @@ where
          needs_del: Cell::new(false),
       };
 
-      let out = Rc::new(RefCell::new(out));
-      {
-         let mut bor = out.borrow_mut();
-         let derive = cb(&mut bor.vtable);
-         bor.derive.write(derive);
-      }
-
-      out
+      let derive = cb(&mut out.vtable);
+      out.derive.write(derive);
+      Rc::new(RefCell::new(out))
    }
 
    pub fn derive_ref(&self) -> &D {
@@ -284,37 +290,6 @@ where
       // # Safety
       // All initialization happen in new function.
       unsafe { self.derive.assume_init_mut() }
-   }
-}
-
-impl<D: 'static> IWidgetControl for Widget<D>
-where
-   D: Derive,
-{
-   fn request_draw(&self) {
-      if !self.needs_draw.get() {
-         self.needs_draw.set(true);
-         self.children.request_draw_parent();
-      }
-   }
-
-   fn request_delete(&self) {
-      if !self.needs_update.get() {
-         self.needs_update.set(true);
-         self.children.request_update_parent();
-      }
-   }
-
-   fn request_update(&self) {
-      self.needs_del.set(true);
-   }
-
-   fn widget(&self) -> &dyn IWidget {
-      self
-   }
-
-   fn widget_mut(&mut self) -> &mut dyn IWidget {
-      self
    }
 }
 
@@ -336,18 +311,23 @@ where
 
    //---------------------------------------
 
-   fn request_draw(&mut self) {
-      IWidgetControl::request_draw(self);
+   fn request_draw(&self) {
+      if !self.needs_draw.get() {
+         self.needs_draw.set(true);
+         self.children.request_draw_parent();
+      }
    }
 
-   fn request_delete(&mut self) {
-      IWidgetControl::request_delete(self);
+   fn request_delete(&self) {
+      if !self.needs_update.get() {
+         self.needs_update.set(true);
+         self.children.request_update_parent();
+      }
    }
 
-   fn request_update(&mut self) {
-      IWidgetControl::request_update(self);
+   fn request_update(&self) {
+      self.needs_del.set(true);
    }
-
    //---------------------------------------
 
    fn children(&self) -> &Children {
@@ -446,7 +426,8 @@ pub fn emit_lifecycle(child: &Rc<RefCell<dyn IWidget>>, event: &LifecycleEvent) 
    let mut children = match child.try_borrow_mut() {
       Ok(mut child) => {
          child.emit_lifecycle(event);
-         child.children_mut().take()
+         let id = child.id();
+         child.children_mut().take(id)
       }
       Err(e) => {
          panic!("{}", e)
@@ -455,7 +436,9 @@ pub fn emit_lifecycle(child: &Rc<RefCell<dyn IWidget>>, event: &LifecycleEvent) 
 
    if !children.is_empty() {
       emit_lifecycle_children(&mut children, event);
-      child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e)).children_mut().set(children);
+      let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e));
+      let id = bor.id();
+      bor.children_mut().set(children, id);
    }
 }
 
@@ -471,7 +454,8 @@ pub fn emit_layout(child: &Rc<RefCell<dyn IWidget>>, event: &LayoutEvent) {
    let mut children = match child.try_borrow_mut() {
       Ok(mut child) => {
          child.emit_layout(event);
-         child.children_mut().take()
+         let id = child.id();
+         child.children_mut().take(id)
       }
       Err(e) => {
          panic!("{}", e)
@@ -480,7 +464,9 @@ pub fn emit_layout(child: &Rc<RefCell<dyn IWidget>>, event: &LayoutEvent) {
 
    if !children.is_empty() {
       emit_layout_children(&mut children, event);
-      child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e)).children_mut().set(children);
+      let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e));
+      let id = bor.id();
+      bor.children_mut().set(children, id);
    }
 }
 
@@ -496,7 +482,8 @@ pub fn emit_update(child: &Rc<RefCell<dyn IWidget>>, event: &UpdateEvent) {
    let mut children = match child.try_borrow_mut() {
       Ok(mut child) => {
          child.emit_update(event);
-         child.children_mut().take()
+         let id = child.id();
+         child.children_mut().take(id)
       }
       Err(e) => {
          panic!("{}", e)
@@ -505,7 +492,9 @@ pub fn emit_update(child: &Rc<RefCell<dyn IWidget>>, event: &UpdateEvent) {
 
    if !children.is_empty() {
       emit_update_children(&mut children, event);
-      child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e)).children_mut().set(children);
+      let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e));
+      let id = bor.id();
+      bor.children_mut().set(children, id);
    }
 }
 
@@ -523,7 +512,8 @@ pub fn emit_draw(child: &Rc<RefCell<dyn IWidget>>, canvas: &mut Canvas, force: b
          let is_visible = child.is_visible();
          if is_visible || force {
             child.emit_draw(canvas);
-            child.children_mut().take()
+            let id = child.id();
+            child.children_mut().take(id)
          } else {
             Vec::default()
          }
@@ -535,7 +525,9 @@ pub fn emit_draw(child: &Rc<RefCell<dyn IWidget>>, canvas: &mut Canvas, force: b
 
    if !children.is_empty() {
       emit_draw_children(&mut children, canvas, force);
-      child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e)).children_mut().set(children);
+      let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e));
+      let id = bor.id();
+      bor.children_mut().set(children, id);
    }
 }
 
@@ -553,7 +545,10 @@ fn emit_draw_children(
 
 pub fn emit_mouse_move(child: &Rc<RefCell<dyn IWidget>>, event: &MouseMoveEvent) -> bool {
    let mut children = match child.try_borrow_mut() {
-      Ok(mut child) => child.children_mut().take(),
+      Ok(mut child) => {
+         let id = child.id();
+         child.children_mut().take(id)
+      }
       Err(e) => {
          panic!("{}", e)
       }
@@ -565,7 +560,8 @@ pub fn emit_mouse_move(child: &Rc<RefCell<dyn IWidget>>, event: &MouseMoveEvent)
 
    match child.try_borrow_mut() {
       Ok(mut child) => {
-         child.children_mut().set(children);
+         let id = child.id();
+         child.children_mut().set(children, id);
          if child.emit_mouse_move(event) {
             return true;
          }
@@ -594,7 +590,10 @@ fn emit_mouse_move_children(
 
 pub fn emit_mouse_button(child: &Rc<RefCell<dyn IWidget>>, event: &MouseButtonsEvent) -> bool {
    let mut children = match child.try_borrow_mut() {
-      Ok(mut child) => child.children_mut().take(),
+      Ok(mut child) => {
+         let id = child.id();
+         child.children_mut().take(id)
+      }
       Err(e) => {
          panic!("{}", e)
       }
@@ -606,7 +605,8 @@ pub fn emit_mouse_button(child: &Rc<RefCell<dyn IWidget>>, event: &MouseButtonsE
 
    match child.try_borrow_mut() {
       Ok(mut child) => {
-         child.children_mut().set(children);
+         let id = child.id();
+         child.children_mut().set(children, id);
          if child.emit_mouse_button(event) {
             return true;
          }
@@ -635,7 +635,10 @@ fn emit_mouse_button_children(
 
 pub fn emit_mouse_wheel(child: &Rc<RefCell<dyn IWidget>>, event: &MouseWheelEvent) -> bool {
    let mut children = match child.try_borrow_mut() {
-      Ok(mut child) => child.children_mut().take(),
+      Ok(mut child) => {
+         let id = child.id();
+         child.children_mut().take(id)
+      }
       Err(e) => {
          panic!("{}", e)
       }
@@ -647,7 +650,8 @@ pub fn emit_mouse_wheel(child: &Rc<RefCell<dyn IWidget>>, event: &MouseWheelEven
 
    match child.try_borrow_mut() {
       Ok(mut child) => {
-         child.children_mut().set(children);
+         let id = child.id();
+         child.children_mut().set(children, id);
          if child.emit_mouse_wheel(event) {
             return true;
          }
@@ -676,7 +680,10 @@ fn emit_mouse_wheel_children(
 
 pub fn emit_keyboard(child: &Rc<RefCell<dyn IWidget>>, event: &KeyboardEvent) -> bool {
    let mut children = match child.try_borrow_mut() {
-      Ok(mut child) => child.children_mut().take(),
+      Ok(mut child) => {
+         let id = child.id();
+         child.children_mut().take(id)
+      }
       Err(e) => {
          panic!("{}", e)
       }
@@ -688,7 +695,8 @@ pub fn emit_keyboard(child: &Rc<RefCell<dyn IWidget>>, event: &KeyboardEvent) ->
 
    match child.try_borrow_mut() {
       Ok(mut child) => {
-         child.children_mut().set(children);
+         let id = child.id();
+         child.children_mut().set(children, id);
          if child.emit_keyboard(event) {
             return true;
          }

@@ -1,11 +1,17 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /// Unique within application instance widget id.
-#[derive(Default, Copy, Clone, Debug, Hash, PartialEq)]
+#[derive(Copy, Clone, Debug, Hash, PartialEq)]
 pub struct WidgetId(usize);
 
 impl WidgetId {
    pub const INVALID: Self = Self(0);
+}
+
+impl Default for WidgetId {
+   fn default() -> Self {
+      Self::INVALID
+   }
 }
 
 impl WidgetId {
