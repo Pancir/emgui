@@ -1,4 +1,5 @@
 use crate::core::Geometry;
+use crate::defines::STATIC_CHILD_NUM;
 use crate::widgets::events::{
    KeyboardEvent, LayoutEvent, LifecycleEvent, MouseButtonsEvent, MouseMoveEvent, MouseWheelEvent,
    UpdateEvent,
@@ -7,6 +8,7 @@ use crate::widgets::WidgetId;
 use sim_draw::color::Rgba;
 use sim_draw::m::Rect;
 use sim_draw::{Canvas, Paint};
+use smallvec::SmallVec;
 use std::any::Any;
 use std::cell::{Cell, RefCell};
 use std::mem::MaybeUninit;
@@ -57,12 +59,14 @@ pub fn cast<T: Derive>(_input: Weak<RefCell<&dyn IWidget>>) -> Weak<RefCell<Widg
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+pub type ChildrenVec = SmallVec<[Rc<RefCell<dyn IWidget>>; STATIC_CHILD_NUM]>;
+
 #[derive(Default)]
 pub struct Children {
    parent: RefCell<Option<Weak<RefCell<dyn IWidget>>>>,
 
    children_busy: Cell<WidgetId>,
-   children: RefCell<Vec<Rc<RefCell<dyn IWidget>>>>,
+   children: RefCell<ChildrenVec>,
 }
 
 impl Children {
@@ -85,7 +89,7 @@ impl Children {
    }
 
    #[track_caller]
-   fn take(&self, id: WidgetId) -> Vec<Rc<RefCell<dyn IWidget>>> {
+   fn take(&self, id: WidgetId) -> ChildrenVec {
       debug_assert!(
          !self.children_busy.get().is_valid(),
          "[{:?}] children taken by [{:?}]",
@@ -99,7 +103,7 @@ impl Children {
    }
 
    #[track_caller]
-   fn set(&self, mut ch: Vec<Rc<RefCell<dyn IWidget>>>, id: WidgetId) {
+   fn set(&self, mut ch: ChildrenVec, id: WidgetId) {
       debug_assert!(
          self.children_busy.get().is_valid(),
          "[{:?}] attempt to set children into non free slot",
@@ -436,17 +440,14 @@ pub fn emit_lifecycle(child: &Rc<RefCell<dyn IWidget>>, event: &LifecycleEvent) 
 
    if !children.is_empty() {
       emit_lifecycle_children(&mut children, event);
-      let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e));
-      let id = bor.id();
-      bor.children_mut().set(children, id);
-   } else {
-      let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e));
-      let id = bor.id();
-      bor.children_mut().set(children, id);
    }
+
+   let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e));
+   let id = bor.id();
+   bor.children_mut().set(children, id);
 }
 
-fn emit_lifecycle_children(children: &mut Vec<Rc<RefCell<dyn IWidget>>>, event: &LifecycleEvent) {
+fn emit_lifecycle_children(children: &mut ChildrenVec, event: &LifecycleEvent) {
    for child in children {
       emit_lifecycle(&child, event);
    }
@@ -468,17 +469,14 @@ pub fn emit_layout(child: &Rc<RefCell<dyn IWidget>>, event: &LayoutEvent) {
 
    if !children.is_empty() {
       emit_layout_children(&mut children, event);
-      let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e));
-      let id = bor.id();
-      bor.children_mut().set(children, id);
-   } else {
-      let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e));
-      let id = bor.id();
-      bor.children_mut().set(children, id);
    }
+
+   let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e));
+   let id = bor.id();
+   bor.children_mut().set(children, id);
 }
 
-fn emit_layout_children(children: &mut Vec<Rc<RefCell<dyn IWidget>>>, event: &LayoutEvent) {
+fn emit_layout_children(children: &mut ChildrenVec, event: &LayoutEvent) {
    for child in children {
       emit_layout(&child, event);
    }
@@ -500,17 +498,14 @@ pub fn emit_update(child: &Rc<RefCell<dyn IWidget>>, event: &UpdateEvent) {
 
    if !children.is_empty() {
       emit_update_children(&mut children, event);
-      let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e));
-      let id = bor.id();
-      bor.children_mut().set(children, id);
-   } else {
-      let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e));
-      let id = bor.id();
-      bor.children_mut().set(children, id);
    }
+
+   let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e));
+   let id = bor.id();
+   bor.children_mut().set(children, id);
 }
 
-fn emit_update_children(children: &mut Vec<Rc<RefCell<dyn IWidget>>>, event: &UpdateEvent) {
+fn emit_update_children(children: &mut ChildrenVec, event: &UpdateEvent) {
    for child in children {
       emit_update(&child, event);
    }
@@ -519,39 +514,30 @@ fn emit_update_children(children: &mut Vec<Rc<RefCell<dyn IWidget>>>, event: &Up
 //------------------------------------------------------------------------------------------------//
 
 pub fn emit_draw(child: &Rc<RefCell<dyn IWidget>>, canvas: &mut Canvas, force: bool) {
-   let mut children = match child.try_borrow_mut() {
+   let (mut children, is_draw) = match child.try_borrow_mut() {
       Ok(mut child) => {
-         let is_visible = child.is_visible();
-         if is_visible || force {
+         let is_draw = child.is_visible() || force;
+         if is_draw {
             child.emit_draw(canvas);
-            let id = child.id();
-            child.children_mut().take(id)
-         } else {
-            Vec::default()
          }
+         let id = child.id();
+         (child.children_mut().take(id), is_draw)
       }
       Err(e) => {
          panic!("{}", e)
       }
    };
 
-   if !children.is_empty() {
+   if is_draw {
       emit_draw_children(&mut children, canvas, force);
-      let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e));
-      let id = bor.id();
-      bor.children_mut().set(children, id);
-   } else {
-      let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e));
-      let id = bor.id();
-      bor.children_mut().set(children, id);
    }
+
+   let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e));
+   let id = bor.id();
+   bor.children_mut().set(children, id);
 }
 
-fn emit_draw_children(
-   children: &mut Vec<Rc<RefCell<dyn IWidget>>>,
-   canvas: &mut Canvas,
-   force: bool,
-) {
+fn emit_draw_children(children: &mut ChildrenVec, canvas: &mut Canvas, force: bool) {
    for child in children {
       emit_draw(&child, canvas, force);
    }
@@ -590,10 +576,7 @@ pub fn emit_mouse_move(child: &Rc<RefCell<dyn IWidget>>, event: &MouseMoveEvent)
    false
 }
 
-fn emit_mouse_move_children(
-   children: &mut Vec<Rc<RefCell<dyn IWidget>>>,
-   event: &MouseMoveEvent,
-) -> bool {
+fn emit_mouse_move_children(children: &mut ChildrenVec, event: &MouseMoveEvent) -> bool {
    for child in children {
       if emit_mouse_move(&child, event) {
          return true;
@@ -635,10 +618,7 @@ pub fn emit_mouse_button(child: &Rc<RefCell<dyn IWidget>>, event: &MouseButtonsE
    false
 }
 
-fn emit_mouse_button_children(
-   children: &mut Vec<Rc<RefCell<dyn IWidget>>>,
-   event: &MouseButtonsEvent,
-) -> bool {
+fn emit_mouse_button_children(children: &mut ChildrenVec, event: &MouseButtonsEvent) -> bool {
    for child in children {
       if emit_mouse_button(&child, event) {
          return true;
@@ -680,10 +660,7 @@ pub fn emit_mouse_wheel(child: &Rc<RefCell<dyn IWidget>>, event: &MouseWheelEven
    false
 }
 
-fn emit_mouse_wheel_children(
-   children: &mut Vec<Rc<RefCell<dyn IWidget>>>,
-   event: &MouseWheelEvent,
-) -> bool {
+fn emit_mouse_wheel_children(children: &mut ChildrenVec, event: &MouseWheelEvent) -> bool {
    for child in children {
       if emit_mouse_wheel(&child, event) {
          return true;
@@ -725,16 +702,26 @@ pub fn emit_keyboard(child: &Rc<RefCell<dyn IWidget>>, event: &KeyboardEvent) ->
    false
 }
 
-fn emit_mouse_keyboard_children(
-   children: &mut Vec<Rc<RefCell<dyn IWidget>>>,
-   event: &KeyboardEvent,
-) -> bool {
+fn emit_mouse_keyboard_children(children: &mut ChildrenVec, event: &KeyboardEvent) -> bool {
    for child in children {
       if emit_keyboard(&child, event) {
          return true;
       }
    }
    false
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#[cfg(test)]
+mod tests {
+   use super::*;
+
+   #[test]
+   fn sizes() {
+      println!("{} : {}", std::any::type_name::<Widget<()>>(), std::mem::size_of::<Widget<()>>());
+      println!("{} : {}", std::any::type_name::<Children>(), std::mem::size_of::<Children>());
+   }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

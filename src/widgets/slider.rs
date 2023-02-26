@@ -35,6 +35,13 @@ pub trait ISlider1DHandler {
    fn draw(&mut self, _canvas: &mut Canvas, _state: &Slider1DState) {}
 }
 
+/// Default Slider handler.
+///
+/// This implementation uses closures allocated in heap so,
+/// in some cases it is better to create you own.
+///
+/// # Note
+/// Heap allocation happens only when you add a closure.
 #[derive(Default)]
 pub struct Slider1DHandler {
    on_slider_moved: Option<Box<dyn FnMut(&Slider1DState)>>,

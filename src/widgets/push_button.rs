@@ -12,19 +12,36 @@ use std::rc::Rc;
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub trait IPushButtonHandler {
-   /// This is called  when [Slider1DState::is_down] is `true` and the slider moves.
+   /// This is called when the button is activated.
    ///
-   /// This usually happens when the user is dragging the slider.
-   /// The [Slider1DState::value] is the new slider position.
+   /// (i.e., pressed down then released while the mouse cursor is inside the button).
+   ///
+   /// The [PushButtonState::is_toggle] is the current state of toggle.
    fn click(&mut self, _state: &PushButtonState) {}
 
-   fn toggle(&mut self, _state: &PushButtonState) {}
+   /// This is called when the button is pressed down.
+   ///
+   /// The [PushButtonState::is_down] is `true`.
+   fn pressed(&mut self, _state: &PushButtonState) {}
+
+   /// This is called when the button is released.
+   ///
+   /// The [PushButtonState::is_down] is `false`.
+   fn released(&mut self, _state: &PushButtonState) {}
 }
 
+/// Default button handler.
+///
+/// This implementation uses closures allocated in heap so,
+/// in some cases it is better to create you own.
+///
+/// # Note
+/// Heap allocation happens only when you add a closure.
 #[derive(Default)]
 pub struct PushButtonHandler {
    on_click: Option<Box<dyn FnMut(&PushButtonState)>>,
-   on_toggle: Option<Box<dyn FnMut(&PushButtonState)>>,
+   on_pressed: Option<Box<dyn FnMut(&PushButtonState)>>,
+   on_released: Option<Box<dyn FnMut(&PushButtonState)>>,
 }
 
 impl PushButtonHandler {
@@ -44,8 +61,16 @@ impl PushButtonHandler {
    /// Set callback.
    ///
    /// It allocates memory in heap for the closure.
-   pub fn on_toggle(mut self, cb: impl FnMut(&PushButtonState) + 'static) -> Self {
-      self.on_toggle = Some(Box::new(cb));
+   pub fn on_pressed(mut self, cb: impl FnMut(&PushButtonState) + 'static) -> Self {
+      self.on_pressed = Some(Box::new(cb));
+      self
+   }
+
+   /// Set callback.
+   ///
+   /// It allocates memory in heap for the closure.
+   pub fn on_released(mut self, cb: impl FnMut(&PushButtonState) + 'static) -> Self {
+      self.on_released = Some(Box::new(cb));
       self
    }
 }
@@ -56,12 +81,6 @@ impl IPushButtonHandler for PushButtonHandler {
          (h)(state)
       }
    }
-
-   fn toggle(&mut self, state: &PushButtonState) {
-      if let Some(h) = &mut self.on_toggle {
-         (h)(state)
-      }
-   }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -69,7 +88,7 @@ impl IPushButtonHandler for PushButtonHandler {
 #[derive(Default)]
 pub struct PushButtonState {
    pub label: Label,
-   pub is_toggle: bool,
+   pub is_toggled: bool,
    pub is_hover: bool,
    pub is_down: bool,
 }
@@ -111,7 +130,7 @@ where
                   text_patin,
                   TextAlign::new().center().middle(),
                ),
-               is_toggle: false,
+               is_toggled: false,
                is_hover: false,
                is_down: false,
             },
@@ -183,9 +202,8 @@ where
       let is_click = !down && d.state.is_hover && d.state.is_down;
       d.state.is_down = down && d.state.is_hover;
       if is_click {
-         d.state.is_toggle = !d.state.is_toggle;
+         d.state.is_toggled = !d.state.is_toggled;
          d.handler.click(&d.state);
-         d.handler.toggle(&d.state);
       }
       is_click
    }
