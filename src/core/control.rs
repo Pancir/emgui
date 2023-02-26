@@ -1,4 +1,4 @@
-// pub mod dispatch;
+pub mod dispatch;
 
 use crate::core::{Geometry, IWidget, WidgetId};
 use crate::defines::{STATIC_CHILD_NUM, STATIC_REGIONS_NUM};
@@ -49,6 +49,7 @@ bitflags! {
       //-----------------------------
 
       const INIT = Self::DRAW.bits | Self::UPDATE.bits;
+      const UPDATE_OR_DLETE = Self::DELETE.bits | Self::UPDATE.bits;
    }
 }
 

@@ -15,7 +15,6 @@ use std::rc::Rc;
 pub fn lifecycle(child: &Rc<RefCell<dyn IWidget>>, event: &LifecycleEventCtx) {
    let mut children = match child.try_borrow_mut() {
       Ok(mut child) => {
-         child.emit_lifecycle(event);
          let id = child.id();
          child.internal_mut().take_children(id)
       }
@@ -28,9 +27,16 @@ pub fn lifecycle(child: &Rc<RefCell<dyn IWidget>>, event: &LifecycleEventCtx) {
       lifecycle_children(&mut children, event);
    }
 
-   let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e));
-   let id = bor.id();
-   bor.internal_mut().set_children(children, id);
+   match child.try_borrow_mut() {
+      Ok(mut child) => {
+         let id = child.id();
+         child.internal_mut().set_children(children, id);
+         child.emit_lifecycle(event)
+      }
+      Err(e) => {
+         panic!("{}", e)
+      }
+   };
 }
 
 fn lifecycle_children(children: &mut ChildrenVec, event: &LifecycleEventCtx) {
@@ -39,7 +45,7 @@ fn lifecycle_children(children: &mut ChildrenVec, event: &LifecycleEventCtx) {
    }
 }
 
-//------------------------------------------------------------------------------------------------//
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub fn layout(child: &Rc<RefCell<dyn IWidget>>, event: &LayoutEventCtx) {
    let mut children = match child.try_borrow_mut() {
@@ -68,30 +74,100 @@ fn layout_children(children: &mut ChildrenVec, event: &LayoutEventCtx) {
    }
 }
 
-//------------------------------------------------------------------------------------------------//
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub fn update(child: &Rc<RefCell<dyn IWidget>>, event: &UpdateEventCtx) {
-   let (mut children, update) = match child.try_borrow_mut() {
+   //--------------------------------------------------
+   // # Safety
+   // It seems it is quite safe, we just read simple copiable variables.
+   let (flow, id) =
+      unsafe { ((*child.as_ptr()).internal().control_flow.get(), (*child.as_ptr()).id()) };
+   //---------------------------------
+   #[cfg(debug_assertions)]
+   {
+      if flow.contains(ControlFLow::SELF_DELETE) {
+         log::error!(
+            "Not expected flag [{:?}] in [{:?}] with all flags: [{:?}]",
+            ControlFLow::SELF_DELETE,
+            id,
+            flow
+         )
+      }
+   }
+   //---------------------------------
+   if !flow.contains(ControlFLow::UPDATE_OR_DLETE) {
+      return;
+   }
+   //--------------------------------------------------
+   // SELF UPDATE AND CHILDREN
+
+   let mut children = match child.try_borrow_mut() {
       Ok(mut child) => {
-         let update = child.needs_update(true);
-         if update {
+         if flow.contains(ControlFLow::SELF_UPDATE) {
+            let internal = child.internal_mut();
+            // Only root widget can have self delete flag and it is should be
+            // processed by this function caller, so if it is not deletes we
+            // just assume that it is not necessary so, the flag is cleared.
+            internal.control_flow.get_mut().remove(ControlFLow::SELF_DELETE);
+            internal.control_flow.get_mut().remove(ControlFLow::SELF_UPDATE);
             child.emit_update(event);
          }
-         let id = child.id();
-         (child.internal_mut().take_children(id), update)
+
+         child.internal_mut().take_children(id)
       }
       Err(e) => {
-         panic!("{}", e)
+         log::error!("Can't borrow widget [{:?}] to process update event!\n\t{}", id, e);
+         return;
       }
    };
+   //--------------------------------------------------
+   // DELETE
 
-   if update {
+   if flow.contains(ControlFLow::CHILDREN_DELETE) {
+      children.retain(|child| {
+         // # Safety
+         // It seems it is quite safe, we just read simple copiable variables.
+         let flow = unsafe { (*child.as_ptr()).internal().control_flow.get() };
+         //---------------------------------
+         if !flow.contains(ControlFLow::SELF_DELETE) {
+            return true;
+         }
+         //---------------------------------
+         lifecycle(&child, &LifecycleEventCtx::Delete);
+         //---------------------------------
+         false
+      });
+   }
+   //--------------------------------------------------
+   // UPDATE CHILDREN
+
+   if flow.contains(ControlFLow::CHILDREN_UPDATE) {
       update_children(&mut children, event);
    }
+   //--------------------------------------------------
+   // FINALIZE
 
-   let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e));
-   let id = bor.id();
-   bor.internal_mut().set_children(children, id);
+   match child.try_borrow_mut() {
+      Ok(mut child) => {
+         let internal = child.internal_mut();
+         internal.control_flow.get_mut().remove(ControlFLow::UPDATE_OR_DLETE);
+         internal.set_children(children, id);
+      }
+      Err(e) => {
+         //-----------------------
+         // Children are lost so, it is attempt to inform them.
+         for child in children {
+            lifecycle(&child, &LifecycleEventCtx::Delete);
+         }
+         //-----------------------
+         log::error!(
+            "Can't borrow widget [{:?}] to process update finalization! Children ARE LOST!\n\t{}",
+            id,
+            e
+         );
+         return;
+      }
+   };
 }
 
 fn update_children(children: &mut ChildrenVec, event: &UpdateEventCtx) {
@@ -100,7 +176,7 @@ fn update_children(children: &mut ChildrenVec, event: &UpdateEventCtx) {
    }
 }
 
-//------------------------------------------------------------------------------------------------//
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub fn draw(child: &Rc<RefCell<dyn IWidget>>, canvas: &mut Canvas, force: bool) {
    draw_child(child, canvas, &DrawEventCtx {}, force)
@@ -112,27 +188,60 @@ pub fn draw_child(
    event: &DrawEventCtx,
    force: bool,
 ) {
-   let (mut children, is_draw) = match child.try_borrow_mut() {
-      Ok(mut child) => {
-         let is_draw = (child.needs_draw(true) && child.is_visible()) || force;
-         if is_draw {
-            child.emit_draw(canvas, event);
-         }
-         let id = child.id();
-         (child.internal_mut().take_children(id), is_draw)
-      }
-      Err(e) => {
-         panic!("{}", e)
-      }
-   };
+   //--------------------------------------------------
+   // # Safety
+   // It seems it is quite safe, we just read simple copiable variables.
+   let (flow, id) =
+      unsafe { ((*child.as_ptr()).internal().control_flow.get(), (*child.as_ptr()).id()) };
 
-   if is_draw {
-      draw_children(&mut children, canvas, event, force);
+   if !flow.contains(ControlFLow::DRAW) {
+      return;
    }
 
-   let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e));
-   let id = bor.id();
-   bor.internal_mut().set_children(children, id);
+   let is_self_draw = flow.contains(ControlFLow::SELF_DRAW);
+   let is_full_draw = is_self_draw || force;
+   //--------------------------------------------------
+   let (mut children, is_visible) = match child.try_borrow_mut() {
+      Ok(mut child) => {
+         let is_visible = child.is_visible();
+         let internal = child.internal_mut();
+
+         if is_full_draw && is_visible {
+            internal.control_flow.get_mut().remove(ControlFLow::SELF_DRAW);
+            child.emit_draw(canvas, event);
+         }
+
+         (child.internal_mut().take_children(id), is_visible)
+      }
+      Err(e) => {
+         log::error!("Can't borrow widget [{:?}] to process draw event!\n\t{}", id, e);
+         return;
+      }
+   };
+   //--------------------------------------------------
+   if is_visible {
+      if is_full_draw {
+         draw_children(&mut children, canvas, event, true);
+      } else {
+         draw_children(&mut children, canvas, event, false);
+      }
+   }
+   //--------------------------------------------------
+   match child.try_borrow_mut() {
+      Ok(mut child) => {
+         let internal = child.internal_mut();
+         internal.control_flow.get_mut().remove(ControlFLow::DRAW);
+         internal.set_children(children, id);
+      }
+      Err(e) => {
+         log::error!(
+            "Can't borrow widget [{:?}] to process draw finalization! Children ARE LOST!\n\t{}",
+            id,
+            e
+         );
+         return;
+      }
+   };
 }
 
 fn draw_children(
@@ -146,7 +255,7 @@ fn draw_children(
    }
 }
 
-//------------------------------------------------------------------------------------------------//
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub fn mouse_move(child: &Rc<RefCell<dyn IWidget>>, event: &MouseMoveEventCtx) -> bool {
    let mut children = match child.try_borrow_mut() {
@@ -188,7 +297,7 @@ fn mouse_move_children(children: &mut ChildrenVec, event: &MouseMoveEventCtx) ->
    false
 }
 
-//------------------------------------------------------------------------------------------------//
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub fn mouse_button(child: &Rc<RefCell<dyn IWidget>>, event: &MouseButtonsEventCtx) -> bool {
    let mut children = match child.try_borrow_mut() {
@@ -230,7 +339,7 @@ fn mouse_button_children(children: &mut ChildrenVec, event: &MouseButtonsEventCt
    false
 }
 
-//------------------------------------------------------------------------------------------------//
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub fn mouse_wheel(child: &Rc<RefCell<dyn IWidget>>, event: &MouseWheelEventCtx) -> bool {
    let mut children = match child.try_borrow_mut() {
@@ -272,7 +381,7 @@ fn mouse_wheel_children(children: &mut ChildrenVec, event: &MouseWheelEventCtx) 
    false
 }
 
-//------------------------------------------------------------------------------------------------//
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub fn keyboard(child: &Rc<RefCell<dyn IWidget>>, event: &KeyboardEventCtx) -> bool {
    let mut children = match child.try_borrow_mut() {
