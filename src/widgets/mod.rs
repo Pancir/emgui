@@ -1,6 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub mod children;
+pub mod derive;
 pub mod dispatch;
 pub mod events;
 
@@ -14,7 +15,7 @@ mod widget_id;
 pub use label::*;
 pub use push_button::*;
 // pub use slider::*;
-pub use widget::{Derive, IWidget, Widget, WidgetVt};
+pub use widget::{IWidget, Widget, WidgetVt};
 pub use widget_id::*;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

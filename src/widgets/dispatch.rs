@@ -10,7 +10,7 @@ use std::rc::Rc;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub fn emit_lifecycle(child: &Rc<RefCell<dyn IWidget>>, event: &LifecycleEvent) {
+pub fn lifecycle(child: &Rc<RefCell<dyn IWidget>>, event: &LifecycleEvent) {
    let mut children = match child.try_borrow_mut() {
       Ok(mut child) => {
          child.emit_lifecycle(event);
@@ -23,7 +23,7 @@ pub fn emit_lifecycle(child: &Rc<RefCell<dyn IWidget>>, event: &LifecycleEvent) 
    };
 
    if !children.is_empty() {
-      emit_lifecycle_children(&mut children, event);
+      lifecycle_children(&mut children, event);
    }
 
    let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e));
@@ -31,15 +31,15 @@ pub fn emit_lifecycle(child: &Rc<RefCell<dyn IWidget>>, event: &LifecycleEvent) 
    bor.children_mut().set(children, id);
 }
 
-fn emit_lifecycle_children(children: &mut ChildrenVec, event: &LifecycleEvent) {
+fn lifecycle_children(children: &mut ChildrenVec, event: &LifecycleEvent) {
    for child in children {
-      emit_lifecycle(&child, event);
+      lifecycle(&child, event);
    }
 }
 
 //------------------------------------------------------------------------------------------------//
 
-pub fn emit_layout(child: &Rc<RefCell<dyn IWidget>>, event: &LayoutEvent) {
+pub fn layout(child: &Rc<RefCell<dyn IWidget>>, event: &LayoutEvent) {
    let mut children = match child.try_borrow_mut() {
       Ok(mut child) => {
          child.emit_layout(event);
@@ -52,7 +52,7 @@ pub fn emit_layout(child: &Rc<RefCell<dyn IWidget>>, event: &LayoutEvent) {
    };
 
    if !children.is_empty() {
-      emit_layout_children(&mut children, event);
+      layout_children(&mut children, event);
    }
 
    let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e));
@@ -60,15 +60,15 @@ pub fn emit_layout(child: &Rc<RefCell<dyn IWidget>>, event: &LayoutEvent) {
    bor.children_mut().set(children, id);
 }
 
-fn emit_layout_children(children: &mut ChildrenVec, event: &LayoutEvent) {
+fn layout_children(children: &mut ChildrenVec, event: &LayoutEvent) {
    for child in children {
-      emit_layout(&child, event);
+      layout(&child, event);
    }
 }
 
 //------------------------------------------------------------------------------------------------//
 
-pub fn emit_update(child: &Rc<RefCell<dyn IWidget>>, event: &UpdateEvent) {
+pub fn update(child: &Rc<RefCell<dyn IWidget>>, event: &UpdateEvent) {
    let mut children = match child.try_borrow_mut() {
       Ok(mut child) => {
          child.emit_update(event);
@@ -81,7 +81,7 @@ pub fn emit_update(child: &Rc<RefCell<dyn IWidget>>, event: &UpdateEvent) {
    };
 
    if !children.is_empty() {
-      emit_update_children(&mut children, event);
+      update_children(&mut children, event);
    }
 
    let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e));
@@ -89,15 +89,15 @@ pub fn emit_update(child: &Rc<RefCell<dyn IWidget>>, event: &UpdateEvent) {
    bor.children_mut().set(children, id);
 }
 
-fn emit_update_children(children: &mut ChildrenVec, event: &UpdateEvent) {
+fn update_children(children: &mut ChildrenVec, event: &UpdateEvent) {
    for child in children {
-      emit_update(&child, event);
+      update(&child, event);
    }
 }
 
 //------------------------------------------------------------------------------------------------//
 
-pub fn emit_draw(child: &Rc<RefCell<dyn IWidget>>, canvas: &mut Canvas, force: bool) {
+pub fn draw(child: &Rc<RefCell<dyn IWidget>>, canvas: &mut Canvas, force: bool) {
    let (mut children, is_draw) = match child.try_borrow_mut() {
       Ok(mut child) => {
          let is_draw = child.is_visible() || force;
@@ -113,7 +113,7 @@ pub fn emit_draw(child: &Rc<RefCell<dyn IWidget>>, canvas: &mut Canvas, force: b
    };
 
    if is_draw {
-      emit_draw_children(&mut children, canvas, force);
+      draw_children(&mut children, canvas, force);
    }
 
    let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e));
@@ -121,15 +121,15 @@ pub fn emit_draw(child: &Rc<RefCell<dyn IWidget>>, canvas: &mut Canvas, force: b
    bor.children_mut().set(children, id);
 }
 
-fn emit_draw_children(children: &mut ChildrenVec, canvas: &mut Canvas, force: bool) {
+fn draw_children(children: &mut ChildrenVec, canvas: &mut Canvas, force: bool) {
    for child in children {
-      emit_draw(&child, canvas, force);
+      draw(&child, canvas, force);
    }
 }
 
 //------------------------------------------------------------------------------------------------//
 
-pub fn emit_mouse_move(child: &Rc<RefCell<dyn IWidget>>, event: &MouseMoveEvent) -> bool {
+pub fn mouse_move(child: &Rc<RefCell<dyn IWidget>>, event: &MouseMoveEvent) -> bool {
    let mut children = match child.try_borrow_mut() {
       Ok(mut child) => {
          let id = child.id();
@@ -141,7 +141,7 @@ pub fn emit_mouse_move(child: &Rc<RefCell<dyn IWidget>>, event: &MouseMoveEvent)
    };
 
    if !children.is_empty() {
-      emit_mouse_move_children(&mut children, event);
+      mouse_move_children(&mut children, event);
    }
 
    match child.try_borrow_mut() {
@@ -160,9 +160,9 @@ pub fn emit_mouse_move(child: &Rc<RefCell<dyn IWidget>>, event: &MouseMoveEvent)
    false
 }
 
-fn emit_mouse_move_children(children: &mut ChildrenVec, event: &MouseMoveEvent) -> bool {
+fn mouse_move_children(children: &mut ChildrenVec, event: &MouseMoveEvent) -> bool {
    for child in children {
-      if emit_mouse_move(&child, event) {
+      if mouse_move(&child, event) {
          return true;
       }
    }
@@ -171,7 +171,7 @@ fn emit_mouse_move_children(children: &mut ChildrenVec, event: &MouseMoveEvent) 
 
 //------------------------------------------------------------------------------------------------//
 
-pub fn emit_mouse_button(child: &Rc<RefCell<dyn IWidget>>, event: &MouseButtonsEvent) -> bool {
+pub fn mouse_button(child: &Rc<RefCell<dyn IWidget>>, event: &MouseButtonsEvent) -> bool {
    let mut children = match child.try_borrow_mut() {
       Ok(mut child) => {
          let id = child.id();
@@ -183,7 +183,7 @@ pub fn emit_mouse_button(child: &Rc<RefCell<dyn IWidget>>, event: &MouseButtonsE
    };
 
    if !children.is_empty() {
-      emit_mouse_button_children(&mut children, event);
+      mouse_button_children(&mut children, event);
    }
 
    match child.try_borrow_mut() {
@@ -202,9 +202,9 @@ pub fn emit_mouse_button(child: &Rc<RefCell<dyn IWidget>>, event: &MouseButtonsE
    false
 }
 
-fn emit_mouse_button_children(children: &mut ChildrenVec, event: &MouseButtonsEvent) -> bool {
+fn mouse_button_children(children: &mut ChildrenVec, event: &MouseButtonsEvent) -> bool {
    for child in children {
-      if emit_mouse_button(&child, event) {
+      if mouse_button(&child, event) {
          return true;
       }
    }
@@ -213,7 +213,7 @@ fn emit_mouse_button_children(children: &mut ChildrenVec, event: &MouseButtonsEv
 
 //------------------------------------------------------------------------------------------------//
 
-pub fn emit_mouse_wheel(child: &Rc<RefCell<dyn IWidget>>, event: &MouseWheelEvent) -> bool {
+pub fn mouse_wheel(child: &Rc<RefCell<dyn IWidget>>, event: &MouseWheelEvent) -> bool {
    let mut children = match child.try_borrow_mut() {
       Ok(mut child) => {
          let id = child.id();
@@ -225,7 +225,7 @@ pub fn emit_mouse_wheel(child: &Rc<RefCell<dyn IWidget>>, event: &MouseWheelEven
    };
 
    if !children.is_empty() {
-      emit_mouse_wheel_children(&mut children, event);
+      mouse_wheel_children(&mut children, event);
    }
 
    match child.try_borrow_mut() {
@@ -244,9 +244,9 @@ pub fn emit_mouse_wheel(child: &Rc<RefCell<dyn IWidget>>, event: &MouseWheelEven
    false
 }
 
-fn emit_mouse_wheel_children(children: &mut ChildrenVec, event: &MouseWheelEvent) -> bool {
+fn mouse_wheel_children(children: &mut ChildrenVec, event: &MouseWheelEvent) -> bool {
    for child in children {
-      if emit_mouse_wheel(&child, event) {
+      if mouse_wheel(&child, event) {
          return true;
       }
    }
@@ -255,7 +255,7 @@ fn emit_mouse_wheel_children(children: &mut ChildrenVec, event: &MouseWheelEvent
 
 //------------------------------------------------------------------------------------------------//
 
-pub fn emit_keyboard(child: &Rc<RefCell<dyn IWidget>>, event: &KeyboardEvent) -> bool {
+pub fn keyboard(child: &Rc<RefCell<dyn IWidget>>, event: &KeyboardEvent) -> bool {
    let mut children = match child.try_borrow_mut() {
       Ok(mut child) => {
          let id = child.id();
@@ -267,7 +267,7 @@ pub fn emit_keyboard(child: &Rc<RefCell<dyn IWidget>>, event: &KeyboardEvent) ->
    };
 
    if !children.is_empty() {
-      emit_mouse_keyboard_children(&mut children, event);
+      mouse_keyboard_children(&mut children, event);
    }
 
    match child.try_borrow_mut() {
@@ -286,9 +286,9 @@ pub fn emit_keyboard(child: &Rc<RefCell<dyn IWidget>>, event: &KeyboardEvent) ->
    false
 }
 
-fn emit_mouse_keyboard_children(children: &mut ChildrenVec, event: &KeyboardEvent) -> bool {
+fn mouse_keyboard_children(children: &mut ChildrenVec, event: &KeyboardEvent) -> bool {
    for child in children {
-      if emit_keyboard(&child, event) {
+      if keyboard(&child, event) {
          return true;
       }
    }
