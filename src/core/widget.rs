@@ -5,9 +5,11 @@ use crate::core::events::{
    UpdateEvent,
 };
 use crate::core::{Geometry, WidgetId};
+use crate::defines::STATIC_REGIONS_NUM;
 use sim_draw::color::Rgba;
 use sim_draw::m::Rect;
 use sim_draw::{Canvas, Paint};
+use smallvec::SmallVec;
 use std::any::Any;
 use std::cell::{Cell, RefCell};
 use std::mem::MaybeUninit;
@@ -113,8 +115,10 @@ where
 
    geometry: Geometry,
 
-   needs_update: Cell<bool>,
+   draw_regions: SmallVec<[Rect<f32>; STATIC_REGIONS_NUM]>,
    needs_draw: Cell<bool>,
+
+   needs_update: Cell<bool>,
    needs_del: Cell<bool>,
 }
 
@@ -143,8 +147,10 @@ where
          children: Children::default(),
          geometry: Geometry::default(),
          //-----------
-         needs_update: Cell::new(true),
          needs_draw: Cell::new(true),
+         draw_regions: Default::default(),
+         //-----------
+         needs_update: Cell::new(true),
          needs_del: Cell::new(false),
       };
 
