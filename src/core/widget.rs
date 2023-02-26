@@ -1,8 +1,8 @@
 use crate::core::control::Internal;
 use crate::core::derive::Derive;
 use crate::core::events::{
-   DrawEvent, KeyboardEvent, LayoutEvent, LifecycleEvent, MouseButtonsEvent, MouseMoveEvent,
-   MouseWheelEvent, UpdateEvent,
+   DrawEventCtx, KeyboardEventCtx, LayoutEventCtx, LifecycleEventCtx, MouseButtonsEventCtx,
+   MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
 };
 use crate::core::{Geometry, WidgetId};
 use crate::defines::STATIC_REGIONS_NUM;
@@ -78,28 +78,28 @@ pub trait IWidget: Any + 'static {
 
    //---------------------------------------
 
-   fn emit_lifecycle(&mut self, _event: &LifecycleEvent);
-   fn emit_layout(&mut self, _event: &LayoutEvent);
-   fn emit_draw(&mut self, _canvas: &mut Canvas, event: &DrawEvent);
-   fn emit_update(&mut self, _event: &UpdateEvent);
-   fn emit_mouse_move(&mut self, _event: &MouseMoveEvent) -> bool;
-   fn emit_mouse_button(&mut self, _event: &MouseButtonsEvent) -> bool;
-   fn emit_mouse_wheel(&mut self, _event: &MouseWheelEvent) -> bool;
-   fn emit_keyboard(&mut self, _event: &KeyboardEvent) -> bool;
+   fn emit_lifecycle(&mut self, _event: &LifecycleEventCtx);
+   fn emit_layout(&mut self, _event: &LayoutEventCtx);
+   fn emit_draw(&mut self, _canvas: &mut Canvas, event: &DrawEventCtx);
+   fn emit_update(&mut self, _event: &UpdateEventCtx);
+   fn emit_mouse_move(&mut self, _event: &MouseMoveEventCtx) -> bool;
+   fn emit_mouse_button(&mut self, _event: &MouseButtonsEventCtx) -> bool;
+   fn emit_mouse_wheel(&mut self, _event: &MouseWheelEventCtx) -> bool;
+   fn emit_keyboard(&mut self, _event: &KeyboardEventCtx) -> bool;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #[derive(Copy, Clone)]
 pub struct WidgetVt<D> {
-   pub on_lifecycle: fn(w: &mut D, &LifecycleEvent),
-   pub on_layout: fn(w: &mut D, &LayoutEvent),
-   pub on_update: fn(w: &mut D, &UpdateEvent),
-   pub on_draw: fn(w: &mut D, &mut Canvas, &DrawEvent),
-   pub on_mouse_move: fn(w: &mut D, &MouseMoveEvent) -> bool,
-   pub on_mouse_button: fn(w: &mut D, &MouseButtonsEvent) -> bool,
-   pub on_mouse_wheel: fn(w: &mut D, &MouseWheelEvent) -> bool,
-   pub on_keyboard: fn(w: &mut D, &KeyboardEvent) -> bool,
+   pub on_lifecycle: fn(w: &mut D, &LifecycleEventCtx),
+   pub on_layout: fn(w: &mut D, &LayoutEventCtx),
+   pub on_update: fn(w: &mut D, &UpdateEventCtx),
+   pub on_draw: fn(w: &mut D, &mut Canvas, &DrawEventCtx),
+   pub on_mouse_move: fn(w: &mut D, &MouseMoveEventCtx) -> bool,
+   pub on_mouse_button: fn(w: &mut D, &MouseButtonsEventCtx) -> bool,
+   pub on_mouse_wheel: fn(w: &mut D, &MouseWheelEventCtx) -> bool,
+   pub on_keyboard: fn(w: &mut D, &KeyboardEventCtx) -> bool,
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -271,39 +271,39 @@ where
 
    //---------------------------------------
 
-   fn emit_lifecycle(&mut self, event: &LifecycleEvent) {
+   fn emit_lifecycle(&mut self, event: &LifecycleEventCtx) {
       (self.vtable.on_lifecycle)(self, event);
    }
 
-   fn emit_layout(&mut self, event: &LayoutEvent) {
+   fn emit_layout(&mut self, event: &LayoutEventCtx) {
       (self.vtable.on_layout)(self, event);
    }
 
-   fn emit_draw(&mut self, canvas: &mut Canvas, event: &DrawEvent) {
+   fn emit_draw(&mut self, canvas: &mut Canvas, event: &DrawEventCtx) {
       (self.vtable.on_draw)(self, canvas, event);
    }
 
-   fn emit_update(&mut self, event: &UpdateEvent) {
+   fn emit_update(&mut self, event: &UpdateEventCtx) {
       (self.vtable.on_update)(self, event);
    }
 
    #[must_use]
-   fn emit_mouse_move(&mut self, event: &MouseMoveEvent) -> bool {
+   fn emit_mouse_move(&mut self, event: &MouseMoveEventCtx) -> bool {
       (self.vtable.on_mouse_move)(self, event)
    }
 
    #[must_use]
-   fn emit_mouse_button(&mut self, event: &MouseButtonsEvent) -> bool {
+   fn emit_mouse_button(&mut self, event: &MouseButtonsEventCtx) -> bool {
       (self.vtable.on_mouse_button)(self, event)
    }
 
    #[must_use]
-   fn emit_mouse_wheel(&mut self, event: &MouseWheelEvent) -> bool {
+   fn emit_mouse_wheel(&mut self, event: &MouseWheelEventCtx) -> bool {
       (self.vtable.on_mouse_wheel)(self, event)
    }
 
    #[must_use]
-   fn emit_keyboard(&mut self, event: &KeyboardEvent) -> bool {
+   fn emit_keyboard(&mut self, event: &KeyboardEventCtx) -> bool {
       (self.vtable.on_keyboard)(self, event)
    }
 }
@@ -312,7 +312,7 @@ impl<D: 'static> Widget<D>
 where
    D: Derive,
 {
-   fn on_draw(&mut self, canvas: &mut Canvas, _event: &DrawEvent) {
+   fn on_draw(&mut self, canvas: &mut Canvas, _event: &DrawEventCtx) {
       canvas.set_paint(Paint::new_color(Rgba::RED));
       canvas.fill(&self.geometry.rect());
    }

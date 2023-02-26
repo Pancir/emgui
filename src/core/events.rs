@@ -1,21 +1,21 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub type KeyboardEvent = sim_run::KeyboardEvent;
-pub type MouseButtonsEvent = sim_run::MouseButtonsEvent;
-pub type MouseMoveEvent = sim_run::MouseMoveEvent;
-pub type MouseWheelEvent = sim_run::MouseWheelEvent;
-pub type UpdateEvent = sim_run::UpdateEvent;
+pub type KeyboardEventCtx = sim_run::KeyboardEvent;
+pub type MouseButtonsEventCtx = sim_run::MouseButtonsEvent;
+pub type MouseMoveEventCtx = sim_run::MouseMoveEvent;
+pub type MouseWheelEventCtx = sim_run::MouseWheelEvent;
+pub type UpdateEventCtx = sim_run::UpdateEvent;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub struct LayoutEvent {}
+pub struct LayoutEventCtx {}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub struct LifecycleEvent {}
+pub struct LifecycleEventCtx {}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub struct DrawEvent {}
+pub struct DrawEventCtx {}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
