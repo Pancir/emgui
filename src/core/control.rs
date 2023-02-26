@@ -21,9 +21,6 @@ bitflags! {
       /// Some children need update.
       const CHILDREN_UPDATE = 1<<1;
 
-      /// All update flags. Can be used to clear for example.
-      const UPDATE = Self::SELF_UPDATE.bits | Self::CHILDREN_UPDATE.bits;
-
       //-----------------------------
 
       /// Call update for current widget.
@@ -32,9 +29,6 @@ bitflags! {
       /// Some children need update.
       const CHILDREN_DRAW = 1<<3;
 
-      /// All update flags. Can be used to clear for example.
-      const DRAW = Self::SELF_DRAW.bits | Self::CHILDREN_DRAW.bits;
-
       //-----------------------------
 
       /// Request to delete this widget.
@@ -42,9 +36,6 @@ bitflags! {
 
       /// Widget has one or more children to delete.
       const CHILDREN_DELETE = 1<<5;
-
-      /// All delete flags. Can be used to clear for example.
-      const DELETE = Self::SELF_DELETE.bits | Self::CHILDREN_DELETE.bits;
 
       //-----------------------------
 
@@ -59,8 +50,7 @@ bitflags! {
 
       //-----------------------------
 
-      const INIT = Self::DRAW.bits | Self::UPDATE.bits | Self::IS_VISIBLE.bits | Self::IS_ENABLED.bits;
-      const UPDATE_OR_DLETE = Self::DELETE.bits | Self::UPDATE.bits;
+      const INIT = Self::SELF_DRAW.bits|Self::CHILDREN_DRAW.bits|Self::SELF_UPDATE.bits|Self::CHILDREN_UPDATE.bits|Self::IS_VISIBLE.bits|Self::IS_ENABLED.bits;
    }
 }
 

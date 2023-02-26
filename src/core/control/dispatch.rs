@@ -97,7 +97,13 @@ pub fn update(child: &Rc<RefCell<dyn IWidget>>, event: &UpdateEventCtx) {
       }
    }
    //---------------------------------
-   if !flow.contains(ControlFlow::UPDATE_OR_DLETE) {
+   let is_self_delete = flow.contains(ControlFlow::SELF_DELETE);
+   let is_self_update = flow.contains(ControlFlow::SELF_UPDATE);
+   let is_children_delete = flow.contains(ControlFlow::CHILDREN_DELETE);
+   let is_children_update = flow.contains(ControlFlow::CHILDREN_UPDATE);
+   let is_continue = is_self_delete || is_self_update || is_children_delete || is_children_update;
+
+   if !is_continue {
       return;
    }
    //--------------------------------------------------
@@ -105,7 +111,7 @@ pub fn update(child: &Rc<RefCell<dyn IWidget>>, event: &UpdateEventCtx) {
 
    let mut children = match child.try_borrow_mut() {
       Ok(mut child) => {
-         if flow.contains(ControlFlow::SELF_UPDATE) {
+         if is_self_update {
             let internal = child.internal_mut();
             // Only root widget can have self delete flag and it is should be
             // processed by this function caller, so if it is not deletes we
@@ -125,7 +131,7 @@ pub fn update(child: &Rc<RefCell<dyn IWidget>>, event: &UpdateEventCtx) {
    //--------------------------------------------------
    // DELETE
 
-   if flow.contains(ControlFlow::CHILDREN_DELETE) {
+   if is_children_delete {
       children.retain(|child| {
          // # Safety
          // It seems it is quite safe, we just read simple copiable variables.
@@ -145,7 +151,7 @@ pub fn update(child: &Rc<RefCell<dyn IWidget>>, event: &UpdateEventCtx) {
    //--------------------------------------------------
    // UPDATE CHILDREN
 
-   if flow.contains(ControlFlow::CHILDREN_UPDATE) {
+   if is_children_update {
       update_children(&mut children, event);
    }
    //--------------------------------------------------
@@ -154,7 +160,11 @@ pub fn update(child: &Rc<RefCell<dyn IWidget>>, event: &UpdateEventCtx) {
    match child.try_borrow_mut() {
       Ok(mut child) => {
          let internal = child.internal_mut();
-         internal.control_flow.get_mut().remove(ControlFlow::UPDATE_OR_DLETE);
+         let f = internal.control_flow.get_mut();
+         f.remove(ControlFlow::SELF_UPDATE);
+         f.remove(ControlFlow::SELF_DELETE);
+         f.remove(ControlFlow::CHILDREN_UPDATE);
+         f.remove(ControlFlow::CHILDREN_DELETE);
          internal.set_children(children, id);
       }
       Err(e) => {
@@ -201,15 +211,15 @@ pub fn draw_child(
       unsafe { ((*child.as_ptr()).internal().control_flow.get(), (*child.as_ptr()).id()) };
    //---------------------------------
    let is_self_draw = flow.contains(ControlFlow::SELF_DRAW);
-   let id_draw = is_self_draw || flow.contains(ControlFlow::CHILDREN_DRAW);
+   let is_visible = flow.contains(ControlFlow::IS_VISIBLE);
+   let id_draw = is_visible && (is_self_draw || flow.contains(ControlFlow::CHILDREN_DRAW));
 
    if !id_draw {
       return;
    }
    //--------------------------------------------------
-   let (mut children, regions, is_visible) = match child.try_borrow_mut() {
+   let (mut children, regions) = match child.try_borrow_mut() {
       Ok(mut child) => {
-         let is_visible = child.is_visible();
          let internal = child.internal_mut();
 
          if is_visible && (is_self_draw || force) {
@@ -218,7 +228,7 @@ pub fn draw_child(
          }
 
          let internal = child.internal_mut();
-         (internal.take_children(id), internal.take_regions(id), is_visible)
+         (internal.take_children(id), internal.take_regions(id))
       }
       Err(e) => {
          log::error!("Can't borrow widget [{:?}] to process draw event!\n\t{}", id, e);
@@ -226,14 +236,16 @@ pub fn draw_child(
       }
    };
    //--------------------------------------------------
-   if is_visible {
-      draw_children(&mut children, canvas, event, force);
-   }
+
+   draw_children(&mut children, canvas, event, force);
+
    //--------------------------------------------------
    match child.try_borrow_mut() {
       Ok(mut child) => {
          let internal = child.internal_mut();
-         internal.control_flow.get_mut().remove(ControlFlow::DRAW);
+         let f = internal.control_flow.get_mut();
+         f.remove(ControlFlow::SELF_DRAW);
+         f.remove(ControlFlow::CHILDREN_DRAW);
          internal.set_children(children, id);
          internal.set_regions(regions, id, true);
       }
