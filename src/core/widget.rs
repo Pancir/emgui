@@ -1,4 +1,4 @@
-use crate::core::children::Children;
+use crate::core::control::Internal;
 use crate::core::derive::Derive;
 use crate::core::events::{
    DrawEvent, KeyboardEvent, LayoutEvent, LifecycleEvent, MouseButtonsEvent, MouseMoveEvent,
@@ -55,8 +55,8 @@ pub trait IWidget: Any + 'static {
 
    //---------------------------------------
 
-   fn children(&self) -> &Children;
-   fn children_mut(&mut self) -> &mut Children;
+   fn internal(&self) -> &Internal;
+   fn internal_mut(&mut self) -> &mut Internal;
 
    //---------------------------------------
 
@@ -111,7 +111,7 @@ where
    id: WidgetId,
    derive: MaybeUninit<D>,
    vtable: WidgetVt<Self>,
-   children: Children,
+   internal: Internal,
 
    geometry: Geometry,
 
@@ -144,7 +144,7 @@ where
             on_mouse_wheel: |_, _| false,
             on_keyboard: |_, _| false,
          },
-         children: Children::default(),
+         internal: Internal::default(),
          geometry: Geometry::default(),
          //-----------
          needs_draw: Cell::new(true),
@@ -201,7 +201,7 @@ where
    fn request_draw(&self) {
       if !self.needs_draw.get() {
          self.needs_draw.set(true);
-         self.children.request_draw_parent();
+         self.internal.request_draw_parent();
       }
    }
 
@@ -224,17 +224,17 @@ where
    fn request_update(&self) {
       if !self.needs_update.get() {
          self.needs_update.set(true);
-         self.children.request_update_parent();
+         self.internal.request_update_parent();
       }
    }
    //---------------------------------------
 
-   fn children(&self) -> &Children {
-      &self.children
+   fn internal(&self) -> &Internal {
+      &self.internal
    }
 
-   fn children_mut(&mut self) -> &mut Children {
-      &mut self.children
+   fn internal_mut(&mut self) -> &mut Internal {
+      &mut self.internal
    }
 
    //---------------------------------------

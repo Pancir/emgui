@@ -1,3 +1,5 @@
+pub mod dispatch;
+
 use crate::core::{IWidget, WidgetId};
 use crate::defines::STATIC_CHILD_NUM;
 use smallvec::SmallVec;
@@ -7,17 +9,17 @@ use std::rc::{Rc, Weak};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub type ChildrenVec = SmallVec<[Rc<RefCell<dyn IWidget>>; STATIC_CHILD_NUM]>;
+pub(crate) type ChildrenVec = SmallVec<[Rc<RefCell<dyn IWidget>>; STATIC_CHILD_NUM]>;
 
 #[derive(Default)]
-pub struct Children {
+pub struct Internal {
    parent: RefCell<Option<Weak<RefCell<dyn IWidget>>>>,
 
    children_busy: Cell<WidgetId>,
    children: RefCell<ChildrenVec>,
 }
 
-impl Children {
+impl Internal {
    pub(crate) fn request_draw_parent(&self) {
       let bor = self.parent.borrow_mut();
       if let Some(p) = bor.deref() {
@@ -80,7 +82,7 @@ pub fn add_child(
    let w = Rc::downgrade(&child);
    {
       let bor = parent.borrow();
-      let pch = bor.children();
+      let pch = bor.internal();
 
       debug_assert!(!pch.children_busy.get().is_valid());
 
@@ -90,7 +92,7 @@ pub fn add_child(
 
    {
       let bor = child.borrow();
-      let c = bor.children();
+      let c = bor.internal();
 
       let mut bor_p = c.parent.borrow_mut();
       debug_assert!(bor_p.is_none());
@@ -108,7 +110,7 @@ mod tests {
 
    #[test]
    fn sizes() {
-      println!("{} : {}", std::any::type_name::<Children>(), std::mem::size_of::<Children>());
+      println!("{} : {}", std::any::type_name::<Internal>(), std::mem::size_of::<Internal>());
    }
 }
 
