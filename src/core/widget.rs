@@ -5,13 +5,11 @@ use crate::core::events::{
    MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
 };
 use crate::core::{Geometry, WidgetId};
-use crate::defines::STATIC_REGIONS_NUM;
 use sim_draw::color::Rgba;
 use sim_draw::m::Rect;
 use sim_draw::{Canvas, Paint};
-use smallvec::SmallVec;
 use std::any::Any;
-use std::cell::{Cell, RefCell};
+use std::cell::RefCell;
 use std::mem::MaybeUninit;
 use std::rc::{Rc, Weak};
 
@@ -44,13 +42,8 @@ pub trait IWidget: Any + 'static {
 
    //---------------------------------------
 
-   fn needs_draw(&self, reset: bool) -> bool;
    fn request_draw(&self);
-
-   fn needs_delete(&self) -> bool;
    fn request_delete(&self);
-
-   fn needs_update(&self, reset: bool) -> bool;
    fn request_update(&self);
 
    //---------------------------------------
@@ -112,14 +105,6 @@ where
    derive: MaybeUninit<D>,
    vtable: WidgetVt<Self>,
    internal: Internal,
-
-   geometry: Geometry,
-
-   draw_regions: SmallVec<[Rect<f32>; STATIC_REGIONS_NUM]>,
-   needs_draw: Cell<bool>,
-
-   needs_update: Cell<bool>,
-   needs_del: Cell<bool>,
 }
 
 impl<D: 'static> Widget<D>
@@ -144,14 +129,7 @@ where
             on_mouse_wheel: |_, _| false,
             on_keyboard: |_, _| false,
          },
-         internal: Internal::default(),
-         geometry: Geometry::default(),
-         //-----------
-         needs_draw: Cell::new(true),
-         draw_regions: Default::default(),
-         //-----------
-         needs_update: Cell::new(true),
-         needs_del: Cell::new(false),
+         internal: Internal::new(),
       };
 
       let derive = cb(&mut out.vtable);
@@ -190,43 +168,18 @@ where
 
    //---------------------------------------
 
-   fn needs_draw(&self, reset: bool) -> bool {
-      let out = self.needs_draw.get();
-      if reset {
-         self.needs_draw.set(false)
-      }
-      out
-   }
-
    fn request_draw(&self) {
-      if !self.needs_draw.get() {
-         self.needs_draw.set(true);
-         self.internal.request_draw_parent();
-      }
-   }
-
-   fn needs_delete(&self) -> bool {
-      self.needs_del.get()
+      self.internal.request_draw();
    }
 
    fn request_delete(&self) {
-      self.needs_del.set(true);
-   }
-
-   fn needs_update(&self, reset: bool) -> bool {
-      let out = self.needs_update.get();
-      if reset {
-         self.needs_update.set(false)
-      }
-      out
+      self.internal.request_delete();
    }
 
    fn request_update(&self) {
-      if !self.needs_update.get() {
-         self.needs_update.set(true);
-         self.internal.request_update_parent();
-      }
+      self.internal.request_update();
    }
+
    //---------------------------------------
 
    fn internal(&self) -> &Internal {
@@ -248,15 +201,15 @@ where
    }
 
    fn geometry(&self) -> &Geometry {
-      &self.geometry
+      &self.internal.geometry
    }
 
    fn set_geometry(&mut self, g: Geometry) {
-      self.geometry = g;
+      self.internal.geometry = g;
    }
 
    fn set_rect(&mut self, r: Rect<f32>) {
-      self.geometry.set_rect(r);
+      self.internal.geometry.set_rect(r);
    }
 
    //---------------------------------------
@@ -314,7 +267,7 @@ where
 {
    fn on_draw(&mut self, canvas: &mut Canvas, _event: &DrawEventCtx) {
       canvas.set_paint(Paint::new_color(Rgba::RED));
-      canvas.fill(&self.geometry.rect());
+      canvas.fill(&self.internal.geometry.rect());
    }
 }
 

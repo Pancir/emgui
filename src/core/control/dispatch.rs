@@ -17,7 +17,7 @@ pub fn lifecycle(child: &Rc<RefCell<dyn IWidget>>, event: &LifecycleEventCtx) {
       Ok(mut child) => {
          child.emit_lifecycle(event);
          let id = child.id();
-         child.internal_mut().take(id)
+         child.internal_mut().take_children(id)
       }
       Err(e) => {
          panic!("{}", e)
@@ -30,7 +30,7 @@ pub fn lifecycle(child: &Rc<RefCell<dyn IWidget>>, event: &LifecycleEventCtx) {
 
    let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e));
    let id = bor.id();
-   bor.internal_mut().set(children, id);
+   bor.internal_mut().set_children(children, id);
 }
 
 fn lifecycle_children(children: &mut ChildrenVec, event: &LifecycleEventCtx) {
@@ -46,7 +46,7 @@ pub fn layout(child: &Rc<RefCell<dyn IWidget>>, event: &LayoutEventCtx) {
       Ok(mut child) => {
          child.emit_layout(event);
          let id = child.id();
-         child.internal_mut().take(id)
+         child.internal_mut().take_children(id)
       }
       Err(e) => {
          panic!("{}", e)
@@ -59,7 +59,7 @@ pub fn layout(child: &Rc<RefCell<dyn IWidget>>, event: &LayoutEventCtx) {
 
    let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e));
    let id = bor.id();
-   bor.internal_mut().set(children, id);
+   bor.internal_mut().set_children(children, id);
 }
 
 fn layout_children(children: &mut ChildrenVec, event: &LayoutEventCtx) {
@@ -78,7 +78,7 @@ pub fn update(child: &Rc<RefCell<dyn IWidget>>, event: &UpdateEventCtx) {
             child.emit_update(event);
          }
          let id = child.id();
-         (child.internal_mut().take(id), update)
+         (child.internal_mut().take_children(id), update)
       }
       Err(e) => {
          panic!("{}", e)
@@ -91,7 +91,7 @@ pub fn update(child: &Rc<RefCell<dyn IWidget>>, event: &UpdateEventCtx) {
 
    let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e));
    let id = bor.id();
-   bor.internal_mut().set(children, id);
+   bor.internal_mut().set_children(children, id);
 }
 
 fn update_children(children: &mut ChildrenVec, event: &UpdateEventCtx) {
@@ -119,7 +119,7 @@ pub fn draw_child(
             child.emit_draw(canvas, event);
          }
          let id = child.id();
-         (child.internal_mut().take(id), is_draw)
+         (child.internal_mut().take_children(id), is_draw)
       }
       Err(e) => {
          panic!("{}", e)
@@ -132,7 +132,7 @@ pub fn draw_child(
 
    let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e));
    let id = bor.id();
-   bor.internal_mut().set(children, id);
+   bor.internal_mut().set_children(children, id);
 }
 
 fn draw_children(
@@ -152,7 +152,7 @@ pub fn mouse_move(child: &Rc<RefCell<dyn IWidget>>, event: &MouseMoveEventCtx) -
    let mut children = match child.try_borrow_mut() {
       Ok(mut child) => {
          let id = child.id();
-         child.internal_mut().take(id)
+         child.internal_mut().take_children(id)
       }
       Err(e) => {
          panic!("{}", e)
@@ -166,7 +166,7 @@ pub fn mouse_move(child: &Rc<RefCell<dyn IWidget>>, event: &MouseMoveEventCtx) -
    match child.try_borrow_mut() {
       Ok(mut child) => {
          let id = child.id();
-         child.internal_mut().set(children, id);
+         child.internal_mut().set_children(children, id);
          if child.emit_mouse_move(event) {
             return true;
          }
@@ -194,7 +194,7 @@ pub fn mouse_button(child: &Rc<RefCell<dyn IWidget>>, event: &MouseButtonsEventC
    let mut children = match child.try_borrow_mut() {
       Ok(mut child) => {
          let id = child.id();
-         child.internal_mut().take(id)
+         child.internal_mut().take_children(id)
       }
       Err(e) => {
          panic!("{}", e)
@@ -208,7 +208,7 @@ pub fn mouse_button(child: &Rc<RefCell<dyn IWidget>>, event: &MouseButtonsEventC
    match child.try_borrow_mut() {
       Ok(mut child) => {
          let id = child.id();
-         child.internal_mut().set(children, id);
+         child.internal_mut().set_children(children, id);
          if child.emit_mouse_button(event) {
             return true;
          }
@@ -236,7 +236,7 @@ pub fn mouse_wheel(child: &Rc<RefCell<dyn IWidget>>, event: &MouseWheelEventCtx)
    let mut children = match child.try_borrow_mut() {
       Ok(mut child) => {
          let id = child.id();
-         child.internal_mut().take(id)
+         child.internal_mut().take_children(id)
       }
       Err(e) => {
          panic!("{}", e)
@@ -250,7 +250,7 @@ pub fn mouse_wheel(child: &Rc<RefCell<dyn IWidget>>, event: &MouseWheelEventCtx)
    match child.try_borrow_mut() {
       Ok(mut child) => {
          let id = child.id();
-         child.internal_mut().set(children, id);
+         child.internal_mut().set_children(children, id);
          if child.emit_mouse_wheel(event) {
             return true;
          }
@@ -278,7 +278,7 @@ pub fn keyboard(child: &Rc<RefCell<dyn IWidget>>, event: &KeyboardEventCtx) -> b
    let mut children = match child.try_borrow_mut() {
       Ok(mut child) => {
          let id = child.id();
-         child.internal_mut().take(id)
+         child.internal_mut().take_children(id)
       }
       Err(e) => {
          panic!("{}", e)
@@ -292,7 +292,7 @@ pub fn keyboard(child: &Rc<RefCell<dyn IWidget>>, event: &KeyboardEventCtx) -> b
    match child.try_borrow_mut() {
       Ok(mut child) => {
          let id = child.id();
-         child.internal_mut().set(children, id);
+         child.internal_mut().set_children(children, id);
          if child.emit_keyboard(event) {
             return true;
          }
