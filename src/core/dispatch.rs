@@ -1,9 +1,9 @@
-use crate::widgets::children::ChildrenVec;
-use crate::widgets::events::{
+use crate::core::children::ChildrenVec;
+use crate::core::events::{
    KeyboardEvent, LayoutEvent, LifecycleEvent, MouseButtonsEvent, MouseMoveEvent, MouseWheelEvent,
    UpdateEvent,
 };
-use crate::widgets::IWidget;
+use crate::core::IWidget;
 use sim_draw::Canvas;
 use std::cell::RefCell;
 use std::rc::Rc;

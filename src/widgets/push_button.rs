@@ -1,6 +1,7 @@
-use crate::widgets::derive::Derive;
-use crate::widgets::events::{MouseButtonsEvent, MouseMoveEvent};
-use crate::widgets::{IWidget, Label, Widget};
+use crate::core::derive::Derive;
+use crate::core::events::{MouseButtonsEvent, MouseMoveEvent};
+use crate::core::{IWidget, Widget};
+use crate::elements::Label;
 use sim_draw::color::Rgba;
 use sim_draw::m::Rect;
 use sim_draw::{Canvas, TextAlign, TextPaint};

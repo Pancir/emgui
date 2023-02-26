@@ -1,11 +1,10 @@
-use crate::core::Geometry;
-use crate::widgets::children::Children;
-use crate::widgets::derive::Derive;
-use crate::widgets::events::{
+use crate::core::children::Children;
+use crate::core::derive::Derive;
+use crate::core::events::{
    KeyboardEvent, LayoutEvent, LifecycleEvent, MouseButtonsEvent, MouseMoveEvent, MouseWheelEvent,
    UpdateEvent,
 };
-use crate::widgets::WidgetId;
+use crate::core::{Geometry, WidgetId};
 use sim_draw::color::Rgba;
 use sim_draw::m::Rect;
 use sim_draw::{Canvas, Paint};

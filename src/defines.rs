@@ -8,6 +8,6 @@
 /// ```ascii
 ///  SmallVec<[Rc<RefCell<dyn IWidget>>; STATIC_CHILD_NUM]>
 /// ```
-pub const STATIC_CHILD_NUM: usize = 5;
+pub const STATIC_CHILD_NUM: usize = 3;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -1,5 +1,5 @@
+use crate::core::{IWidget, WidgetId};
 use crate::defines::STATIC_CHILD_NUM;
-use crate::widgets::{IWidget, WidgetId};
 use smallvec::SmallVec;
 use std::cell::{Cell, RefCell};
 use std::ops::{Deref, DerefMut};
