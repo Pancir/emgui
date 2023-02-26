@@ -1,6 +1,5 @@
 use super::*;
 
-use crate::core::control::ChildrenVec;
 use crate::core::events::{
    DrawEventCtx, KeyboardEventCtx, LayoutEventCtx, LifecycleEventCtx, MouseButtonsEventCtx,
    MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
@@ -13,42 +12,50 @@ use std::rc::Rc;
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub fn lifecycle(child: &Rc<RefCell<dyn IWidget>>, event: &LifecycleEventCtx) {
-   let mut children = match child.try_borrow_mut() {
-      Ok(mut child) => {
-         let id = child.id();
-         child.internal_mut().take_children(id)
-      }
+   //--------------------------------------------------
+   // # Safety
+   // It seems it is quite safe, we just read simple copiable variables.
+   // Just in case in debug mode we check availability.
+   debug_assert!(child.try_borrow_mut().is_ok());
+   let id = unsafe {
+      let internal = (*child.as_ptr()).internal();
+      internal.id
+   };
+   //---------------------------------
+   let children = match child.try_borrow_mut() {
+      Ok(mut child) => child.internal_mut().take_children(id),
       Err(e) => {
-         panic!("{}", e)
+         log::error!("Can't borrow widget [{:?}] to process lifecycle event!\n\t{}", id, e);
+         return;
       }
    };
-
+   //--------------------------------------------------
    if !children.is_empty() {
-      lifecycle_children(&mut children, event);
+      for child in &children {
+         lifecycle(&child, event);
+      }
    }
-
+   //--------------------------------------------------
    match child.try_borrow_mut() {
       Ok(mut child) => {
-         let id = child.id();
          child.internal_mut().set_children(children, id);
-         child.emit_lifecycle(event)
+         child.emit_lifecycle(event);
       }
       Err(e) => {
-         panic!("{}", e)
+         log::error!(
+            "Can't borrow widget [{:?}] to process lifecycle finalization! Children [{}] ARE LOST!\n\t{}",
+            id,
+            children.len(),
+            e
+         );
       }
    };
-}
-
-fn lifecycle_children(children: &mut ChildrenVec, event: &LifecycleEventCtx) {
-   for child in children {
-      lifecycle(&child, event);
-   }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub fn layout(child: &Rc<RefCell<dyn IWidget>>, event: &LayoutEventCtx) {
-   let mut children = match child.try_borrow_mut() {
+   let children = match child.try_borrow_mut() {
       Ok(mut child) => {
          child.emit_layout(event);
          let id = child.id();
@@ -58,20 +65,16 @@ pub fn layout(child: &Rc<RefCell<dyn IWidget>>, event: &LayoutEventCtx) {
          panic!("{}", e)
       }
    };
-
+   //--------------------------------------------------
    if !children.is_empty() {
-      layout_children(&mut children, event);
+      for child in &children {
+         layout(&child, event);
+      }
    }
-
+   //--------------------------------------------------
    let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e));
    let id = bor.id();
    bor.internal_mut().set_children(children, id);
-}
-
-fn layout_children(children: &mut ChildrenVec, event: &LayoutEventCtx) {
-   for child in children {
-      layout(&child, event);
-   }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -82,8 +85,10 @@ pub fn update(child: &Rc<RefCell<dyn IWidget>>, event: &UpdateEventCtx) {
    // It seems it is quite safe, we just read simple copiable variables.
    // Just in case in debug mode we check availability.
    debug_assert!(child.try_borrow_mut().is_ok());
-   let (flow, id) =
-      unsafe { ((*child.as_ptr()).internal().control_flow.get(), (*child.as_ptr()).id()) };
+   let (flow, id) = unsafe {
+      let internal = (*child.as_ptr()).internal();
+      (internal.control_flow.get(), internal.id)
+   };
    //---------------------------------
    #[cfg(debug_assertions)]
    {
@@ -152,7 +157,9 @@ pub fn update(child: &Rc<RefCell<dyn IWidget>>, event: &UpdateEventCtx) {
    // UPDATE CHILDREN
 
    if is_children_update {
-      update_children(&mut children, event);
+      for child in &children {
+         update(&child, event);
+      }
    }
    //--------------------------------------------------
    // FINALIZE
@@ -170,24 +177,19 @@ pub fn update(child: &Rc<RefCell<dyn IWidget>>, event: &UpdateEventCtx) {
       Err(e) => {
          //-----------------------
          // Children are lost so, it is attempt to inform them.
-         for child in children {
-            lifecycle(&child, &LifecycleEventCtx::Delete);
+         for child in &children {
+            lifecycle(&child, &LifecycleEventCtx::UnexpectedDelete);
          }
          //-----------------------
          log::error!(
-            "Can't borrow widget [{:?}] to process update finalization! Children ARE LOST!\n\t{}",
+            "Can't borrow widget [{:?}] to process update finalization! Children [{}] ARE LOST!\n\t{}",
             id,
+            children.len(),
             e
          );
          return;
       }
    };
-}
-
-fn update_children(children: &mut ChildrenVec, event: &UpdateEventCtx) {
-   for child in children {
-      update(&child, event);
-   }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -207,22 +209,25 @@ pub fn draw_child(
    // It seems it is quite safe, we just read simple copiable variables.
    // Just in case in debug mode we check availability.
    debug_assert!(child.try_borrow_mut().is_ok());
-   let (flow, id) =
-      unsafe { ((*child.as_ptr()).internal().control_flow.get(), (*child.as_ptr()).id()) };
+   let (flow, id) = unsafe {
+      let internal = (*child.as_ptr()).internal();
+      (internal.control_flow.get(), internal.id)
+   };
    //---------------------------------
    let is_self_draw = flow.contains(ControlFlow::SELF_DRAW);
+   let is_children_draw = flow.contains(ControlFlow::CHILDREN_DRAW);
    let is_visible = flow.contains(ControlFlow::IS_VISIBLE);
-   let id_draw = is_visible && (is_self_draw || flow.contains(ControlFlow::CHILDREN_DRAW));
+   let is_full_redraw = is_self_draw || force;
 
-   if !id_draw {
+   if !(is_visible && (is_self_draw || is_children_draw)) {
       return;
    }
    //--------------------------------------------------
-   let (mut children, regions) = match child.try_borrow_mut() {
+   let (children, regions) = match child.try_borrow_mut() {
       Ok(mut child) => {
          let internal = child.internal_mut();
 
-         if is_visible && (is_self_draw || force) {
+         if is_full_redraw {
             internal.control_flow.get_mut().remove(ControlFlow::SELF_DRAW);
             child.emit_draw(canvas, event);
          }
@@ -236,9 +241,9 @@ pub fn draw_child(
       }
    };
    //--------------------------------------------------
-
-   draw_children(&mut children, canvas, event, force);
-
+   for child in &children {
+      draw_child(&child, canvas, event, force);
+   }
    //--------------------------------------------------
    match child.try_borrow_mut() {
       Ok(mut child) => {
@@ -250,9 +255,16 @@ pub fn draw_child(
          internal.set_regions(regions, id, true);
       }
       Err(e) => {
+         //-----------------------
+         // Children are lost so, it is attempt to inform them.
+         for child in &children {
+            lifecycle(&child, &LifecycleEventCtx::UnexpectedDelete);
+         }
+         //-----------------------
          log::error!(
-            "Can't borrow widget [{:?}] to process draw finalization! Children ARE LOST!\n\t{}",
+            "Can't borrow widget [{:?}] to process draw finalization! Children [{}] ARE LOST!\n\t{}",
             id,
+            children.len(),
             e
          );
          return;
@@ -260,183 +272,252 @@ pub fn draw_child(
    };
 }
 
-fn draw_children(
-   children: &mut ChildrenVec,
-   canvas: &mut Canvas,
-   event: &DrawEventCtx,
-   force: bool,
-) {
-   for child in children {
-      draw_child(&child, canvas, event, force);
-   }
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub fn mouse_move(child: &Rc<RefCell<dyn IWidget>>, event: &MouseMoveEventCtx) -> bool {
-   let mut children = match child.try_borrow_mut() {
-      Ok(mut child) => {
-         let id = child.id();
-         child.internal_mut().take_children(id)
-      }
-      Err(e) => {
-         panic!("{}", e)
-      }
+   //--------------------------------------------------
+   // # Safety
+   // It seems it is quite safe, we just read simple copiable variables.
+   // Just in case in debug mode we check availability.
+   debug_assert!(child.try_borrow_mut().is_ok());
+   let (id, flow, rect) = unsafe {
+      let internal = (*child.as_ptr()).internal();
+      (internal.id, internal.control_flow.get(), internal.geometry.rect())
    };
+   //---------------------------------
+   let is_enabled = flow.contains(ControlFlow::IS_ENABLED);
+   let is_inside = rect.is_inside(event.input.x, event.input.y);
 
-   if !children.is_empty() {
-      mouse_move_children(&mut children, event);
+   if !is_enabled {
+      return is_inside;
    }
 
+   // TODO optimization, probably a parameter "mouse tracking" may as draw/update way.
+   //--------------------------------------------------
+   let children = match child.try_borrow_mut() {
+      Ok(mut child) => child.internal_mut().take_children(id),
+      Err(e) => {
+         log::error!("Can't borrow widget [{:?}] to process mouse move event!\n\t{}", id, e);
+         return false;
+      }
+   };
+   //--------------------------------------------------
+   let mut accepted = false;
+   for child in &children {
+      if mouse_move(&child, event) {
+         accepted = true;
+         break;
+      }
+   }
+   //--------------------------------------------------
    match child.try_borrow_mut() {
       Ok(mut child) => {
-         let id = child.id();
          child.internal_mut().set_children(children, id);
-         if child.emit_mouse_move(event) {
-            return true;
+         if !accepted && child.emit_mouse_move(event) {
+            accepted = true;
          }
       }
       Err(e) => {
-         panic!("{}", e)
+         //-----------------------
+         // Children are lost so, it is attempt to inform them.
+         for child in &children {
+            lifecycle(&child, &LifecycleEventCtx::UnexpectedDelete);
+         }
+         //-----------------------
+         log::error!(
+            "Can't borrow widget [{:?}] to process mouse move finalization! Children [{}] ARE LOST!\n\t{}",
+            id,
+            children.len(),
+            e
+         );
       }
    };
 
-   false
-}
-
-fn mouse_move_children(children: &mut ChildrenVec, event: &MouseMoveEventCtx) -> bool {
-   for child in children {
-      if mouse_move(&child, event) {
-         return true;
-      }
-   }
-   false
+   accepted
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub fn mouse_button(child: &Rc<RefCell<dyn IWidget>>, event: &MouseButtonsEventCtx) -> bool {
-   let mut children = match child.try_borrow_mut() {
-      Ok(mut child) => {
-         let id = child.id();
-         child.internal_mut().take_children(id)
-      }
+   //--------------------------------------------------
+   // # Safety
+   // It seems it is quite safe, we just read simple copiable variables.
+   // Just in case in debug mode we check availability.
+   debug_assert!(child.try_borrow_mut().is_ok());
+   let (id, flow, rect) = unsafe {
+      let internal = (*child.as_ptr()).internal();
+      (internal.id, internal.control_flow.get(), internal.geometry.rect())
+   };
+   //---------------------------------
+   let is_enabled = flow.contains(ControlFlow::IS_ENABLED);
+   let is_inside = rect.is_inside(event.input.x, event.input.y);
+
+   if !is_enabled {
+      return is_inside;
+   }
+   //--------------------------------------------------
+   let children = match child.try_borrow_mut() {
+      Ok(mut child) => child.internal_mut().take_children(id),
       Err(e) => {
-         panic!("{}", e)
+         log::error!("Can't borrow widget [{:?}] to process mouse button event!\n\t{}", id, e);
+         return false;
       }
    };
-
-   if !children.is_empty() {
-      mouse_button_children(&mut children, event);
+   //--------------------------------------------------
+   let mut accepted = false;
+   for child in &children {
+      if mouse_button(&child, event) {
+         accepted = true;
+         break;
+      }
    }
-
+   //--------------------------------------------------
    match child.try_borrow_mut() {
       Ok(mut child) => {
-         let id = child.id();
          child.internal_mut().set_children(children, id);
-         if child.emit_mouse_button(event) {
-            return true;
+         if !accepted && child.emit_mouse_button(event) {
+            accepted = true;
          }
       }
       Err(e) => {
-         panic!("{}", e)
+         //-----------------------
+         // Children are lost so, it is attempt to inform them.
+         for child in &children {
+            lifecycle(&child, &LifecycleEventCtx::UnexpectedDelete);
+         }
+         //-----------------------
+         log::error!(
+            "Can't borrow widget [{:?}] to process mouse button finalization! Children [{}] ARE LOST!\n\t{}",
+            id,
+            children.len(),
+            e
+         );
       }
    };
 
-   false
-}
-
-fn mouse_button_children(children: &mut ChildrenVec, event: &MouseButtonsEventCtx) -> bool {
-   for child in children {
-      if mouse_button(&child, event) {
-         return true;
-      }
-   }
-   false
+   accepted
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub fn mouse_wheel(child: &Rc<RefCell<dyn IWidget>>, event: &MouseWheelEventCtx) -> bool {
-   let mut children = match child.try_borrow_mut() {
-      Ok(mut child) => {
-         let id = child.id();
-         child.internal_mut().take_children(id)
-      }
+   //--------------------------------------------------
+   // # Safety
+   // It seems it is quite safe, we just read simple copiable variables.
+   // Just in case in debug mode we check availability.
+   debug_assert!(child.try_borrow_mut().is_ok());
+   let (id, flow, rect) = unsafe {
+      let internal = (*child.as_ptr()).internal();
+      (internal.id, internal.control_flow.get(), internal.geometry.rect())
+   };
+   //---------------------------------
+   let is_enabled = flow.contains(ControlFlow::IS_ENABLED);
+   let is_inside = rect.is_inside(event.input.x, event.input.y);
+
+   if !is_enabled {
+      return is_inside;
+   }
+   //--------------------------------------------------
+   let children = match child.try_borrow_mut() {
+      Ok(mut child) => child.internal_mut().take_children(id),
       Err(e) => {
-         panic!("{}", e)
+         log::error!("Can't borrow widget [{:?}] to process mouse wheel event!\n\t{}", id, e);
+         return false;
       }
    };
-
-   if !children.is_empty() {
-      mouse_wheel_children(&mut children, event);
+   //--------------------------------------------------
+   let mut accepted = false;
+   for child in &children {
+      if mouse_wheel(&child, event) {
+         accepted = true;
+         break;
+      }
    }
-
+   //--------------------------------------------------
    match child.try_borrow_mut() {
       Ok(mut child) => {
-         let id = child.id();
          child.internal_mut().set_children(children, id);
-         if child.emit_mouse_wheel(event) {
-            return true;
+         if !accepted && child.emit_mouse_wheel(event) {
+            accepted = true;
          }
       }
       Err(e) => {
-         panic!("{}", e)
+         //-----------------------
+         // Children are lost so, it is attempt to inform them.
+         for child in &children {
+            lifecycle(&child, &LifecycleEventCtx::UnexpectedDelete);
+         }
+         //-----------------------
+         log::error!(
+            "Can't borrow widget [{:?}] to process mouse wheel finalization! Children [{}] ARE LOST!\n\t{}",
+            id,
+            children.len(),
+            e
+         );
       }
    };
 
-   false
-}
-
-fn mouse_wheel_children(children: &mut ChildrenVec, event: &MouseWheelEventCtx) -> bool {
-   for child in children {
-      if mouse_wheel(&child, event) {
-         return true;
-      }
-   }
-   false
+   accepted
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub fn keyboard(child: &Rc<RefCell<dyn IWidget>>, event: &KeyboardEventCtx) -> bool {
-   let mut children = match child.try_borrow_mut() {
-      Ok(mut child) => {
-         let id = child.id();
-         child.internal_mut().take_children(id)
-      }
+   //--------------------------------------------------
+   // # Safety
+   // It seems it is quite safe, we just read simple copiable variables.
+   // Just in case in debug mode we check availability.
+   debug_assert!(child.try_borrow_mut().is_ok());
+   let (id, flow) = unsafe {
+      let internal = (*child.as_ptr()).internal();
+      (internal.id, internal.control_flow.get())
+   };
+   //---------------------------------
+   let is_enabled = flow.contains(ControlFlow::IS_ENABLED);
+   if !is_enabled {
+      return false;
+   }
+   //--------------------------------------------------
+   let children = match child.try_borrow_mut() {
+      Ok(mut child) => child.internal_mut().take_children(id),
       Err(e) => {
-         panic!("{}", e)
+         log::error!("Can't borrow widget [{:?}] to process mouse wheel event!\n\t{}", id, e);
+         return false;
       }
    };
-
-   if !children.is_empty() {
-      mouse_keyboard_children(&mut children, event);
+   //--------------------------------------------------
+   let mut accepted = false;
+   for child in &children {
+      if keyboard(&child, event) {
+         accepted = true;
+         break;
+      }
    }
-
+   //--------------------------------------------------
    match child.try_borrow_mut() {
       Ok(mut child) => {
-         let id = child.id();
          child.internal_mut().set_children(children, id);
-         if child.emit_keyboard(event) {
-            return true;
+         if !accepted && child.emit_keyboard(event) {
+            accepted = true;
          }
       }
       Err(e) => {
-         panic!("{}", e)
+         //-----------------------
+         // Children are lost so, it is attempt to inform them.
+         for child in &children {
+            lifecycle(&child, &LifecycleEventCtx::UnexpectedDelete);
+         }
+         //-----------------------
+         log::error!(
+            "Can't borrow widget [{:?}] to process mouse wheel finalization! Children [{}] ARE LOST!\n\t{}",
+            id,
+            children.len(),
+            e
+         );
       }
    };
 
-   false
-}
-
-fn mouse_keyboard_children(children: &mut ChildrenVec, event: &KeyboardEventCtx) -> bool {
-   for child in children {
-      if keyboard(&child, event) {
-         return true;
-      }
-   }
-   false
+   accepted
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

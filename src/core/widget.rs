@@ -66,13 +66,13 @@ pub trait IWidget: Any + 'static {
    //---------------------------------------
 
    fn is_visible(&self) -> bool;
-   fn set_visible(&self, state: bool);
+   fn set_visible(&mut self, state: bool);
 
    fn is_enabled(&self) -> bool;
-   fn set_enabled(&self, state: bool);
+   fn set_enabled(&mut self, state: bool);
 
    fn is_transparent(&self) -> bool;
-   fn set_transparent(&self, state: bool);
+   fn set_transparent(&mut self, state: bool);
 
    //---------------------------------------
 
@@ -90,6 +90,9 @@ pub trait IWidget: Any + 'static {
 
 #[derive(Copy, Clone)]
 pub struct WidgetVt<D> {
+   pub on_visible: fn(w: &mut D, bool),
+   pub on_disable: fn(w: &mut D, bool),
+
    pub on_lifecycle: fn(w: &mut D, &LifecycleEventCtx),
    pub on_layout: fn(w: &mut D, &LayoutEventCtx),
    pub on_update: fn(w: &mut D, &UpdateEventCtx),
@@ -106,7 +109,6 @@ pub struct Widget<D>
 where
    D: Derive,
 {
-   id: WidgetId,
    derive: MaybeUninit<D>,
    vtable: WidgetVt<Self>,
    internal: Internal,
@@ -122,9 +124,10 @@ where
       CB: FnOnce(&mut WidgetVt<Self>) -> D,
    {
       let mut out = Self {
-         id: WidgetId::new::<Self>(),
          derive: unsafe { std::mem::zeroed() },
          vtable: WidgetVt {
+            on_visible: |_, _| {},
+            on_disable: |_, _| {},
             on_lifecycle: |_, _| {},
             on_layout: |_, _| {},
             on_update: |_, _| {},
@@ -134,7 +137,7 @@ where
             on_mouse_wheel: |_, _| false,
             on_keyboard: |_, _| false,
          },
-         internal: Internal::new(),
+         internal: Internal::new::<Self>(),
       };
 
       let derive = cb(&mut out.vtable);
@@ -168,7 +171,7 @@ where
    }
 
    fn id(&self) -> WidgetId {
-      self.id
+      self.internal.id
    }
 
    //---------------------------------------
@@ -223,23 +226,27 @@ where
       self.internal.is_visible()
    }
 
-   fn set_visible(&self, state: bool) {
-      self.internal.set_visible(state)
+   fn set_visible(&mut self, state: bool) {
+      if self.internal.set_visible(state) {
+         (self.vtable.on_visible)(self, state)
+      }
    }
 
    fn is_enabled(&self) -> bool {
       self.internal.is_enabled()
    }
 
-   fn set_enabled(&self, state: bool) {
-      self.internal.set_enabled(state)
+   fn set_enabled(&mut self, state: bool) {
+      if self.internal.set_enabled(state) {
+         (self.vtable.on_disable)(self, !state)
+      }
    }
 
    fn is_transparent(&self) -> bool {
       self.internal.is_transparent()
    }
 
-   fn set_transparent(&self, state: bool) {
+   fn set_transparent(&mut self, state: bool) {
       self.internal.set_transparent(state)
    }
 

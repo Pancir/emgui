@@ -13,7 +13,10 @@ pub struct LayoutEventCtx {}
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub enum LifecycleEventCtx {
-   /// The widget is going to be deleted after this event.
+   /// The widget is scheduled to be deleted by dispatcher in unexpected situation.
+   UnexpectedDelete,
+
+   /// The widget is scheduled to be deleted by dispatcher.
    Delete,
 }
 

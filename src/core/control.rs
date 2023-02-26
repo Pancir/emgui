@@ -61,6 +61,7 @@ pub(crate) type RegionsVec = SmallVec<[Rect<f32>; STATIC_REGIONS_NUM]>;
 
 pub struct Internal {
    parent: Option<Weak<RefCell<dyn IWidget>>>,
+   pub(crate) id: WidgetId,
    pub(crate) geometry: Geometry,
    //--------------------
    control_flow: Cell<ControlFlow>,
@@ -72,16 +73,11 @@ pub struct Internal {
    children: RefCell<ChildrenVec>,
 }
 
-impl Default for Internal {
-   fn default() -> Self {
-      Self::new()
-   }
-}
-
 impl Internal {
-   pub(crate) fn new() -> Self {
+   pub(crate) fn new<T>() -> Self {
       Self {
          parent: Default::default(),
+         id: WidgetId::new::<T>(),
          geometry: Geometry::default(),
          //--------------------
          control_flow: Cell::new(ControlFlow::INIT),
@@ -154,20 +150,32 @@ impl Internal {
       self.control_flow.get().contains(ControlFlow::IS_VISIBLE)
    }
 
-   pub(crate) fn set_visible(&self, state: bool) {
+   pub(crate) fn set_visible(&self, state: bool) -> bool {
       let mut f = self.control_flow.get();
-      f.set(ControlFlow::IS_VISIBLE, state);
-      self.control_flow.set(f);
+      let curr = f.contains(ControlFlow::IS_VISIBLE);
+      if curr != state {
+         f.set(ControlFlow::IS_VISIBLE, state);
+         self.control_flow.set(f);
+         true
+      } else {
+         false
+      }
    }
 
    pub(crate) fn is_enabled(&self) -> bool {
       self.control_flow.get().contains(ControlFlow::IS_ENABLED)
    }
 
-   pub(crate) fn set_enabled(&self, state: bool) {
+   pub(crate) fn set_enabled(&self, state: bool) -> bool {
       let mut f = self.control_flow.get();
-      f.set(ControlFlow::IS_ENABLED, state);
-      self.control_flow.set(f);
+      let curr = f.contains(ControlFlow::IS_ENABLED);
+      if curr != state {
+         f.set(ControlFlow::IS_ENABLED, state);
+         self.control_flow.set(f);
+         true
+      } else {
+         false
+      }
    }
 
    pub(crate) fn is_transparent(&self) -> bool {

@@ -143,6 +143,9 @@ where
 
       match out.try_borrow_mut() {
          Ok(mut w) => {
+            // TODO check it when draw function is changed.
+            // IT is enabled for testing...
+            w.set_transparent(true);
             w.set_rect(rect);
          }
          Err(_) => {
