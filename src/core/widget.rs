@@ -42,10 +42,13 @@ pub trait IWidget: Any + 'static {
 
    //---------------------------------------
 
+   fn needs_draw(&self, reset: bool) -> bool;
    fn request_draw(&self);
 
+   fn needs_delete(&self) -> bool;
    fn request_delete(&self);
 
+   fn needs_update(&self, reset: bool) -> bool;
    fn request_update(&self);
 
    //---------------------------------------
@@ -140,8 +143,8 @@ where
          children: Children::default(),
          geometry: Geometry::default(),
          //-----------
-         needs_update: Cell::new(false),
-         needs_draw: Cell::new(false),
+         needs_update: Cell::new(true),
+         needs_draw: Cell::new(true),
          needs_del: Cell::new(false),
       };
 
@@ -181,6 +184,14 @@ where
 
    //---------------------------------------
 
+   fn needs_draw(&self, reset: bool) -> bool {
+      let out = self.needs_draw.get();
+      if reset {
+         self.needs_draw.set(false)
+      }
+      out
+   }
+
    fn request_draw(&self) {
       if !self.needs_draw.get() {
          self.needs_draw.set(true);
@@ -188,15 +199,27 @@ where
       }
    }
 
+   fn needs_delete(&self) -> bool {
+      self.needs_del.get()
+   }
+
    fn request_delete(&self) {
+      self.needs_del.set(true);
+   }
+
+   fn needs_update(&self, reset: bool) -> bool {
+      let out = self.needs_update.get();
+      if reset {
+         self.needs_update.set(false)
+      }
+      out
+   }
+
+   fn request_update(&self) {
       if !self.needs_update.get() {
          self.needs_update.set(true);
          self.children.request_update_parent();
       }
-   }
-
-   fn request_update(&self) {
-      self.needs_del.set(true);
    }
    //---------------------------------------
 

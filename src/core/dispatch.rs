@@ -69,18 +69,21 @@ fn layout_children(children: &mut ChildrenVec, event: &LayoutEvent) {
 //------------------------------------------------------------------------------------------------//
 
 pub fn update(child: &Rc<RefCell<dyn IWidget>>, event: &UpdateEvent) {
-   let mut children = match child.try_borrow_mut() {
+   let (mut children, update) = match child.try_borrow_mut() {
       Ok(mut child) => {
-         child.emit_update(event);
+         let update = child.needs_update(true);
+         if update {
+            child.emit_update(event);
+         }
          let id = child.id();
-         child.children_mut().take(id)
+         (child.children_mut().take(id), update)
       }
       Err(e) => {
          panic!("{}", e)
       }
    };
 
-   if !children.is_empty() {
+   if update {
       update_children(&mut children, event);
    }
 
@@ -100,7 +103,7 @@ fn update_children(children: &mut ChildrenVec, event: &UpdateEvent) {
 pub fn draw(child: &Rc<RefCell<dyn IWidget>>, canvas: &mut Canvas, force: bool) {
    let (mut children, is_draw) = match child.try_borrow_mut() {
       Ok(mut child) => {
-         let is_draw = child.is_visible() || force;
+         let is_draw = (child.needs_draw(true) && child.is_visible()) || force;
          if is_draw {
             child.emit_draw(canvas);
          }

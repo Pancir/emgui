@@ -138,9 +138,6 @@ impl ISlider1DHandler for Slider1DHandler {
 
 #[derive(Default)]
 pub struct Slider1DState {
-   /// Base data.
-   pub base: BaseState,
-   //---------------------------------
    /// Value range.
    pub range: Range<i32>,
 
@@ -158,26 +155,23 @@ pub struct Slider1DState {
 
    /// `True` if mouse pressed over handle.
    pub is_down: bool,
-
-   //---------------------------------
-   needs_draw: bool,
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub struct Slider1D<HDL = Slider1DHandler>
+pub struct Slider1D<H = Slider1DHandler>
 where
-   HDL: ISlider1DHandler,
+   H: ISlider1DHandler,
 {
-   pub state: Slider1DState,
-   pub handler: HDL,
+   state: Slider1DState,
+   handler: H,
 }
 
-impl<HDL> Slider1D<HDL>
+impl<H> Slider1D<H>
 where
-   HDL: ISlider1DHandler,
+   H: ISlider1DHandler,
 {
-   pub fn new(handler: HDL, rect: Rect<f32>) -> Rc<RefCell<Widget<Self>>> {
+   pub fn new(handler: H, rect: Rect<f32>) -> Rc<RefCell<Widget<Self>>> {
       let out = Widget::new(|vt| {
          vt.on_draw = Self::on_draw;
          vt.on_mouse_move = Self::on_mouse_move;
@@ -212,41 +206,6 @@ where
    }
 
    #[inline]
-   pub fn with_rect(mut self, rect: Rect<f32>) -> Self {
-      self.state.base.geometry.set_rect(rect);
-      self
-   }
-
-   #[inline]
-   pub fn with_range(mut self, range: Range<i32>) -> Self {
-      self.state.range = range;
-      self
-   }
-
-   #[inline]
-   pub fn with_value(mut self, value: i32) -> Self {
-      self.state.value = value;
-      self
-   }
-
-   #[inline]
-   pub fn disabled(mut self) -> Self {
-      self.state.base.is_enabled = false;
-      self
-   }
-
-   #[inline]
-   pub fn visible(mut self) -> Self {
-      self.state.base.is_visible = true;
-      self
-   }
-}
-
-impl<HDL> Slider1D<HDL>
-where
-   HDL: ISlider1DHandler,
-{
-   #[inline]
    pub fn set_rect(&mut self, rect: Rect<f32>) {
       self.state.base.geometry.set_rect(rect);
    }
@@ -268,9 +227,9 @@ where
    }
 }
 
-impl<HDL> IWidget for Slider1D<HDL>
+impl<H> IWidget for Slider1D<H>
 where
-   HDL: ISlider1DHandler + 'static,
+   H: ISlider1DHandler + 'static,
 {
    fn base_state(&self) -> &BaseState {
       &self.state.base

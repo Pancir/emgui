@@ -203,9 +203,17 @@ where
 
    pub fn on_mouse_move(w: &mut Widget<PushButton<H>>, event: &MouseMoveEvent) -> bool {
       let rect = w.geometry().rect();
+      let is_over = rect.is_inside(event.input.x, event.input.y);
+
       let mut d = w.derive_mut();
-      d.state.is_hover = rect.is_inside(event.input.x, event.input.y);
-      d.state.is_hover
+
+      if d.state.is_hover != is_over {
+         d.state.is_hover = is_over;
+         w.request_draw();
+         is_over
+      } else {
+         false
+      }
    }
 
    pub fn on_mouse_button(w: &mut Widget<PushButton<H>>, event: &MouseButtonsEvent) -> bool {
@@ -216,6 +224,7 @@ where
             if d.state.is_hover {
                d.state.is_down = true;
                d.handler.pressed(&d.state, event.input.button);
+               w.request_draw();
                return true;
             }
          }
@@ -233,6 +242,7 @@ where
                   d.handler.click(&d.state);
                   return true;
                }
+               w.request_draw();
             }
          }
       }
