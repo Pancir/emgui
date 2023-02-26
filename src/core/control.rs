@@ -1,5 +1,6 @@
-pub mod dispatch;
-pub mod dispatcher;
+mod dispatcher;
+
+pub use dispatcher::*;
 
 use crate::core::{Geometry, IWidget, WidgetId};
 use crate::defines::{STATIC_CHILD_NUM, STATIC_REGIONS_NUM};

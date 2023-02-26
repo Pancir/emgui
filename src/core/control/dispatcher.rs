@@ -21,8 +21,19 @@ pub struct Dispatcher {
 }
 
 impl Dispatcher {
+   #[inline]
    pub fn new(root: Option<Rc<RefCell<dyn IWidget>>>) -> Self {
       Self { inner: InnerDispatcher {}, root: root.unwrap_or_else(|| Widget::new(|_| ())) }
+   }
+
+   #[inline]
+   pub fn reinit(&mut self, root: Rc<RefCell<dyn IWidget>>) {
+      self.root = root;
+   }
+
+   #[inline]
+   pub fn widget(&self) -> &Rc<RefCell<dyn IWidget>> {
+      &self.root
    }
 }
 
@@ -69,11 +80,12 @@ impl Dispatcher {
          }
          Err(e) => {
             log::error!(
-            "Can't borrow widget [{:?}] to process lifecycle finalization! Children [{}] ARE LOST!\n\t{}",
-            id,
-            children.len(),
-            e
-         );
+               "Can't borrow widget [{:?}] to process lifecycle finalization! \
+               Children [{}] ARE LOST!\n\t{}",
+               id,
+               children.len(),
+               e
+            );
          }
       };
    }
@@ -229,11 +241,12 @@ impl Dispatcher {
             }
             //-----------------------
             log::error!(
-            "Can't borrow widget [{:?}] to process update finalization! Children [{}] ARE LOST!\n\t{}",
-            id,
-            children.len(),
-            e
-         );
+               "Can't borrow widget [{:?}] to process update finalization! \
+               Children [{}] ARE LOST!\n\t{}",
+               id,
+               children.len(),
+               e
+            );
             return;
          }
       };
@@ -312,11 +325,12 @@ impl Dispatcher {
             }
             //-----------------------
             log::error!(
-            "Can't borrow widget [{:?}] to process draw finalization! Children [{}] ARE LOST!\n\t{}",
-            id,
-            children.len(),
-            e
-         );
+               "Can't borrow widget [{:?}] to process draw finalization! \
+               Children [{}] ARE LOST!\n\t{}",
+               id,
+               children.len(),
+               e
+            );
             return;
          }
       };
@@ -326,8 +340,8 @@ impl Dispatcher {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 impl Dispatcher {
-   pub fn emit_mouse_move(&mut self, event: &MouseMoveEventCtx) {
-      Self::emit_inner_mouse_move(&mut self.inner, &self.root, event);
+   pub fn emit_mouse_move(&mut self, event: &MouseMoveEventCtx) -> bool {
+      Self::emit_inner_mouse_move(&mut self.inner, &self.root, event)
    }
 
    fn emit_inner_mouse_move(
@@ -385,11 +399,12 @@ impl Dispatcher {
             }
             //-----------------------
             log::error!(
-            "Can't borrow widget [{:?}] to process mouse move finalization! Children [{}] ARE LOST!\n\t{}",
-            id,
-            children.len(),
-            e
-         );
+               "Can't borrow widget [{:?}] to process mouse move finalization! \
+               Children [{}] ARE LOST!\n\t{}",
+               id,
+               children.len(),
+               e
+            );
          }
       };
 
@@ -400,8 +415,8 @@ impl Dispatcher {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 impl Dispatcher {
-   pub fn emit_mouse_button(&mut self, event: &MouseButtonsEventCtx) {
-      Self::emit_inner_mouse_button(&mut self.inner, &self.root, event);
+   pub fn emit_mouse_button(&mut self, event: &MouseButtonsEventCtx) -> bool {
+      Self::emit_inner_mouse_button(&mut self.inner, &self.root, event)
    }
 
    fn emit_inner_mouse_button(
@@ -457,11 +472,12 @@ impl Dispatcher {
             }
             //-----------------------
             log::error!(
-            "Can't borrow widget [{:?}] to process mouse button finalization! Children [{}] ARE LOST!\n\t{}",
-            id,
-            children.len(),
-            e
-         );
+               "Can't borrow widget [{:?}] to process mouse button finalization! \
+                Children [{}] ARE LOST!\n\t{}",
+               id,
+               children.len(),
+               e
+            );
          }
       };
 
@@ -472,8 +488,8 @@ impl Dispatcher {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 impl Dispatcher {
-   pub fn emit_mouse_wheel(&mut self, event: &MouseWheelEventCtx) {
-      Self::emit_inner_mouse_wheel(&mut self.inner, &self.root, event);
+   pub fn emit_mouse_wheel(&mut self, event: &MouseWheelEventCtx) -> bool {
+      Self::emit_inner_mouse_wheel(&mut self.inner, &self.root, event)
    }
 
    fn emit_inner_mouse_wheel(
@@ -529,11 +545,12 @@ impl Dispatcher {
             }
             //-----------------------
             log::error!(
-            "Can't borrow widget [{:?}] to process mouse wheel finalization! Children [{}] ARE LOST!\n\t{}",
-            id,
-            children.len(),
-            e
-         );
+               "Can't borrow widget [{:?}] to process mouse wheel finalization! \
+               Children [{}] ARE LOST!\n\t{}",
+               id,
+               children.len(),
+               e
+            );
          }
       };
 
@@ -544,8 +561,8 @@ impl Dispatcher {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 impl Dispatcher {
-   pub fn emit_keyboard(&mut self, event: &KeyboardEventCtx) {
-      Self::emit_inner_keyboard(&mut self.inner, &self.root, event);
+   pub fn emit_keyboard(&mut self, event: &KeyboardEventCtx) -> bool {
+      Self::emit_inner_keyboard(&mut self.inner, &self.root, event)
    }
 
    pub fn emit_inner_keyboard(
@@ -599,11 +616,12 @@ impl Dispatcher {
             }
             //-----------------------
             log::error!(
-            "Can't borrow widget [{:?}] to process mouse wheel finalization! Children [{}] ARE LOST!\n\t{}",
-            id,
-            children.len(),
-            e
-         );
+               "Can't borrow widget [{:?}] to process mouse wheel finalization! \
+               Children [{}] ARE LOST!\n\t{}",
+               id,
+               children.len(),
+               e
+            );
          }
       };
 
