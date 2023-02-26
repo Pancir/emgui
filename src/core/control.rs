@@ -10,6 +10,7 @@ use crate::core::control::runtime::Runtime;
 use crate::core::{Geometry, IWidget, WidgetId};
 use crate::defines::{STATIC_CHILD_NUM, STATIC_REGIONS_NUM};
 use bitflags::bitflags;
+use sim_draw::color::Rgba;
 use sim_draw::m::Rect;
 use smallvec::SmallVec;
 use std::cell::{Cell, RefCell};
@@ -68,8 +69,10 @@ pub(crate) type RegionsVec = SmallVec<[Rect<f32>; STATIC_REGIONS_NUM]>;
 
 pub struct Internal {
    parent: Option<Weak<RefCell<dyn IWidget>>>,
+   //--------------------
    pub(crate) id: WidgetId,
    pub(crate) geometry: Geometry,
+   pub(crate) background_color: Rgba,
    //--------------------
    runtime: Option<Runtime>,
    control_flow: Cell<ControlFlow>,
@@ -79,14 +82,17 @@ pub struct Internal {
    //--------------------
    children_busy: Cell<WidgetId>,
    children: RefCell<ChildrenVec>,
+   //--------------------
 }
 
 impl Internal {
    pub(crate) fn new<T>() -> Self {
       Self {
          parent: Default::default(),
+         //--------------------
          id: WidgetId::new::<T>(),
          geometry: Geometry::default(),
+         background_color: Rgba::GRAY,
          //--------------------
          runtime: None,
          control_flow: Cell::new(ControlFlow::INIT),

@@ -55,14 +55,13 @@ pub trait IWidget: Any + 'static {
    //---------------------------------------
 
    fn derive(&self) -> &dyn Derive;
-
    fn derive_mut(&mut self) -> &mut dyn Derive;
 
    fn geometry(&self) -> &Geometry;
-
    fn set_geometry(&mut self, g: Geometry);
 
    fn set_rect(&mut self, r: Rect<f32>);
+   fn set_background_color(&mut self, color: Rgba);
 
    //---------------------------------------
 
@@ -119,10 +118,11 @@ impl<D: 'static> Widget<D>
 where
    D: Derive,
 {
-   /// Construct new.
-   pub fn new<CB>(cb: CB) -> Rc<RefCell<Self>>
+   /// Construct new and init.
+   pub fn new_flat<CB1, CB2>(vt_cb: CB1, init_cb: CB2) -> Self
    where
-      CB: FnOnce(&mut WidgetVt<Self>) -> D,
+      CB1: FnOnce(&mut WidgetVt<Self>) -> D,
+      CB2: FnOnce(&mut Self),
    {
       let mut out = Self {
          derive: unsafe { std::mem::zeroed() },
@@ -141,9 +141,33 @@ where
          internal: Internal::new::<Self>(),
       };
 
-      let derive = cb(&mut out.vtable);
+      let derive = vt_cb(&mut out.vtable);
       out.derive.write(derive);
-      Rc::new(RefCell::new(out))
+
+      init_cb(&mut out);
+      out
+   }
+
+   /// Construct new `Rc` and init.
+   pub fn new<CB1, CB2>(vt_cb: CB1, init_cb: CB2) -> Rc<RefCell<Self>>
+   where
+      CB1: FnOnce(&mut WidgetVt<Self>) -> D,
+      CB2: FnOnce(&mut Self),
+   {
+      Self::new_flat(vt_cb, init_cb).to_rc()
+   }
+
+   /// Plane into `Rc`.
+   pub fn to_rc(self) -> Rc<RefCell<Self>> {
+      let w = Rc::new(RefCell::new(self));
+      let d = Rc::downgrade(&w);
+      match w.try_borrow_mut() {
+         Ok(mut w) => (w.vtable.on_lifecycle)(&mut w, &LifecycleEventCtx::SelfReference(d)),
+         Err(_) => {
+            unreachable!()
+         }
+      }
+      w
    }
 
    pub fn derive_ref(&self) -> &D {
@@ -225,6 +249,12 @@ where
       self.internal.geometry.set_rect(r);
    }
 
+   fn set_background_color(&mut self, color: Rgba) {
+      debug_assert!(color.a > (0.0 - f32::EPSILON) && color.a < 1.0 + f32::EPSILON);
+      self.internal.background_color = color;
+      self.set_transparent(color.a < 1.0);
+   }
+
    //---------------------------------------
 
    fn is_visible(&self) -> bool {
@@ -299,7 +329,7 @@ where
    D: Derive,
 {
    fn on_draw(&mut self, canvas: &mut Canvas, _event: &DrawEventCtx) {
-      canvas.set_paint(Paint::new_color(Rgba::RED));
+      canvas.set_paint(Paint::new_color(self.internal.background_color));
       canvas.fill(&self.internal.geometry.rect());
    }
 }

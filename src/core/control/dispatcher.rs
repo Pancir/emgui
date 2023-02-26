@@ -28,7 +28,7 @@ impl Dispatcher {
    pub fn new(root: Option<Rc<RefCell<dyn IWidget>>>) -> Self {
       let mut out = Self {
          inner: InnerDispatcher { runtime: Runtime::new() },
-         root: root.unwrap_or_else(|| Widget::new(|_| ())),
+         root: root.unwrap_or_else(|| Widget::new(|_| (), |_| ())),
       };
 
       out.set_runtime_to_widget();
@@ -239,7 +239,11 @@ impl Dispatcher {
                return true;
             }
             //---------------------------------
-            Self::emit_inner_lifecycle(dispatcher, &child, &LifecycleEventCtx::Delete);
+            Self::emit_inner_lifecycle(
+               dispatcher,
+               &child,
+               &LifecycleEventCtx::Delete { unexpected: false },
+            );
             //---------------------------------
             false
          });
@@ -269,7 +273,11 @@ impl Dispatcher {
             //-----------------------
             // Children are lost so, it is attempt to inform them.
             for child in &children {
-               Self::emit_inner_lifecycle(dispatcher, &child, &LifecycleEventCtx::UnexpectedDelete);
+               Self::emit_inner_lifecycle(
+                  dispatcher,
+                  &child,
+                  &LifecycleEventCtx::Delete { unexpected: true },
+               );
             }
             //-----------------------
             log::error!(
@@ -353,7 +361,11 @@ impl Dispatcher {
             //-----------------------
             // Children are lost so, it is attempt to inform them.
             for child in &children {
-               Self::emit_inner_lifecycle(dispatcher, &child, &LifecycleEventCtx::UnexpectedDelete);
+               Self::emit_inner_lifecycle(
+                  dispatcher,
+                  &child,
+                  &LifecycleEventCtx::Delete { unexpected: true },
+               );
             }
             //-----------------------
             log::error!(
@@ -427,7 +439,11 @@ impl Dispatcher {
             //-----------------------
             // Children are lost so, it is attempt to inform them.
             for child in &children {
-               Self::emit_inner_lifecycle(dispatcher, &child, &LifecycleEventCtx::UnexpectedDelete);
+               Self::emit_inner_lifecycle(
+                  dispatcher,
+                  &child,
+                  &LifecycleEventCtx::Delete { unexpected: true },
+               );
             }
             //-----------------------
             log::error!(
@@ -500,7 +516,11 @@ impl Dispatcher {
             //-----------------------
             // Children are lost so, it is attempt to inform them.
             for child in &children {
-               Self::emit_inner_lifecycle(dispatcher, &child, &LifecycleEventCtx::UnexpectedDelete);
+               Self::emit_inner_lifecycle(
+                  dispatcher,
+                  &child,
+                  &LifecycleEventCtx::Delete { unexpected: true },
+               );
             }
             //-----------------------
             log::error!(
@@ -573,7 +593,11 @@ impl Dispatcher {
             //-----------------------
             // Children are lost so, it is attempt to inform them.
             for child in &children {
-               Self::emit_inner_lifecycle(dispatcher, &child, &LifecycleEventCtx::UnexpectedDelete);
+               Self::emit_inner_lifecycle(
+                  dispatcher,
+                  &child,
+                  &LifecycleEventCtx::Delete { unexpected: true },
+               );
             }
             //-----------------------
             log::error!(
@@ -644,7 +668,11 @@ impl Dispatcher {
             //-----------------------
             // Children are lost so, it is attempt to inform them.
             for child in &children {
-               Self::emit_inner_lifecycle(dispatcher, &child, &LifecycleEventCtx::UnexpectedDelete);
+               Self::emit_inner_lifecycle(
+                  dispatcher,
+                  &child,
+                  &LifecycleEventCtx::Delete { unexpected: true },
+               );
             }
             //-----------------------
             log::error!(

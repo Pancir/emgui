@@ -119,41 +119,35 @@ where
    where
       TXT: Into<Cow<'static, str>>,
    {
-      let out = Widget::new(|vt| {
-         vt.on_draw = Self::on_draw;
-         vt.on_mouse_move = Self::on_mouse_move;
-         vt.on_mouse_button = Self::on_mouse_button;
+      Widget::new(
+         |vt| {
+            vt.on_draw = Self::on_draw;
+            vt.on_mouse_move = Self::on_mouse_move;
+            vt.on_mouse_button = Self::on_mouse_button;
 
-         Self {
-            handler,
-            state: PushButtonState {
-               label: Label::new(
-                  label,
-                  rect.center(),
-                  text_patin,
-                  TextAlign::new().center().middle(),
-               ),
-               toggle_num: 2,
-               toggle: 0,
-               is_hover: false,
-               is_down: false,
-            },
-         }
-      });
-
-      match out.try_borrow_mut() {
-         Ok(mut w) => {
+            Self {
+               handler,
+               state: PushButtonState {
+                  label: Label::new(
+                     label,
+                     rect.center(),
+                     text_patin,
+                     TextAlign::new().center().middle(),
+                  ),
+                  toggle_num: 2,
+                  toggle: 0,
+                  is_hover: false,
+                  is_down: false,
+               },
+            }
+         },
+         |w| {
             // TODO check it when draw function is changed.
-            // IT is enabled for testing...
+            // It is enabled for testing..
             w.set_transparent(true);
             w.set_rect(rect);
-         }
-         Err(_) => {
-            unreachable!()
-         }
-      }
-
-      out
+         },
+      )
    }
 
    #[inline]
