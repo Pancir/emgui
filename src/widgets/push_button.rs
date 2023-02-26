@@ -1,5 +1,5 @@
 use crate::core::derive::Derive;
-use crate::core::events::{MouseButtonsEvent, MouseMoveEvent};
+use crate::core::events::{DrawEvent, MouseButtonsEvent, MouseMoveEvent};
 use crate::core::{IWidget, Widget};
 use crate::elements::Label;
 use sim_draw::color::Rgba;
@@ -182,7 +182,7 @@ impl<H> PushButton<H>
 where
    H: IPushButtonHandler + 'static,
 {
-   fn on_draw(w: &mut Widget<PushButton<H>>, canvas: &mut Canvas) {
+   fn on_draw(w: &mut Widget<PushButton<H>>, canvas: &mut Canvas, _event: &DrawEvent) {
       let d = w.derive_ref();
 
       canvas.set_color(Rgba::GRAY.with_alpha(0.5));

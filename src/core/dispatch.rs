@@ -1,7 +1,7 @@
 use crate::core::children::ChildrenVec;
 use crate::core::events::{
-   KeyboardEvent, LayoutEvent, LifecycleEvent, MouseButtonsEvent, MouseMoveEvent, MouseWheelEvent,
-   UpdateEvent,
+   DrawEvent, KeyboardEvent, LayoutEvent, LifecycleEvent, MouseButtonsEvent, MouseMoveEvent,
+   MouseWheelEvent, UpdateEvent,
 };
 use crate::core::IWidget;
 use sim_draw::Canvas;
@@ -101,11 +101,20 @@ fn update_children(children: &mut ChildrenVec, event: &UpdateEvent) {
 //------------------------------------------------------------------------------------------------//
 
 pub fn draw(child: &Rc<RefCell<dyn IWidget>>, canvas: &mut Canvas, force: bool) {
+   draw_child(child, canvas, &DrawEvent {}, force)
+}
+
+pub fn draw_child(
+   child: &Rc<RefCell<dyn IWidget>>,
+   canvas: &mut Canvas,
+   event: &DrawEvent,
+   force: bool,
+) {
    let (mut children, is_draw) = match child.try_borrow_mut() {
       Ok(mut child) => {
          let is_draw = (child.needs_draw(true) && child.is_visible()) || force;
          if is_draw {
-            child.emit_draw(canvas);
+            child.emit_draw(canvas, event);
          }
          let id = child.id();
          (child.children_mut().take(id), is_draw)
@@ -116,7 +125,7 @@ pub fn draw(child: &Rc<RefCell<dyn IWidget>>, canvas: &mut Canvas, force: bool) 
    };
 
    if is_draw {
-      draw_children(&mut children, canvas, force);
+      draw_children(&mut children, canvas, event, force);
    }
 
    let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e));
@@ -124,9 +133,9 @@ pub fn draw(child: &Rc<RefCell<dyn IWidget>>, canvas: &mut Canvas, force: bool) 
    bor.children_mut().set(children, id);
 }
 
-fn draw_children(children: &mut ChildrenVec, canvas: &mut Canvas, force: bool) {
+fn draw_children(children: &mut ChildrenVec, canvas: &mut Canvas, event: &DrawEvent, force: bool) {
    for child in children {
-      draw(&child, canvas, force);
+      draw_child(&child, canvas, event, force);
    }
 }
 

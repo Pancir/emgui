@@ -1,8 +1,8 @@
 use crate::core::children::Children;
 use crate::core::derive::Derive;
 use crate::core::events::{
-   KeyboardEvent, LayoutEvent, LifecycleEvent, MouseButtonsEvent, MouseMoveEvent, MouseWheelEvent,
-   UpdateEvent,
+   DrawEvent, KeyboardEvent, LayoutEvent, LifecycleEvent, MouseButtonsEvent, MouseMoveEvent,
+   MouseWheelEvent, UpdateEvent,
 };
 use crate::core::{Geometry, WidgetId};
 use crate::defines::STATIC_REGIONS_NUM;
@@ -80,7 +80,7 @@ pub trait IWidget: Any + 'static {
 
    fn emit_lifecycle(&mut self, _event: &LifecycleEvent);
    fn emit_layout(&mut self, _event: &LayoutEvent);
-   fn emit_draw(&mut self, _canvas: &mut Canvas);
+   fn emit_draw(&mut self, _canvas: &mut Canvas, event: &DrawEvent);
    fn emit_update(&mut self, _event: &UpdateEvent);
    fn emit_mouse_move(&mut self, _event: &MouseMoveEvent) -> bool;
    fn emit_mouse_button(&mut self, _event: &MouseButtonsEvent) -> bool;
@@ -95,7 +95,7 @@ pub struct WidgetVt<D> {
    pub on_lifecycle: fn(w: &mut D, &LifecycleEvent),
    pub on_layout: fn(w: &mut D, &LayoutEvent),
    pub on_update: fn(w: &mut D, &UpdateEvent),
-   pub on_draw: fn(w: &mut D, &mut Canvas),
+   pub on_draw: fn(w: &mut D, &mut Canvas, &DrawEvent),
    pub on_mouse_move: fn(w: &mut D, &MouseMoveEvent) -> bool,
    pub on_mouse_button: fn(w: &mut D, &MouseButtonsEvent) -> bool,
    pub on_mouse_wheel: fn(w: &mut D, &MouseWheelEvent) -> bool,
@@ -279,8 +279,8 @@ where
       (self.vtable.on_layout)(self, event);
    }
 
-   fn emit_draw(&mut self, canvas: &mut Canvas) {
-      (self.vtable.on_draw)(self, canvas);
+   fn emit_draw(&mut self, canvas: &mut Canvas, event: &DrawEvent) {
+      (self.vtable.on_draw)(self, canvas, event);
    }
 
    fn emit_update(&mut self, event: &UpdateEvent) {
@@ -312,7 +312,7 @@ impl<D: 'static> Widget<D>
 where
    D: Derive,
 {
-   fn on_draw(&mut self, canvas: &mut Canvas) {
+   fn on_draw(&mut self, canvas: &mut Canvas, _event: &DrawEvent) {
       canvas.set_paint(Paint::new_color(Rgba::RED));
       canvas.fill(&self.geometry.rect());
    }
