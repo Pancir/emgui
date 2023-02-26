@@ -45,6 +45,7 @@ pub trait IWidget: Any + 'static {
    fn request_draw(&self);
    fn request_delete(&self);
    fn request_update(&self);
+   fn request_focus(&self);
 
    //---------------------------------------
 
@@ -186,6 +187,10 @@ where
 
    fn request_update(&self) {
       self.internal.request_update();
+   }
+
+   fn request_focus(&self) {
+      unimplemented!()
    }
 
    //---------------------------------------

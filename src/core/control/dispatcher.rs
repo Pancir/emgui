@@ -1,5 +1,6 @@
 use super::*;
 
+use crate::core::control::runtime::Runtime;
 use crate::core::events::{
    DrawEventCtx, KeyboardEventCtx, LayoutEventCtx, LifecycleEventCtx, MouseButtonsEventCtx,
    MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
@@ -11,7 +12,9 @@ use std::rc::Rc;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub struct InnerDispatcher {}
+pub struct InnerDispatcher {
+   runtime: Runtime,
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -23,17 +26,46 @@ pub struct Dispatcher {
 impl Dispatcher {
    #[inline]
    pub fn new(root: Option<Rc<RefCell<dyn IWidget>>>) -> Self {
-      Self { inner: InnerDispatcher {}, root: root.unwrap_or_else(|| Widget::new(|_| ())) }
+      let mut out = Self {
+         inner: InnerDispatcher { runtime: Runtime::new() },
+         root: root.unwrap_or_else(|| Widget::new(|_| ())),
+      };
+
+      out.set_runtime_to_widget();
+      out
    }
 
    #[inline]
    pub fn reinit(&mut self, root: Rc<RefCell<dyn IWidget>>) {
       self.root = root;
+      self.set_runtime_to_widget();
    }
 
    #[inline]
    pub fn widget(&self) -> &Rc<RefCell<dyn IWidget>> {
       &self.root
+   }
+}
+
+impl Dispatcher {
+   fn set_runtime_to_widget(&mut self) {
+      Self::set_runtime_to_widget_inner(self.inner.runtime.clone(), &self.root);
+   }
+
+   fn set_runtime_to_widget_inner(runtime: Runtime, child: &Rc<RefCell<dyn IWidget>>) {
+      match child.try_borrow_mut() {
+         Ok(mut bor) => {
+            let mut internal = bor.internal_mut();
+            internal.runtime = Some(runtime.clone());
+
+            let children = internal.take_children(internal.id);
+            for child in &children {
+               Self::set_runtime_to_widget_inner(runtime.clone(), &child);
+            }
+            internal.set_children(children, internal.id)
+         }
+         Err(e) => panic!("{}", e),
+      }
    }
 }
 

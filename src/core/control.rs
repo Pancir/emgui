@@ -1,7 +1,12 @@
 mod dispatcher;
+mod focus;
+mod runtime;
 
 pub use dispatcher::*;
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+use crate::core::control::runtime::Runtime;
 use crate::core::{Geometry, IWidget, WidgetId};
 use crate::defines::{STATIC_CHILD_NUM, STATIC_REGIONS_NUM};
 use bitflags::bitflags;
@@ -66,6 +71,7 @@ pub struct Internal {
    pub(crate) id: WidgetId,
    pub(crate) geometry: Geometry,
    //--------------------
+   runtime: Option<Runtime>,
    control_flow: Cell<ControlFlow>,
    //--------------------
    draw_regions_busy: Cell<WidgetId>,
@@ -82,6 +88,7 @@ impl Internal {
          id: WidgetId::new::<T>(),
          geometry: Geometry::default(),
          //--------------------
+         runtime: None,
          control_flow: Cell::new(ControlFlow::INIT),
          //--------------------
          draw_regions_busy: Cell::new(WidgetId::INVALID),
