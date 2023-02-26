@@ -4,7 +4,7 @@ use crate::core::{IWidget, Widget};
 use crate::elements::Label;
 use sim_draw::color::Rgba;
 use sim_draw::m::Rect;
-use sim_draw::{Canvas, TextAlign, TextPaint};
+use sim_draw::{Canvas, Paint, TextAlign, TextPaint};
 use sim_input::mouse::{MouseButton, MouseState};
 use std::any::Any;
 use std::borrow::Cow;
@@ -185,7 +185,7 @@ where
    fn on_draw(w: &mut Widget<PushButton<H>>, canvas: &mut Canvas, _event: &DrawEventCtx) {
       let d = w.derive_ref();
 
-      canvas.set_color(Rgba::GRAY.with_alpha(0.5));
+      canvas.set_paint(Paint::new_color(Rgba::GRAY.with_alpha(0.5)));
 
       if d.state.is_hover {
          canvas.set_color(Rgba::GRAY);
@@ -240,9 +240,9 @@ where
                   }
 
                   d.handler.click(&d.state);
-                  return true;
                }
                w.request_draw();
+               return true;
             }
          }
       }

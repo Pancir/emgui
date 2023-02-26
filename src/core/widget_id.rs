@@ -18,10 +18,18 @@ impl WidgetId {
    pub fn new<T>() -> Self {
       static WIDGET_ID_COUNTER: std::sync::atomic::AtomicUsize =
          std::sync::atomic::AtomicUsize::new(1);
-      WidgetId((
+      Self((
          WIDGET_ID_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
          std::any::type_name::<T>(),
       ))
+   }
+
+   pub fn from_raw<T>(v: usize) -> Self {
+      Self((v, std::any::type_name::<T>()))
+   }
+
+   pub fn raw(&self) -> usize {
+      self.0 .0
    }
 
    pub fn is_valid(self) -> bool {

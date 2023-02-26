@@ -12,7 +12,7 @@ use std::rc::{Rc, Weak};
 
 bitflags! {
    /// Control flow for events.
-   struct ControlFLow: u8 {
+   struct ControlFlow: u16 {
       //-----------------------------
 
       /// Call update for current widget.
@@ -48,7 +48,18 @@ bitflags! {
 
       //-----------------------------
 
-      const INIT = Self::DRAW.bits | Self::UPDATE.bits;
+      /// Visible state.
+      const IS_VISIBLE = 1<<6;
+
+      /// Visible state.
+      const IS_ENABLED = 1<<7;
+
+      /// Visible state.
+      const IS_TRANSPARENT = 1<<8;
+
+      //-----------------------------
+
+      const INIT = Self::DRAW.bits | Self::UPDATE.bits | Self::IS_VISIBLE.bits | Self::IS_ENABLED.bits;
       const UPDATE_OR_DLETE = Self::DELETE.bits | Self::UPDATE.bits;
    }
 }
@@ -62,7 +73,7 @@ pub struct Internal {
    parent: Option<Weak<RefCell<dyn IWidget>>>,
    pub(crate) geometry: Geometry,
    //--------------------
-   control_flow: Cell<ControlFLow>,
+   control_flow: Cell<ControlFlow>,
    //--------------------
    draw_regions_busy: Cell<WidgetId>,
    draw_regions: RefCell<RegionsVec>,
@@ -83,7 +94,7 @@ impl Internal {
          parent: Default::default(),
          geometry: Geometry::default(),
          //--------------------
-         control_flow: Cell::new(ControlFLow::INIT),
+         control_flow: Cell::new(ControlFlow::INIT),
          //--------------------
          draw_regions_busy: Cell::new(WidgetId::INVALID),
          draw_regions: Default::default(),
@@ -98,14 +109,15 @@ impl Internal {
    pub(crate) fn request_draw(&self) {
       let mut f = self.control_flow.get();
 
-      if !f.contains(ControlFLow::SELF_DRAW) {
-         f.set(ControlFLow::SELF_DRAW, true);
+      if !f.contains(ControlFlow::SELF_DRAW) {
+         f.set(ControlFlow::SELF_DRAW, true);
+         self.control_flow.set(f);
 
          if let Some(parent) = &self.parent {
             if let Some(p) = parent.upgrade() {
                let mut bor = p.borrow_mut();
                let internal = bor.internal_mut();
-               internal.control_flow.get_mut().set(ControlFLow::CHILDREN_DRAW, true);
+               internal.control_flow.get_mut().set(ControlFlow::CHILDREN_DRAW, true);
                internal.draw_regions.get_mut().push(internal.geometry.rect())
             }
          }
@@ -115,14 +127,15 @@ impl Internal {
    pub(crate) fn request_update(&self) {
       let mut f = self.control_flow.get();
 
-      if !f.contains(ControlFLow::SELF_UPDATE) {
-         f.set(ControlFLow::SELF_UPDATE, true);
+      if !f.contains(ControlFlow::SELF_UPDATE) {
+         f.set(ControlFlow::SELF_UPDATE, true);
+         self.control_flow.set(f);
 
          if let Some(parent) = &self.parent {
             if let Some(p) = parent.upgrade() {
                let mut bor = p.borrow_mut();
                let internal = bor.internal_mut();
-               internal.control_flow.get_mut().set(ControlFLow::CHILDREN_UPDATE, true);
+               internal.control_flow.get_mut().set(ControlFlow::CHILDREN_UPDATE, true);
             }
          }
       }
@@ -131,17 +144,50 @@ impl Internal {
    pub(crate) fn request_delete(&self) {
       let mut f = self.control_flow.get();
 
-      if !f.contains(ControlFLow::SELF_DELETE) {
-         f.set(ControlFLow::SELF_DELETE, true);
+      if !f.contains(ControlFlow::SELF_DELETE) {
+         f.set(ControlFlow::SELF_DELETE, true);
+         self.control_flow.set(f);
 
          if let Some(parent) = &self.parent {
             if let Some(p) = parent.upgrade() {
                let mut bor = p.borrow_mut();
                let internal = bor.internal_mut();
-               internal.control_flow.get_mut().set(ControlFLow::CHILDREN_DELETE, true);
+               internal.control_flow.get_mut().set(ControlFlow::CHILDREN_DELETE, true);
             }
          }
       }
+   }
+}
+
+impl Internal {
+   pub(crate) fn is_visible(&self) -> bool {
+      self.control_flow.get().contains(ControlFlow::IS_VISIBLE)
+   }
+
+   pub(crate) fn set_visible(&self, state: bool) {
+      let mut f = self.control_flow.get();
+      f.set(ControlFlow::IS_VISIBLE, state);
+      self.control_flow.set(f);
+   }
+
+   pub(crate) fn is_enabled(&self) -> bool {
+      self.control_flow.get().contains(ControlFlow::IS_ENABLED)
+   }
+
+   pub(crate) fn set_enabled(&self, state: bool) {
+      let mut f = self.control_flow.get();
+      f.set(ControlFlow::IS_ENABLED, state);
+      self.control_flow.set(f);
+   }
+
+   pub(crate) fn is_transparent(&self) -> bool {
+      self.control_flow.get().contains(ControlFlow::IS_TRANSPARENT)
+   }
+
+   pub(crate) fn set_transparent(&self, state: bool) {
+      let mut f = self.control_flow.get();
+      f.set(ControlFlow::IS_TRANSPARENT, state);
+      self.control_flow.set(f);
    }
 }
 
@@ -161,7 +207,7 @@ impl Internal {
    }
 
    #[track_caller]
-   pub(crate) fn set_regions(&mut self, mut ch: RegionsVec, id: WidgetId) {
+   pub(crate) fn set_regions(&mut self, mut ch: RegionsVec, id: WidgetId, clear: bool) {
       debug_assert!(
          self.draw_regions_busy.get().is_valid(),
          "[{:?}] attempt to set regions into non free slot",
@@ -169,6 +215,9 @@ impl Internal {
       );
       *self.draw_regions.get_mut() = std::mem::take(&mut ch);
       self.draw_regions_busy.set(WidgetId::INVALID);
+      if clear {
+         self.draw_regions.get_mut().clear();
+      }
    }
 }
 

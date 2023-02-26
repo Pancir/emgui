@@ -66,8 +66,13 @@ pub trait IWidget: Any + 'static {
    //---------------------------------------
 
    fn is_visible(&self) -> bool;
+   fn set_visible(&self, state: bool);
 
    fn is_enabled(&self) -> bool;
+   fn set_enabled(&self, state: bool);
+
+   fn is_transparent(&self) -> bool;
+   fn set_transparent(&self, state: bool);
 
    //---------------------------------------
 
@@ -215,11 +220,27 @@ where
    //---------------------------------------
 
    fn is_visible(&self) -> bool {
-      true
+      self.internal.is_visible()
+   }
+
+   fn set_visible(&self, state: bool) {
+      self.internal.set_visible(state)
    }
 
    fn is_enabled(&self) -> bool {
-      true
+      self.internal.is_enabled()
+   }
+
+   fn set_enabled(&self, state: bool) {
+      self.internal.set_enabled(state)
+   }
+
+   fn is_transparent(&self) -> bool {
+      self.internal.is_transparent()
+   }
+
+   fn set_transparent(&self, state: bool) {
+      self.internal.set_transparent(state)
    }
 
    //---------------------------------------
