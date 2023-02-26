@@ -90,27 +90,28 @@ impl IPushButtonHandler for PushButtonHandler {
 #[derive(Default)]
 pub struct PushButtonState {
    pub label: Label,
-   pub is_toggled: bool,
+   pub toggle_num: u8,
+   pub toggle: u8,
    pub is_hover: bool,
    pub is_down: bool,
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub struct PushButton<HDL>
+pub struct PushButton<H>
 where
-   HDL: IPushButtonHandler,
+   H: IPushButtonHandler,
 {
    state: PushButtonState,
-   handler: HDL,
+   handler: H,
 }
 
-impl<HDL> PushButton<HDL>
+impl<H> PushButton<H>
 where
-   HDL: IPushButtonHandler + 'static,
+   H: IPushButtonHandler + 'static,
 {
    pub fn new<TXT>(
-      handler: HDL,
+      handler: H,
       rect: Rect<f32>,
       label: TXT,
       text_patin: TextPaint,
@@ -132,7 +133,8 @@ where
                   text_patin,
                   TextAlign::new().center().middle(),
                ),
-               is_toggled: false,
+               toggle_num: 2,
+               toggle: 0,
                is_hover: false,
                is_down: false,
             },
@@ -150,11 +152,22 @@ where
 
       out
    }
+
+   #[inline]
+   pub fn set_toggle_num(&mut self, num: u8) {
+      self.state.toggle_num = num.max(2);
+      self.state.toggle = self.state.toggle.min(self.state.toggle_num - 1);
+   }
+
+   #[inline]
+   pub fn state(&self) -> &PushButtonState {
+      &self.state
+   }
 }
 
-impl<HDL> Derive for PushButton<HDL>
+impl<H> Derive for PushButton<H>
 where
-   HDL: IPushButtonHandler + 'static,
+   H: IPushButtonHandler + 'static,
 {
    fn as_any(&self) -> &dyn Any {
       self
@@ -165,11 +178,11 @@ where
    }
 }
 
-impl<HDL> PushButton<HDL>
+impl<H> PushButton<H>
 where
-   HDL: IPushButtonHandler + 'static,
+   H: IPushButtonHandler + 'static,
 {
-   fn on_draw(w: &mut Widget<PushButton<HDL>>, canvas: &mut Canvas) {
+   fn on_draw(w: &mut Widget<PushButton<H>>, canvas: &mut Canvas) {
       let d = w.derive_ref();
 
       canvas.set_color(Rgba::GRAY.with_alpha(0.5));
@@ -188,14 +201,14 @@ where
       }
    }
 
-   pub fn on_mouse_move(w: &mut Widget<PushButton<HDL>>, event: &MouseMoveEvent) -> bool {
+   pub fn on_mouse_move(w: &mut Widget<PushButton<H>>, event: &MouseMoveEvent) -> bool {
       let rect = w.geometry().rect();
       let mut d = w.derive_mut();
       d.state.is_hover = rect.is_inside(event.input.x, event.input.y);
       d.state.is_hover
    }
 
-   pub fn on_mouse_button(w: &mut Widget<PushButton<HDL>>, event: &MouseButtonsEvent) -> bool {
+   pub fn on_mouse_button(w: &mut Widget<PushButton<H>>, event: &MouseButtonsEvent) -> bool {
       let mut d = w.derive_mut();
 
       match event.input.state {
@@ -212,7 +225,11 @@ where
                d.handler.released(&d.state, event.input.button);
 
                if d.state.is_hover {
-                  d.state.is_toggled = !d.state.is_toggled;
+                  d.state.toggle += 1;
+                  if d.state.toggle == d.state.toggle_num {
+                     d.state.toggle = 0;
+                  }
+
                   d.handler.click(&d.state);
                   return true;
                }
@@ -221,6 +238,22 @@ where
       }
 
       false
+   }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#[cfg(test)]
+mod tests {
+   use super::*;
+
+   #[test]
+   fn sizes() {
+      println!(
+         "{} : {}",
+         std::any::type_name::<PushButton<PushButtonHandler>>(),
+         std::mem::size_of::<PushButton<PushButtonHandler>>()
+      );
    }
 }
 
