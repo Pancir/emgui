@@ -1,9 +1,11 @@
-use crate::widgets::events::{LifecycleEvent, MouseButtonsEvent, MouseMoveEvent};
-use crate::widgets::IWidget;
+use crate::core::events::{LifecycleEvent, MouseButtonsEvent, MouseMoveEvent};
+use crate::core::{IWidget, Widget};
 use sim_draw::color::Rgba;
 use sim_draw::m::{Point2, Rect};
 use sim_draw::{Canvas, Paint};
+use std::cell::RefCell;
 use std::ops::Range;
+use std::rc::Rc;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -175,9 +177,38 @@ impl<HDL> Slider1D<HDL>
 where
    HDL: ISlider1DHandler,
 {
-   #[inline]
-   pub fn new(handler: HDL) -> Self {
-      Self { state: Slider1DState::default(), handler }
+   pub fn new(handler: HDL, rect: Rect<f32>) -> Rc<RefCell<Widget<Self>>> {
+      let out = Widget::new(|vt| {
+         vt.on_draw = Self::on_draw;
+         vt.on_mouse_move = Self::on_mouse_move;
+         vt.on_mouse_button = Self::on_mouse_button;
+
+         Self {
+            handler,
+            state: PushButtonState {
+               label: Label::new(
+                  label,
+                  rect.center(),
+                  text_patin,
+                  TextAlign::new().center().middle(),
+               ),
+               is_toggled: false,
+               is_hover: false,
+               is_down: false,
+            },
+         }
+      });
+
+      match out.try_borrow_mut() {
+         Ok(mut w) => {
+            w.set_rect(rect);
+         }
+         Err(_) => {
+            unreachable!()
+         }
+      }
+
+      out
    }
 
    #[inline]

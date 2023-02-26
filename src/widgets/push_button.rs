@@ -24,12 +24,12 @@ pub trait IPushButtonHandler {
    /// This is called when the button is pressed down.
    ///
    /// The [PushButtonState::is_down] is `true`.
-   fn pressed(&mut self, _state: &PushButtonState) {}
+   fn pressed(&mut self, _state: &PushButtonState, _button: MouseButton) {}
 
    /// This is called when the button is released.
    ///
    /// The [PushButtonState::is_down] is `false`.
-   fn released(&mut self, _state: &PushButtonState) {}
+   fn released(&mut self, _state: &PushButtonState, _button: MouseButton) {}
 }
 
 /// Default button handler.
@@ -42,8 +42,8 @@ pub trait IPushButtonHandler {
 #[derive(Default)]
 pub struct PushButtonHandler {
    on_click: Option<Box<dyn FnMut(&PushButtonState)>>,
-   on_pressed: Option<Box<dyn FnMut(&PushButtonState)>>,
-   on_released: Option<Box<dyn FnMut(&PushButtonState)>>,
+   on_pressed: Option<Box<dyn FnMut(&PushButtonState, MouseButton)>>,
+   on_released: Option<Box<dyn FnMut(&PushButtonState, MouseButton)>>,
 }
 
 impl PushButtonHandler {
@@ -63,7 +63,7 @@ impl PushButtonHandler {
    /// Set callback.
    ///
    /// It allocates memory in heap for the closure.
-   pub fn on_pressed(mut self, cb: impl FnMut(&PushButtonState) + 'static) -> Self {
+   pub fn on_pressed(mut self, cb: impl FnMut(&PushButtonState, MouseButton) + 'static) -> Self {
       self.on_pressed = Some(Box::new(cb));
       self
    }
@@ -71,7 +71,7 @@ impl PushButtonHandler {
    /// Set callback.
    ///
    /// It allocates memory in heap for the closure.
-   pub fn on_released(mut self, cb: impl FnMut(&PushButtonState) + 'static) -> Self {
+   pub fn on_released(mut self, cb: impl FnMut(&PushButtonState, MouseButton) + 'static) -> Self {
       self.on_released = Some(Box::new(cb));
       self
    }
@@ -196,18 +196,31 @@ where
    }
 
    pub fn on_mouse_button(w: &mut Widget<PushButton<HDL>>, event: &MouseButtonsEvent) -> bool {
-      let down =
-         event.input.state == MouseState::Pressed && event.input.button == MouseButton::Left;
-
       let mut d = w.derive_mut();
 
-      let is_click = !down && d.state.is_hover && d.state.is_down;
-      d.state.is_down = down && d.state.is_hover;
-      if is_click {
-         d.state.is_toggled = !d.state.is_toggled;
-         d.handler.click(&d.state);
+      match event.input.state {
+         MouseState::Pressed => {
+            if d.state.is_hover {
+               d.state.is_down = true;
+               d.handler.pressed(&d.state, event.input.button);
+               return true;
+            }
+         }
+         MouseState::Released => {
+            if d.state.is_down {
+               d.state.is_down = false;
+               d.handler.released(&d.state, event.input.button);
+
+               if d.state.is_hover {
+                  d.state.is_toggled = !d.state.is_toggled;
+                  d.handler.click(&d.state);
+                  return true;
+               }
+            }
+         }
       }
-      is_click
+
+      false
    }
 }
 
