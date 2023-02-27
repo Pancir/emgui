@@ -158,6 +158,8 @@ where
    }
 
    /// Plane into `Rc`.
+   ///
+   /// TODO maybe Pin?
    pub fn to_rc(self) -> Rc<RefCell<Self>> {
       let w = Rc::new(RefCell::new(self));
       let d = Rc::downgrade(&w);
