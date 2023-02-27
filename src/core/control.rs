@@ -119,6 +119,7 @@ impl Internal {
                let mut bor = p.borrow_mut();
                let internal = bor.internal_mut();
                internal.state_flags.get_mut().set(StateFlags::CHILDREN_DRAW, true);
+               // TODO Regions and IDs are not used at this moment.
                internal.draw_regions.get_mut().push((self.id, internal.geometry.rect()));
             }
          }

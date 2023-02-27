@@ -372,23 +372,22 @@ impl Dispatcher {
       };
       //--------------------------------------------------
       for child in &children {
-         //---------------------------------
-         // # Safety
-         // It seems it is quite safe, we just read simple copiable variables.
-         // Just in case in debug mode we check availability.
-         debug_assert!(child.try_borrow_mut().is_ok());
-         let (child_rect, child_id, flags) = unsafe {
-            let internal = (*child.as_ptr()).internal();
-            (internal.geometry.rect(), internal.id, internal.state_flags.get())
-         };
-         //---------------------------------
-
-         if regions.iter().any(|v| v.0 == child_id) {
-            println!("{:?}\n  {:?} : {:?}\n", regions, child_id, child_rect);
-            Self::emit_inner_draw(dispatcher, &child, canvas, event);
-         }
-
-         //---------------------------------
+         Self::emit_inner_draw(dispatcher, &child, canvas, event);
+         // //---------------------------------
+         // // # Safety
+         // // It seems it is quite safe, we just read simple copiable variables.
+         // // Just in case in debug mode we check availability.
+         // debug_assert!(child.try_borrow_mut().is_ok());
+         // let (child_rect, child_id, flags) = unsafe {
+         //    let internal = (*child.as_ptr()).internal();
+         //    (internal.geometry.rect(), internal.id, internal.state_flags.get())
+         // };
+         // //---------------------------------
+         // if regions.iter().any(|v| v.0 == child_id) {
+         //    println!("{:?}\n  {:?} : {:?}\n{:?}\n", regions, child_id, child_rect, flags);
+         //    Self::emit_inner_draw(dispatcher, &child, canvas, event);
+         // }
+         // //---------------------------------
       }
       //--------------------------------------------------
       match child.try_borrow_mut() {

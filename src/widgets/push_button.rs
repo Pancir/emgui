@@ -144,7 +144,7 @@ where
          |w| {
             // TODO check it when draw function is changed.
             // It is enabled for testing..
-            w.set_transparent(true);
+            // w.set_transparent(true);
             w.set_rect(rect);
          },
       )
@@ -182,7 +182,7 @@ where
    fn on_draw(w: &mut Widget<PushButton<H>>, canvas: &mut Canvas, _event: &DrawEventCtx) {
       let d = w.derive_ref();
 
-      canvas.set_paint(Paint::new_color(Rgba::GRAY.with_alpha(0.5)));
+      canvas.set_paint(Paint::new_color(Rgba::GREEN.with_alpha_mul(0.5)));
 
       if d.state.is_hover {
          canvas.set_color(Rgba::GRAY);
