@@ -256,11 +256,7 @@ mod tests {
 
    #[test]
    fn sizes() {
-      println!(
-         "{} : {}",
-         std::any::type_name::<PushButton<PushButtonHandler>>(),
-         std::mem::size_of::<PushButton<PushButtonHandler>>()
-      );
+      dbg!(std::mem::size_of::<PushButton<PushButtonHandler>>());
    }
 }
 

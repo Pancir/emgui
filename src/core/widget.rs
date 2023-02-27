@@ -344,7 +344,7 @@ mod tests {
 
    #[test]
    fn sizes() {
-      println!("{} : {}", std::any::type_name::<Widget<()>>(), std::mem::size_of::<Widget<()>>());
+      dbg!(std::mem::size_of::<Widget<()>>());
    }
 }
 

@@ -304,13 +304,7 @@ impl Dispatcher {
          Err(e) => {
             //-----------------------
             // Children are lost so, it is attempt to inform them.
-            for child in &children {
-               Self::emit_inner_lifecycle(
-                  dispatcher,
-                  &child,
-                  &LifecycleEventCtx::Destroy { unexpected: true },
-               );
-            }
+            Self::inform_lost_children(dispatcher, &children);
             //-----------------------
             log::error!(
                "Can't borrow widget [{:?}] to process update finalization! \
@@ -329,7 +323,11 @@ impl Dispatcher {
 
 impl Dispatcher {
    pub fn emit_draw(&mut self, env: &mut AppEnv, canvas: &mut Canvas, force: bool) {
-      Self::emit_inner_draw(&mut self.inner, &self.root, canvas, &DrawEventCtx { env }, force);
+      if !force {
+         Self::emit_inner_draw(&mut self.inner, &self.root, canvas, &DrawEventCtx { env });
+      } else {
+         Self::emit_inner_draw_full(&mut self.inner, &self.root, canvas, &DrawEventCtx { env });
+      }
    }
 
    fn emit_inner_draw(
@@ -337,22 +335,20 @@ impl Dispatcher {
       child: &Rc<RefCell<dyn IWidget>>,
       canvas: &mut Canvas,
       event: &DrawEventCtx,
-      force: bool,
    ) {
       //--------------------------------------------------
       // # Safety
       // It seems it is quite safe, we just read simple copiable variables.
       // Just in case in debug mode we check availability.
       debug_assert!(child.try_borrow_mut().is_ok());
-      let (flow, id) = unsafe {
+      let (state_flags, id) = unsafe {
          let internal = (*child.as_ptr()).internal();
          (internal.state_flags.get(), internal.id)
       };
       //---------------------------------
-      let is_self_draw = flow.contains(StateFlags::SELF_DRAW);
-      let is_children_draw = flow.contains(StateFlags::CHILDREN_DRAW);
-      let is_visible = flow.contains(StateFlags::IS_VISIBLE);
-      let is_full_redraw = is_self_draw || force;
+      let is_self_draw = state_flags.contains(StateFlags::SELF_DRAW);
+      let is_children_draw = state_flags.contains(StateFlags::CHILDREN_DRAW);
+      let is_visible = state_flags.contains(StateFlags::IS_VISIBLE);
 
       if !(is_visible && (is_self_draw || is_children_draw)) {
          return;
@@ -364,10 +360,8 @@ impl Dispatcher {
 
             // TODO draw debug bounds frame
 
-            if is_full_redraw {
-               internal.state_flags.get_mut().remove(StateFlags::SELF_DRAW);
-               child.emit_draw(canvas, event);
-            }
+            internal.state_flags.get_mut().remove(StateFlags::SELF_DRAW);
+            child.emit_draw(canvas, event);
 
             let internal = child.internal_mut();
             (internal.take_children(id), internal.take_regions(id))
@@ -379,35 +373,30 @@ impl Dispatcher {
       };
       //--------------------------------------------------
       for child in &children {
-         if !is_full_redraw {
-            //---------------------------------
-            // # Safety
-            // It seems it is quite safe, we just read simple copiable variables.
-            // Just in case in debug mode we check availability.
-            debug_assert!(child.try_borrow_mut().is_ok());
-            let (child_rect, _transparent) = unsafe {
-               let internal = (*child.as_ptr()).internal();
-               let flags = internal.state_flags.get();
-               (internal.geometry.rect(), flags.contains(StateFlags::IS_TRANSPARENT))
-            };
-            //---------------------------------
+         //---------------------------------
+         // # Safety
+         // It seems it is quite safe, we just read simple copiable variables.
+         // Just in case in debug mode we check availability.
+         debug_assert!(child.try_borrow_mut().is_ok());
+         let (child_rect, _transparent) = unsafe {
+            let internal = (*child.as_ptr()).internal();
+            let flags = internal.state_flags.get();
+            (internal.geometry.rect(), flags.contains(StateFlags::IS_TRANSPARENT))
+         };
+         //---------------------------------
 
-            if regions.iter().find(|v| child_rect.intersects(**v)).is_some() {
-               // println!("{:?}\n\n\t{:?}", regions, child_rect);
-               Self::emit_inner_draw(dispatcher, &child, canvas, event, force);
-            }
-
-            //---------------------------------
-         } else {
-            Self::emit_inner_draw(dispatcher, &child, canvas, event, force);
+         if regions.iter().find(|v| child_rect.intersects(**v)).is_some() {
+            // println!("{:?}\n\n\t{:?}", regions, child_rect);
+            Self::emit_inner_draw(dispatcher, &child, canvas, event);
          }
+
+         //---------------------------------
       }
       //--------------------------------------------------
       match child.try_borrow_mut() {
          Ok(mut child) => {
             let internal = child.internal_mut();
             let f = internal.state_flags.get_mut();
-            f.remove(StateFlags::SELF_DRAW);
             f.remove(StateFlags::CHILDREN_DRAW);
             internal.set_children(children, id);
             internal.set_regions(regions, id, true);
@@ -415,13 +404,73 @@ impl Dispatcher {
          Err(e) => {
             //-----------------------
             // Children are lost so, it is attempt to inform them.
-            for child in &children {
-               Self::emit_inner_lifecycle(
-                  dispatcher,
-                  &child,
-                  &LifecycleEventCtx::Destroy { unexpected: true },
-               );
-            }
+            Self::inform_lost_children(dispatcher, &children);
+            //-----------------------
+            log::error!(
+               "Can't borrow widget [{:?}] to process draw finalization! \
+               Children [{}] ARE LOST!\n\t{}",
+               id,
+               children.len(),
+               e
+            );
+            return;
+         }
+      };
+   }
+
+   fn emit_inner_draw_full(
+      dispatcher: &mut InnerDispatcher,
+      child: &Rc<RefCell<dyn IWidget>>,
+      canvas: &mut Canvas,
+      event: &DrawEventCtx,
+   ) {
+      //--------------------------------------------------
+      // # Safety
+      // It seems it is quite safe, we just read simple copiable variables.
+      // Just in case in debug mode we check availability.
+      debug_assert!(child.try_borrow_mut().is_ok());
+      let (state_flags, id) = unsafe {
+         let internal = (*child.as_ptr()).internal();
+         (internal.state_flags.get(), internal.id)
+      };
+      //---------------------------------
+      let is_visible = state_flags.contains(StateFlags::IS_VISIBLE);
+      if !is_visible {
+         return;
+      }
+      //--------------------------------------------------
+      let children = match child.try_borrow_mut() {
+         Ok(mut child) => {
+            let internal = child.internal_mut();
+            internal.state_flags.get_mut().remove(StateFlags::SELF_DRAW);
+
+            // TODO draw debug bounds frame
+            child.emit_draw(canvas, event);
+
+            let internal = child.internal_mut();
+            internal.take_children(id)
+         }
+         Err(e) => {
+            log::error!("Can't borrow widget [{:?}] to process draw event!\n\t{}", id, e);
+            return;
+         }
+      };
+      //--------------------------------------------------
+      for child in &children {
+         Self::emit_inner_draw_full(dispatcher, &child, canvas, event);
+      }
+      //--------------------------------------------------
+      match child.try_borrow_mut() {
+         Ok(mut child) => {
+            let internal = child.internal_mut();
+            let f = internal.state_flags.get_mut();
+            f.remove(StateFlags::CHILDREN_DRAW);
+            internal.set_children(children, id);
+         }
+         Err(e) => {
+            //-----------------------
+            // Children are lost so, it is attempt to inform them.
+            Self::inform_lost_children(dispatcher, &children);
             //-----------------------
             log::error!(
                "Can't borrow widget [{:?}] to process draw finalization! \
@@ -493,13 +542,7 @@ impl Dispatcher {
          Err(e) => {
             //-----------------------
             // Children are lost so, it is attempt to inform them.
-            for child in &children {
-               Self::emit_inner_lifecycle(
-                  dispatcher,
-                  &child,
-                  &LifecycleEventCtx::Destroy { unexpected: true },
-               );
-            }
+            Self::inform_lost_children(dispatcher, &children);
             //-----------------------
             log::error!(
                "Can't borrow widget [{:?}] to process mouse move finalization! \
@@ -570,13 +613,7 @@ impl Dispatcher {
          Err(e) => {
             //-----------------------
             // Children are lost so, it is attempt to inform them.
-            for child in &children {
-               Self::emit_inner_lifecycle(
-                  dispatcher,
-                  &child,
-                  &LifecycleEventCtx::Destroy { unexpected: true },
-               );
-            }
+            Self::inform_lost_children(dispatcher, &children);
             //-----------------------
             log::error!(
                "Can't borrow widget [{:?}] to process mouse button finalization! \
@@ -647,13 +684,7 @@ impl Dispatcher {
          Err(e) => {
             //-----------------------
             // Children are lost so, it is attempt to inform them.
-            for child in &children {
-               Self::emit_inner_lifecycle(
-                  dispatcher,
-                  &child,
-                  &LifecycleEventCtx::Destroy { unexpected: true },
-               );
-            }
+            Self::inform_lost_children(dispatcher, &children);
             //-----------------------
             log::error!(
                "Can't borrow widget [{:?}] to process mouse wheel finalization! \
@@ -722,13 +753,7 @@ impl Dispatcher {
          Err(e) => {
             //-----------------------
             // Children are lost so, it is attempt to inform them.
-            for child in &children {
-               Self::emit_inner_lifecycle(
-                  dispatcher,
-                  &child,
-                  &LifecycleEventCtx::Destroy { unexpected: true },
-               );
-            }
+            Self::inform_lost_children(dispatcher, &children);
             //-----------------------
             log::error!(
                "Can't borrow widget [{:?}] to process mouse wheel finalization! \
@@ -741,6 +766,23 @@ impl Dispatcher {
       };
 
       accepted
+   }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+impl Dispatcher {
+   fn inform_lost_children(
+      dispatcher: &mut InnerDispatcher,
+      children: &[Rc<RefCell<dyn IWidget>>],
+   ) {
+      for child in children {
+         Self::emit_inner_lifecycle(
+            dispatcher,
+            &child,
+            &LifecycleEventCtx::Destroy { unexpected: true },
+         );
+      }
    }
 }
 

@@ -314,7 +314,7 @@ mod tests {
 
    #[test]
    fn sizes() {
-      println!("{} : {}", std::any::type_name::<Internal>(), std::mem::size_of::<Internal>());
+      dbg!(std::mem::size_of::<Internal>());
    }
 }
 
