@@ -323,10 +323,11 @@ impl Dispatcher {
 
 impl Dispatcher {
    pub fn emit_draw(&mut self, env: &mut AppEnv, canvas: &mut Canvas, force: bool) {
+      let ev = DrawEventCtx { env, region: None };
       if !force {
-         Self::emit_inner_draw(&mut self.inner, &self.root, canvas, &DrawEventCtx { env });
+         Self::emit_inner_draw(&mut self.inner, &self.root, canvas, &ev);
       } else {
-         Self::emit_inner_draw_full(&mut self.inner, &self.root, canvas, &DrawEventCtx { env });
+         Self::emit_inner_draw_full(&mut self.inner, &self.root, canvas, &ev);
       }
    }
 
@@ -360,8 +361,10 @@ impl Dispatcher {
 
             // TODO draw debug bounds frame
 
-            internal.state_flags.get_mut().remove(StateFlags::SELF_DRAW);
-            child.emit_draw(canvas, event);
+            if is_self_draw {
+               internal.state_flags.get_mut().remove(StateFlags::SELF_DRAW);
+               child.emit_draw(canvas, event);
+            }
 
             let internal = child.internal_mut();
             (internal.take_children(id), internal.take_regions(id))
@@ -372,26 +375,32 @@ impl Dispatcher {
          }
       };
       //--------------------------------------------------
-      for child in &children {
-         //---------------------------------
-         // # Safety
-         // It seems it is quite safe, we just read simple copiable variables.
-         // Just in case in debug mode we check availability.
-         debug_assert!(child.try_borrow_mut().is_ok());
-         let (child_rect, _transparent) = unsafe {
-            let internal = (*child.as_ptr()).internal();
-            let flags = internal.state_flags.get();
-            (internal.geometry.rect(), flags.contains(StateFlags::IS_TRANSPARENT))
-         };
-         //---------------------------------
+      if !is_self_draw {
+         for child in &children {
+            //---------------------------------
+            // # Safety
+            // It seems it is quite safe, we just read simple copiable variables.
+            // Just in case in debug mode we check availability.
+            debug_assert!(child.try_borrow_mut().is_ok());
+            let (child_rect, flags) = unsafe {
+               let internal = (*child.as_ptr()).internal();
+               (internal.geometry.rect(), internal.state_flags.get())
+            };
+            //---------------------------------
 
-         if regions.iter().find(|v| child_rect.intersects(**v)).is_some() {
-            // println!("{:?}\n\n\t{:?}", regions, child_rect);
-            Self::emit_inner_draw(dispatcher, &child, canvas, event);
+            if regions.iter().find(|v| child_rect.intersects(**v)).is_some() {
+               // println!("{:?}\n\n\t{:?}", regions, child_rect);
+               Self::emit_inner_draw(dispatcher, &child, canvas, event);
+            }
+
+            //---------------------------------
          }
-
-         //---------------------------------
+      } else {
+         for child in &children {
+            Self::emit_inner_draw_full(dispatcher, &child, canvas, event);
+         }
       }
+
       //--------------------------------------------------
       match child.try_borrow_mut() {
          Ok(mut child) => {

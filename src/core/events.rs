@@ -1,4 +1,5 @@
 use crate::core::{AppEnv, IWidget};
+use sim_draw::m::Rect;
 use std::cell::RefCell;
 use std::fmt::Formatter;
 use std::rc::Weak;
@@ -55,6 +56,7 @@ pub struct UpdateEventCtx<'a> {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub struct DrawEventCtx<'env> {
+   pub region: Option<Rect<f32>>,
    pub env: &'env mut AppEnv,
 }
 
