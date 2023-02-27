@@ -7,7 +7,7 @@ pub use dispatcher::*;
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 use crate::core::control::runtime::Runtime;
-use crate::core::{Geometry, IWidget, WidgetId};
+use crate::core::{Geometry, IWidget, Widget, WidgetId};
 use crate::defines::{STATIC_CHILD_NUM, STATIC_REGIONS_NUM};
 use bitflags::bitflags;
 use sim_draw::color::Rgba;
@@ -64,11 +64,33 @@ bitflags! {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+/// It is some kind of hack to create empty weak ref once and use it later
+/// when "null" parent is needed. Otherwise the `Option` must be used and
+/// access uses 2 checks `Option` and `Weak::upgrade`.
+/// This hack allows you to use only one check `Weak::upgrade`.
+fn empty_parent() -> Weak<RefCell<dyn IWidget>> {
+   static mut EMPTY_WEAK: Option<Weak<RefCell<dyn IWidget>>> = None;
+
+   // # Safety
+   // # Thread safe
+   // It is assumed that it is used only by this module to create and empty parent in one thread.
+   unsafe {
+      EMPTY_WEAK
+         .get_or_insert_with(|| {
+            let w: Rc<RefCell<dyn IWidget>> = Widget::new(|_| (), |_| {});
+            Rc::downgrade(&w)
+         })
+         .clone()
+   }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 pub(crate) type ChildrenVec = SmallVec<[Rc<RefCell<dyn IWidget>>; STATIC_CHILD_NUM]>;
 pub(crate) type RegionsVec = SmallVec<[Rect<f32>; STATIC_REGIONS_NUM]>;
 
 pub struct Internal {
-   parent: Option<Weak<RefCell<dyn IWidget>>>,
+   parent: Weak<RefCell<dyn IWidget>>,
    //--------------------
    pub(crate) id: WidgetId,
    pub(crate) geometry: Geometry,
@@ -88,7 +110,7 @@ pub struct Internal {
 impl Internal {
    pub(crate) fn new<T>() -> Self {
       Self {
-         parent: Default::default(),
+         parent: empty_parent(),
          //--------------------
          id: WidgetId::new::<T>(),
          geometry: Geometry::default(),
@@ -114,13 +136,11 @@ impl Internal {
          f.set(ControlFlow::SELF_DRAW, true);
          self.control_flow.set(f);
 
-         if let Some(parent) = &self.parent {
-            if let Some(p) = parent.upgrade() {
-               let mut bor = p.borrow_mut();
-               let internal = bor.internal_mut();
-               internal.control_flow.get_mut().set(ControlFlow::CHILDREN_DRAW, true);
-               internal.draw_regions.get_mut().push(internal.geometry.rect())
-            }
+         if let Some(p) = self.parent.upgrade() {
+            let mut bor = p.borrow_mut();
+            let internal = bor.internal_mut();
+            internal.control_flow.get_mut().set(ControlFlow::CHILDREN_DRAW, true);
+            internal.draw_regions.get_mut().push(internal.geometry.rect())
          }
       }
    }
@@ -132,12 +152,10 @@ impl Internal {
          f.set(ControlFlow::SELF_UPDATE, true);
          self.control_flow.set(f);
 
-         if let Some(parent) = &self.parent {
-            if let Some(p) = parent.upgrade() {
-               let mut bor = p.borrow_mut();
-               let internal = bor.internal_mut();
-               internal.control_flow.get_mut().set(ControlFlow::CHILDREN_UPDATE, true);
-            }
+         if let Some(p) = self.parent.upgrade() {
+            let mut bor = p.borrow_mut();
+            let internal = bor.internal_mut();
+            internal.control_flow.get_mut().set(ControlFlow::CHILDREN_UPDATE, true);
          }
       }
    }
@@ -149,12 +167,10 @@ impl Internal {
          f.set(ControlFlow::SELF_DELETE, true);
          self.control_flow.set(f);
 
-         if let Some(parent) = &self.parent {
-            if let Some(p) = parent.upgrade() {
-               let mut bor = p.borrow_mut();
-               let internal = bor.internal_mut();
-               internal.control_flow.get_mut().set(ControlFlow::CHILDREN_DELETE, true);
-            }
+         if let Some(p) = self.parent.upgrade() {
+            let mut bor = p.borrow_mut();
+            let internal = bor.internal_mut();
+            internal.control_flow.get_mut().set(ControlFlow::CHILDREN_DELETE, true);
          }
       }
    }
@@ -292,7 +308,10 @@ pub fn add_child(
    {
       let mut bor = child.borrow_mut();
       let c = bor.internal_mut();
-      c.parent = Some(Rc::downgrade(&parent));
+
+      debug_assert!(c.parent.upgrade().is_none(), "need re-parent implementation");
+
+      c.parent = Rc::downgrade(&parent);
    }
 
    w
