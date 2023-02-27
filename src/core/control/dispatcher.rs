@@ -21,6 +21,7 @@ pub struct InnerDispatcher {
 pub struct Dispatcher {
    inner: InnerDispatcher,
    root: Rc<RefCell<dyn IWidget>>,
+   destroyed: bool,
 }
 
 impl Dispatcher {
@@ -29,6 +30,7 @@ impl Dispatcher {
       let mut out = Self {
          inner: InnerDispatcher { runtime: Runtime::new() },
          root: root.unwrap_or_else(|| Widget::new(|_| (), |_| ())),
+         destroyed: false,
       };
 
       out.set_runtime_to_widget();
@@ -37,6 +39,9 @@ impl Dispatcher {
 
    #[inline]
    pub fn reinit(&mut self, root: Rc<RefCell<dyn IWidget>>) {
+      if !self.destroyed {
+         self.destroy();
+      }
       self.root = root;
       self.set_runtime_to_widget();
    }
@@ -44,6 +49,36 @@ impl Dispatcher {
    #[inline]
    pub fn widget(&self) -> &Rc<RefCell<dyn IWidget>> {
       &self.root
+   }
+}
+
+impl std::ops::Drop for Dispatcher {
+   fn drop(&mut self) {
+      if !self.destroyed {
+         log::warn!("You forgot to call destroy on dispatcher. It is auto-called while dropping, \
+         but it may lead to unexpected behaviour because it can be too late, please call it yourself.");
+
+         self.destroy()
+      }
+   }
+}
+
+impl Dispatcher {
+   pub fn destroy(&mut self) {
+      if self.destroyed {
+         log::warn!("Attempt to call destroy on destroyed dispatcher.");
+         return;
+      }
+      self.destroyed = true;
+      Self::emit_inner_destroy(&mut self.inner, &self.root);
+   }
+
+   fn emit_inner_destroy(dispatcher: &mut InnerDispatcher, child: &Rc<RefCell<dyn IWidget>>) {
+      Self::emit_inner_lifecycle(
+         dispatcher,
+         &child,
+         &LifecycleEventCtx::Destroy { unexpected: false },
+      );
    }
 }
 
@@ -242,7 +277,7 @@ impl Dispatcher {
             Self::emit_inner_lifecycle(
                dispatcher,
                &child,
-               &LifecycleEventCtx::Delete { unexpected: false },
+               &LifecycleEventCtx::Destroy { unexpected: false },
             );
             //---------------------------------
             false
@@ -276,7 +311,7 @@ impl Dispatcher {
                Self::emit_inner_lifecycle(
                   dispatcher,
                   &child,
-                  &LifecycleEventCtx::Delete { unexpected: true },
+                  &LifecycleEventCtx::Destroy { unexpected: true },
                );
             }
             //-----------------------
@@ -364,7 +399,7 @@ impl Dispatcher {
                Self::emit_inner_lifecycle(
                   dispatcher,
                   &child,
-                  &LifecycleEventCtx::Delete { unexpected: true },
+                  &LifecycleEventCtx::Destroy { unexpected: true },
                );
             }
             //-----------------------
@@ -442,7 +477,7 @@ impl Dispatcher {
                Self::emit_inner_lifecycle(
                   dispatcher,
                   &child,
-                  &LifecycleEventCtx::Delete { unexpected: true },
+                  &LifecycleEventCtx::Destroy { unexpected: true },
                );
             }
             //-----------------------
@@ -519,7 +554,7 @@ impl Dispatcher {
                Self::emit_inner_lifecycle(
                   dispatcher,
                   &child,
-                  &LifecycleEventCtx::Delete { unexpected: true },
+                  &LifecycleEventCtx::Destroy { unexpected: true },
                );
             }
             //-----------------------
@@ -596,7 +631,7 @@ impl Dispatcher {
                Self::emit_inner_lifecycle(
                   dispatcher,
                   &child,
-                  &LifecycleEventCtx::Delete { unexpected: true },
+                  &LifecycleEventCtx::Destroy { unexpected: true },
                );
             }
             //-----------------------
@@ -671,7 +706,7 @@ impl Dispatcher {
                Self::emit_inner_lifecycle(
                   dispatcher,
                   &child,
-                  &LifecycleEventCtx::Delete { unexpected: true },
+                  &LifecycleEventCtx::Destroy { unexpected: true },
                );
             }
             //-----------------------

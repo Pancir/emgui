@@ -2,6 +2,7 @@
 
 use crate::core::IWidget;
 use std::cell::RefCell;
+use std::fmt::Formatter;
 use std::rc::Weak;
 
 pub type KeyboardEventCtx = sim_run::KeyboardEvent;
@@ -25,11 +26,24 @@ pub enum LifecycleEventCtx {
    /// sending it somewhere else while interacting with the widget.
    SelfReference(Weak<RefCell<dyn IWidget>>),
 
-   /// The widget is scheduled to be deleted by dispatcher.
+   /// The widget is scheduled to be destroyed by dispatcher.
    ///
-   /// unexpected `true` means that the widget will be deleted in on incorrect situation,
+   /// unexpected `true` means that the widget will be destroyed in on incorrect situation,
    /// for example it can happen when dispatcher fails in an event and widget's children are lost.
-   Delete { unexpected: bool },
+   Destroy { unexpected: bool },
+}
+
+impl core::fmt::Debug for LifecycleEventCtx {
+   fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+      match self {
+         LifecycleEventCtx::SelfReference(_) => {
+            f.debug_tuple("LifecycleEventCtx::SelfReference").field(&"ref").finish()
+         }
+         LifecycleEventCtx::Destroy { unexpected } => {
+            f.debug_struct("LifecycleEventCtx::Destroy").field("unexpected", &unexpected).finish()
+         }
+      }
+   }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
