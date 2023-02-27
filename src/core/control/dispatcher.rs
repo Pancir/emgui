@@ -379,7 +379,28 @@ impl Dispatcher {
       };
       //--------------------------------------------------
       for child in &children {
-         Self::emit_inner_draw(dispatcher, &child, canvas, event, force);
+         if !is_full_redraw {
+            //---------------------------------
+            // # Safety
+            // It seems it is quite safe, we just read simple copiable variables.
+            // Just in case in debug mode we check availability.
+            debug_assert!(child.try_borrow_mut().is_ok());
+            let (child_rect, _transparent) = unsafe {
+               let internal = (*child.as_ptr()).internal();
+               let flags = internal.state_flags.get();
+               (internal.geometry.rect(), flags.contains(StateFlags::IS_TRANSPARENT))
+            };
+            //---------------------------------
+
+            if regions.iter().find(|v| child_rect.intersects(**v)).is_some() {
+               // println!("{:?}\n\n\t{:?}", regions, child_rect);
+               Self::emit_inner_draw(dispatcher, &child, canvas, event, force);
+            }
+
+            //---------------------------------
+         } else {
+            Self::emit_inner_draw(dispatcher, &child, canvas, event, force);
+         }
       }
       //--------------------------------------------------
       match child.try_borrow_mut() {
