@@ -158,7 +158,7 @@ impl Dispatcher {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 impl Dispatcher {
-   pub fn emit_layout(&mut self, env: &mut AppEnv, event: &LayoutEventCtx) {
+   pub fn emit_layout(&mut self, event: &LayoutEventCtx) {
       Self::emit_inner_layout(&mut self.inner, &self.root, event);
    }
 
@@ -209,25 +209,25 @@ impl Dispatcher {
       debug_assert!(child.try_borrow_mut().is_ok());
       let (flow, id) = unsafe {
          let internal = (*child.as_ptr()).internal();
-         (internal.control_flow.get(), internal.id)
+         (internal.state_flags.get(), internal.id)
       };
       //---------------------------------
       #[cfg(debug_assertions)]
       {
-         if flow.contains(ControlFlow::SELF_DELETE) {
+         if flow.contains(StateFlags::SELF_DELETE) {
             log::error!(
                "Not expected flag [{:?}] in [{:?}] with all flags: [{:?}]",
-               ControlFlow::SELF_DELETE,
+               StateFlags::SELF_DELETE,
                id,
                flow
             )
          }
       }
       //---------------------------------
-      let is_self_delete = flow.contains(ControlFlow::SELF_DELETE);
-      let is_self_update = flow.contains(ControlFlow::SELF_UPDATE);
-      let is_children_delete = flow.contains(ControlFlow::CHILDREN_DELETE);
-      let is_children_update = flow.contains(ControlFlow::CHILDREN_UPDATE);
+      let is_self_delete = flow.contains(StateFlags::SELF_DELETE);
+      let is_self_update = flow.contains(StateFlags::SELF_UPDATE);
+      let is_children_delete = flow.contains(StateFlags::CHILDREN_DELETE);
+      let is_children_update = flow.contains(StateFlags::CHILDREN_UPDATE);
       let is_continue =
          is_self_delete || is_self_update || is_children_delete || is_children_update;
 
@@ -244,8 +244,8 @@ impl Dispatcher {
                // Only root widget can have self delete flag and it is should be
                // processed by this function caller, so if it is not deletes we
                // just assume that it is not necessary so, the flag is cleared.
-               internal.control_flow.get_mut().remove(ControlFlow::SELF_DELETE);
-               internal.control_flow.get_mut().remove(ControlFlow::SELF_UPDATE);
+               internal.state_flags.get_mut().remove(StateFlags::SELF_DELETE);
+               internal.state_flags.get_mut().remove(StateFlags::SELF_UPDATE);
                child.emit_update(event);
             }
 
@@ -265,9 +265,9 @@ impl Dispatcher {
             // It seems it is quite safe, we just read simple copiable variables.
             // Just in case in debug mode we check availability.
             debug_assert!(child.try_borrow_mut().is_ok());
-            let flow = unsafe { (*child.as_ptr()).internal().control_flow.get() };
+            let flow = unsafe { (*child.as_ptr()).internal().state_flags.get() };
             //---------------------------------
-            if !flow.contains(ControlFlow::SELF_DELETE) {
+            if !flow.contains(StateFlags::SELF_DELETE) {
                return true;
             }
             //---------------------------------
@@ -294,11 +294,11 @@ impl Dispatcher {
       match child.try_borrow_mut() {
          Ok(mut child) => {
             let internal = child.internal_mut();
-            let f = internal.control_flow.get_mut();
-            f.remove(ControlFlow::SELF_UPDATE);
-            f.remove(ControlFlow::SELF_DELETE);
-            f.remove(ControlFlow::CHILDREN_UPDATE);
-            f.remove(ControlFlow::CHILDREN_DELETE);
+            let f = internal.state_flags.get_mut();
+            f.remove(StateFlags::SELF_UPDATE);
+            f.remove(StateFlags::SELF_DELETE);
+            f.remove(StateFlags::CHILDREN_UPDATE);
+            f.remove(StateFlags::CHILDREN_DELETE);
             internal.set_children(children, id);
          }
          Err(e) => {
@@ -346,12 +346,12 @@ impl Dispatcher {
       debug_assert!(child.try_borrow_mut().is_ok());
       let (flow, id) = unsafe {
          let internal = (*child.as_ptr()).internal();
-         (internal.control_flow.get(), internal.id)
+         (internal.state_flags.get(), internal.id)
       };
       //---------------------------------
-      let is_self_draw = flow.contains(ControlFlow::SELF_DRAW);
-      let is_children_draw = flow.contains(ControlFlow::CHILDREN_DRAW);
-      let is_visible = flow.contains(ControlFlow::IS_VISIBLE);
+      let is_self_draw = flow.contains(StateFlags::SELF_DRAW);
+      let is_children_draw = flow.contains(StateFlags::CHILDREN_DRAW);
+      let is_visible = flow.contains(StateFlags::IS_VISIBLE);
       let is_full_redraw = is_self_draw || force;
 
       if !(is_visible && (is_self_draw || is_children_draw)) {
@@ -365,7 +365,7 @@ impl Dispatcher {
             // TODO draw debug bounds frame
 
             if is_full_redraw {
-               internal.control_flow.get_mut().remove(ControlFlow::SELF_DRAW);
+               internal.state_flags.get_mut().remove(StateFlags::SELF_DRAW);
                child.emit_draw(canvas, event);
             }
 
@@ -385,9 +385,9 @@ impl Dispatcher {
       match child.try_borrow_mut() {
          Ok(mut child) => {
             let internal = child.internal_mut();
-            let f = internal.control_flow.get_mut();
-            f.remove(ControlFlow::SELF_DRAW);
-            f.remove(ControlFlow::CHILDREN_DRAW);
+            let f = internal.state_flags.get_mut();
+            f.remove(StateFlags::SELF_DRAW);
+            f.remove(StateFlags::CHILDREN_DRAW);
             internal.set_children(children, id);
             internal.set_regions(regions, id, true);
          }
@@ -434,10 +434,10 @@ impl Dispatcher {
       debug_assert!(child.try_borrow_mut().is_ok());
       let (id, flow, rect) = unsafe {
          let internal = (*child.as_ptr()).internal();
-         (internal.id, internal.control_flow.get(), internal.geometry.rect())
+         (internal.id, internal.state_flags.get(), internal.geometry.rect())
       };
       //---------------------------------
-      let is_enabled = flow.contains(ControlFlow::IS_ENABLED);
+      let is_enabled = flow.contains(StateFlags::IS_ENABLED);
       let is_inside = rect.is_inside(event.input.x, event.input.y);
 
       if !is_enabled {
@@ -513,10 +513,10 @@ impl Dispatcher {
       debug_assert!(child.try_borrow_mut().is_ok());
       let (id, flow, rect) = unsafe {
          let internal = (*child.as_ptr()).internal();
-         (internal.id, internal.control_flow.get(), internal.geometry.rect())
+         (internal.id, internal.state_flags.get(), internal.geometry.rect())
       };
       //---------------------------------
-      let is_enabled = flow.contains(ControlFlow::IS_ENABLED);
+      let is_enabled = flow.contains(StateFlags::IS_ENABLED);
       let is_inside = rect.is_inside(event.input.x, event.input.y);
 
       if !is_enabled {
@@ -590,10 +590,10 @@ impl Dispatcher {
       debug_assert!(child.try_borrow_mut().is_ok());
       let (id, flow, rect) = unsafe {
          let internal = (*child.as_ptr()).internal();
-         (internal.id, internal.control_flow.get(), internal.geometry.rect())
+         (internal.id, internal.state_flags.get(), internal.geometry.rect())
       };
       //---------------------------------
-      let is_enabled = flow.contains(ControlFlow::IS_ENABLED);
+      let is_enabled = flow.contains(StateFlags::IS_ENABLED);
       let is_inside = rect.is_inside(event.input.x, event.input.y);
 
       if !is_enabled {
@@ -667,10 +667,10 @@ impl Dispatcher {
       debug_assert!(child.try_borrow_mut().is_ok());
       let (id, flow) = unsafe {
          let internal = (*child.as_ptr()).internal();
-         (internal.id, internal.control_flow.get())
+         (internal.id, internal.state_flags.get())
       };
       //---------------------------------
-      let is_enabled = flow.contains(ControlFlow::IS_ENABLED);
+      let is_enabled = flow.contains(StateFlags::IS_ENABLED);
       if !is_enabled {
          return false;
       }
