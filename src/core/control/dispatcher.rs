@@ -108,6 +108,7 @@ impl Dispatcher {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 impl Dispatcher {
+   #[cfg_attr(feature = "trace-dispatcher", tracing::instrument(level = "trace", skip_all))]
    fn emit_inner_lifecycle(
       dispatcher: &mut InnerDispatcher,
       child: &Rc<RefCell<dyn IWidget>>,
@@ -158,6 +159,7 @@ impl Dispatcher {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 impl Dispatcher {
+   #[cfg_attr(feature = "trace-dispatcher", tracing::instrument(level = "trace", skip_all))]
    pub fn emit_layout(&mut self, event: &LayoutEventCtx) {
       Self::emit_inner_layout(&mut self.inner, &self.root, event);
    }
@@ -193,6 +195,7 @@ impl Dispatcher {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 impl Dispatcher {
+   #[cfg_attr(feature = "trace-dispatcher", tracing::instrument(level = "trace", skip_all))]
    pub fn emit_update(&mut self, env: &mut AppEnv, event: &UpdateEvent) {
       Self::emit_inner_update(&mut self.inner, &self.root, &UpdateEventCtx { env, data: event });
    }
@@ -322,6 +325,7 @@ impl Dispatcher {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 impl Dispatcher {
+   #[cfg_attr(feature = "trace-dispatcher", tracing::instrument(level = "trace", skip_all))]
    pub fn emit_draw(&mut self, env: &mut AppEnv, canvas: &mut Canvas, force: bool) {
       let ev = DrawEventCtx { env, region: None };
       if !force {
@@ -485,6 +489,7 @@ impl Dispatcher {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 impl Dispatcher {
+   #[cfg_attr(feature = "trace-dispatcher", tracing::instrument(level = "trace", skip_all))]
    pub fn emit_mouse_move(&mut self, event: &MouseMoveEventCtx) -> bool {
       Self::emit_inner_mouse_move(&mut self.inner, &self.root, event)
    }
@@ -558,6 +563,7 @@ impl Dispatcher {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 impl Dispatcher {
+   #[cfg_attr(feature = "trace-dispatcher", tracing::instrument(level = "trace", skip_all))]
    pub fn emit_mouse_button(&mut self, event: &MouseButtonsEventCtx) -> bool {
       Self::emit_inner_mouse_button(&mut self.inner, &self.root, event)
    }
@@ -629,6 +635,7 @@ impl Dispatcher {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 impl Dispatcher {
+   #[cfg_attr(feature = "trace-dispatcher", tracing::instrument(level = "trace", skip_all))]
    pub fn emit_mouse_wheel(&mut self, event: &MouseWheelEventCtx) -> bool {
       Self::emit_inner_mouse_wheel(&mut self.inner, &self.root, event)
    }
@@ -700,6 +707,7 @@ impl Dispatcher {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 impl Dispatcher {
+   #[cfg_attr(feature = "trace-dispatcher", tracing::instrument(level = "trace", skip_all))]
    pub fn emit_keyboard(&mut self, event: &KeyboardEventCtx) -> bool {
       Self::emit_inner_keyboard(&mut self.inner, &self.root, event)
    }

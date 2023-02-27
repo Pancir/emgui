@@ -5,11 +5,18 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+default = []
+trace-dispatcher = ["tracing"]
+trace-widget = ["tracing"]
+
 [dependencies]
 anyhow = "1.0"
 bitflags = "1.3"
 log = "0.4"
 smallvec = "1.10"
+
+tracing = { version = "0.1", optional = true }
 
 sim_run = { path = "../sim-run", package = "sim_run" }
 sim_draw = { path = "../sim-draw", package = "sim_draw" }
