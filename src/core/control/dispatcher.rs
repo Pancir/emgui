@@ -365,6 +365,8 @@ impl Dispatcher {
          Ok(mut child) => {
             let internal = child.internal_mut();
 
+            // TODO draw debug bounds frame
+
             if is_full_redraw {
                internal.control_flow.get_mut().remove(ControlFlow::SELF_DRAW);
                child.emit_draw(canvas, event);
