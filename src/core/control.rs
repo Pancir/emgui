@@ -65,7 +65,7 @@ bitflags! {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub(crate) type ChildrenVec = SmallVec<[Rc<RefCell<dyn IWidget>>; STATIC_CHILD_NUM]>;
-pub(crate) type RegionsVec = SmallVec<[Rect<f32>; STATIC_REGIONS_NUM]>;
+pub(crate) type RegionsVec = SmallVec<[(WidgetId, Rect<f32>); STATIC_REGIONS_NUM]>;
 
 pub struct Internal {
    parent: Option<Weak<RefCell<dyn IWidget>>>,
@@ -119,7 +119,7 @@ impl Internal {
                let mut bor = p.borrow_mut();
                let internal = bor.internal_mut();
                internal.state_flags.get_mut().set(StateFlags::CHILDREN_DRAW, true);
-               internal.draw_regions.get_mut().push(internal.geometry.rect())
+               internal.draw_regions.get_mut().push((self.id, internal.geometry.rect()));
             }
          }
       }

@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /// Unique within application instance widget id.
-#[derive(Copy, Clone, Debug, Hash, PartialEq)]
+#[derive(Copy, Clone, Debug, Hash)]
 pub struct WidgetId((usize, &'static str));
 
 impl WidgetId {
@@ -34,6 +34,12 @@ impl WidgetId {
 
    pub fn is_valid(self) -> bool {
       self != Self::INVALID
+   }
+}
+
+impl PartialEq for WidgetId {
+   fn eq(&self, other: &Self) -> bool {
+      self.0 == other.0
    }
 }
 

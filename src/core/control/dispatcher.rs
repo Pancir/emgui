@@ -355,17 +355,13 @@ impl Dispatcher {
          return;
       }
       //--------------------------------------------------
+      if is_self_draw {
+         Self::emit_inner_draw_full(dispatcher, &child, canvas, event);
+         return;
+      }
+      //--------------------------------------------------
       let (children, regions) = match child.try_borrow_mut() {
          Ok(mut child) => {
-            let internal = child.internal_mut();
-
-            // TODO draw debug bounds frame
-
-            if is_self_draw {
-               internal.state_flags.get_mut().remove(StateFlags::SELF_DRAW);
-               child.emit_draw(canvas, event);
-            }
-
             let internal = child.internal_mut();
             (internal.take_children(id), internal.take_regions(id))
          }
@@ -375,32 +371,25 @@ impl Dispatcher {
          }
       };
       //--------------------------------------------------
-      if !is_self_draw {
-         for child in &children {
-            //---------------------------------
-            // # Safety
-            // It seems it is quite safe, we just read simple copiable variables.
-            // Just in case in debug mode we check availability.
-            debug_assert!(child.try_borrow_mut().is_ok());
-            let (child_rect, flags) = unsafe {
-               let internal = (*child.as_ptr()).internal();
-               (internal.geometry.rect(), internal.state_flags.get())
-            };
-            //---------------------------------
+      for child in &children {
+         //---------------------------------
+         // # Safety
+         // It seems it is quite safe, we just read simple copiable variables.
+         // Just in case in debug mode we check availability.
+         debug_assert!(child.try_borrow_mut().is_ok());
+         let (child_rect, child_id, flags) = unsafe {
+            let internal = (*child.as_ptr()).internal();
+            (internal.geometry.rect(), internal.id, internal.state_flags.get())
+         };
+         //---------------------------------
 
-            if regions.iter().find(|v| child_rect.intersects(**v)).is_some() {
-               // println!("{:?}\n\n\t{:?}", regions, child_rect);
-               Self::emit_inner_draw(dispatcher, &child, canvas, event);
-            }
+         if regions.iter().any(|v| v.0 == child_id) {
+            println!("{:?}\n  {:?} : {:?}\n", regions, child_id, child_rect);
+            Self::emit_inner_draw(dispatcher, &child, canvas, event);
+         }
 
-            //---------------------------------
-         }
-      } else {
-         for child in &children {
-            Self::emit_inner_draw_full(dispatcher, &child, canvas, event);
-         }
+         //---------------------------------
       }
-
       //--------------------------------------------------
       match child.try_borrow_mut() {
          Ok(mut child) => {
