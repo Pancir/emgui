@@ -50,11 +50,16 @@ bitflags! {
       /// Visible state.
       const IS_VISIBLE = 1<<6;
 
-      /// Visible state.
+      /// Set if interaction events are desired like mouse and keyboard ones..
       const IS_ENABLED = 1<<7;
 
-      /// Visible state.
+      /// Set if background has transparent pixels.
       const IS_TRANSPARENT = 1<<8;
+
+      //-----------------------------
+
+      /// It is set when mouse is over the widgets rectangle.
+      const IS_OVER = 1<<9;
 
       //-----------------------------
 

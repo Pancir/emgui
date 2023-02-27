@@ -257,6 +257,7 @@ mod tests {
    #[test]
    fn sizes() {
       dbg!(std::mem::size_of::<PushButton<PushButtonHandler>>());
+      dbg!(std::mem::size_of::<Widget<PushButton<PushButtonHandler>>>());
    }
 }
 

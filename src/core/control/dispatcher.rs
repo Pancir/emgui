@@ -517,6 +517,7 @@ impl Dispatcher {
       }
 
       // TODO optimization, probably a parameter "mouse tracking" may as draw/update way.
+      // TODO Enter/Leave events.
       //--------------------------------------------------
       let children = match child.try_borrow_mut() {
          Ok(mut child) => child.internal_mut().take_children(id),
@@ -777,6 +778,7 @@ impl Dispatcher {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 impl Dispatcher {
+   #[cfg_attr(feature = "trace-dispatcher", tracing::instrument(level = "trace", skip_all))]
    fn inform_lost_children(
       dispatcher: &mut InnerDispatcher,
       children: &[Rc<RefCell<dyn IWidget>>],

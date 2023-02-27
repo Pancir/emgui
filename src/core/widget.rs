@@ -95,11 +95,20 @@ pub struct WidgetVt<D> {
 
    pub on_lifecycle: fn(w: &mut D, &LifecycleEventCtx),
    pub on_layout: fn(w: &mut D, &LayoutEventCtx),
+
    pub on_update: fn(w: &mut D, &UpdateEventCtx),
    pub on_draw: fn(w: &mut D, &mut Canvas, &DrawEventCtx),
+   //-------------------------------------------------
+   /// An event is sent to the widget when the mouse cursor enters the widget.
+   pub on_enter: fn(w: &mut D),
+
+   /// A leave event is sent to the widget when the mouse cursor leaves the widget.
+   pub on_leave: fn(w: &mut D),
+   //-------------------------------------------------
    pub on_mouse_move: fn(w: &mut D, &MouseMoveEventCtx) -> bool,
    pub on_mouse_button: fn(w: &mut D, &MouseButtonsEventCtx) -> bool,
    pub on_mouse_wheel: fn(w: &mut D, &MouseWheelEventCtx) -> bool,
+
    pub on_keyboard: fn(w: &mut D, &KeyboardEventCtx) -> bool,
 }
 
@@ -129,13 +138,20 @@ where
          vtable: WidgetVt {
             on_visible: |_, _| {},
             on_disable: |_, _| {},
+            //-------------------------------------------------
             on_lifecycle: |_, _| {},
             on_layout: |_, _| {},
+            //-------------------------------------------------
             on_update: |_, _| {},
             on_draw: Self::on_draw,
+            //-------------------------------------------------
+            on_enter: |_| {},
+            on_leave: |_| {},
+            //-------------------------------------------------
             on_mouse_move: |_, _| false,
             on_mouse_button: |_, _| false,
             on_mouse_wheel: |_, _| false,
+            //-------------------------------------------------
             on_keyboard: |_, _| false,
          },
          internal: Internal::new::<Self>(),
@@ -366,6 +382,7 @@ mod tests {
 
    #[test]
    fn sizes() {
+      dbg!(std::mem::size_of::<WidgetVt<()>>());
       dbg!(std::mem::size_of::<Widget<()>>());
    }
 }
