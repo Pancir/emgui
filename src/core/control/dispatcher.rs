@@ -5,8 +5,9 @@ use crate::core::events::{
    DrawEventCtx, KeyboardEventCtx, LayoutEventCtx, LifecycleEventCtx, MouseButtonsEventCtx,
    MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
 };
-use crate::core::{IWidget, Widget};
+use crate::core::{AppEnv, IWidget, Widget};
 use sim_draw::Canvas;
+use sim_run::UpdateEvent;
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -107,10 +108,6 @@ impl Dispatcher {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 impl Dispatcher {
-   pub fn emit_lifecycle(&mut self, event: &LifecycleEventCtx) {
-      Self::emit_inner_lifecycle(&mut self.inner, &self.root, event);
-   }
-
    fn emit_inner_lifecycle(
       dispatcher: &mut InnerDispatcher,
       child: &Rc<RefCell<dyn IWidget>>,
@@ -161,7 +158,7 @@ impl Dispatcher {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 impl Dispatcher {
-   pub fn emit_layout(&mut self, event: &LayoutEventCtx) {
+   pub fn emit_layout(&mut self, env: &mut AppEnv, event: &LayoutEventCtx) {
       Self::emit_inner_layout(&mut self.inner, &self.root, event);
    }
 
@@ -196,8 +193,8 @@ impl Dispatcher {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 impl Dispatcher {
-   pub fn emit_update(&mut self, event: &UpdateEventCtx) {
-      Self::emit_inner_update(&mut self.inner, &self.root, event);
+   pub fn emit_update(&mut self, env: &mut AppEnv, event: &UpdateEvent) {
+      Self::emit_inner_update(&mut self.inner, &self.root, &UpdateEventCtx { env, data: event });
    }
 
    fn emit_inner_update(
@@ -331,8 +328,8 @@ impl Dispatcher {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 impl Dispatcher {
-   pub fn emit_draw(&mut self, canvas: &mut Canvas, force: bool) {
-      Self::emit_inner_draw(&mut self.inner, &self.root, canvas, &DrawEventCtx {}, force);
+   pub fn emit_draw(&mut self, env: &mut AppEnv, canvas: &mut Canvas, force: bool) {
+      Self::emit_inner_draw(&mut self.inner, &self.root, canvas, &DrawEventCtx { env }, force);
    }
 
    fn emit_inner_draw(

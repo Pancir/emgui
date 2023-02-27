@@ -1,4 +1,5 @@
 use crate::core::Theme;
+use anyhow::bail;
 use std::any::Any;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -9,13 +10,10 @@ use std::any::Any;
 /// so the access to it is faster than access to the user data.
 ///
 /// The user data is stored in the vector and every time
-/// you request the one the vector is reverse iterated to find it.
+/// you request the one the vector is iterated to find it.
 ///
-/// Because it mostly designed to use in trees/gui/widgets,
-/// the reverse iteration seems more effective as there is
-/// big probability you need data from the end of the vector.
-///
-/// Limitation: the struct can hold only one instance of the same type.
+/// # Limitation
+/// the struct can hold only one instance of the same type.
 pub struct AppEnv {
    theme: Theme,
    app_data: Box<dyn Any>,
@@ -49,6 +47,7 @@ impl AppEnv {
 impl AppEnv {
    /// Remove user data.
    pub fn remove_data<USR: 'static>(&mut self) {
+      // retain is not used to stop iterating when the type is found.
       let idx = self.user_data.iter().position(|v| (*v).downcast_ref::<USR>().is_some());
       if let Some(idx) = idx {
          self.user_data.remove(idx);
@@ -59,12 +58,9 @@ impl AppEnv {
    ///
    /// # Return
    /// error if data with the specified type has already been inserted before.
-   pub fn insert_data<USR: 'static>(&mut self, usr: USR) -> std::result::Result<(), String> {
+   pub fn insert_data<USR: 'static>(&mut self, usr: USR) -> anyhow::Result<()> {
       if self.data::<USR>().is_some() {
-         return Err(format!(
-            "Type: [{}] has already been inserted before",
-            std::any::type_name::<USR>()
-         ));
+         bail!("Type: [{}] has already been inserted before", std::any::type_name::<USR>());
       }
 
       self.user_data.push(Box::new(usr));
@@ -73,7 +69,7 @@ impl AppEnv {
 
    /// Get user data by the specified type.
    pub fn data<USR: 'static>(&self) -> Option<&USR> {
-      for data in self.user_data.iter().rev() {
+      for data in &self.user_data {
          if let Some(d) = data.downcast_ref::<USR>() {
             return Some(d);
          }
@@ -83,7 +79,7 @@ impl AppEnv {
 
    /// Get mut user data by the specified type.
    pub fn data_mut<USR: 'static>(&mut self) -> Option<&mut USR> {
-      for data in self.user_data.iter_mut().rev() {
+      for data in &mut self.user_data {
          if let Some(d) = data.downcast_mut::<USR>() {
             return Some(d);
          }
