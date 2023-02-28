@@ -504,15 +504,15 @@ impl Dispatcher {
       // It seems it is quite safe, we just read simple copiable variables.
       // Just in case in debug mode we check availability.
       debug_assert!(child.try_borrow_mut().is_ok());
-      let (id, flow, rect) = unsafe {
+      let (id, state_flags, rect) = unsafe {
          let internal = (*child.as_ptr()).internal();
          (internal.id, internal.state_flags.get(), internal.geometry.rect())
       };
       //---------------------------------
-      let is_enabled = flow.contains(StateFlags::IS_ENABLED);
+      let is_enabled = state_flags.contains(StateFlags::IS_ENABLED);
       let is_inside = rect.is_inside(event.input.x, event.input.y);
 
-      if !is_enabled {
+      if !is_enabled || !is_inside {
          return is_inside;
       }
 
