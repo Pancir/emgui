@@ -59,7 +59,7 @@ bitflags! {
       //-----------------------------
 
       // It is set when mouse is over the widgets rectangle.
-      // const IS_OVER = 1<<9;
+      const IS_OVER = 1<<9;
 
       //-----------------------------
 

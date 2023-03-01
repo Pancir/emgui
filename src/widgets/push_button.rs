@@ -202,11 +202,13 @@ where
    pub fn on_mouse_enter(w: &mut Widget<PushButton<H>>) {
       let mut d = w.derive_mut();
       d.state.is_hover = true;
+      w.request_draw();
    }
 
    pub fn on_mouse_leave(w: &mut Widget<PushButton<H>>) {
       let mut d = w.derive_mut();
       d.state.is_hover = false;
+      w.request_draw();
    }
 
    pub fn on_mouse_button(w: &mut Widget<PushButton<H>>, event: &MouseButtonsEventCtx) -> bool {

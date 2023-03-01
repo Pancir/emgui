@@ -532,31 +532,23 @@ impl Dispatcher {
    #[cfg_attr(feature = "trace-dispatcher", tracing::instrument(level = "trace", skip_all))]
    pub fn emit_mouse_move(&mut self, event: &MouseMoveEventCtx) -> bool {
       //--------------------------------------------------
-      let accepted = if let Some(wmo) = &self.inner.widget_mouse_over {
+      if let Some(wmo) = &self.inner.widget_mouse_over {
          if let Some(w) = wmo.upgrade() {
             let mut widget = w.borrow_mut();
-            let is_inside =
-               widget.internal().geometry.rect().is_inside(event.input.x, event.input.y);
+            let mut internal = widget.internal_mut();
+            let rect = internal.geometry.rect();
+            let is_inside = rect.is_inside(event.input.x, event.input.y);
 
             if !is_inside {
+               internal.state_flags.get_mut().remove(StateFlags::IS_OVER);
                widget.emit_mouse_leave();
                self.inner.widget_mouse_over = None;
-               false
-            } else {
-               widget.emit_mouse_move(event)
+               return true;
             }
-         } else {
-            false
          }
-      } else {
-         false
-      };
-      //--------------------------------------------------
-      if !accepted {
-         Self::emit_inner_mouse_move(&mut self.inner, &self.root, event)
-      } else {
-         false
       }
+      //--------------------------------------------------
+      Self::emit_inner_mouse_move(&mut self.inner, &self.root, event)
       //--------------------------------------------------
    }
 
@@ -603,12 +595,16 @@ impl Dispatcher {
       //--------------------------------------------------
       match input_child.try_borrow_mut() {
          Ok(mut child) => {
-            child.internal_mut().set_children(children, id);
-            child.emit_mouse_enter();
-            dispatcher.widget_mouse_over = Some(Rc::downgrade(input_child));
-            if !accepted && child.emit_mouse_move(event) {
-               accepted = true;
+            let mut internal = child.internal_mut();
+            internal.set_children(children, id);
+            if !accepted {
+               if !state_flags.contains(StateFlags::IS_OVER) {
+                  internal.state_flags.get_mut().set(StateFlags::IS_OVER, true);
+                  child.emit_mouse_enter();
+                  dispatcher.widget_mouse_over = Some(Rc::downgrade(input_child));
+               }
             }
+            accepted = true;
          }
          Err(e) => {
             //-----------------------
