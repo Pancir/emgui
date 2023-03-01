@@ -13,7 +13,7 @@ pub type MouseWheelEventCtx = sim_run::MouseWheelEvent;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub enum LifecycleEventCtx {
+pub enum LifecycleState {
    /// When widget is placed into the heap a reference becomes available.
    ///
    /// You should not use it in the widget while an event is processed,
@@ -29,17 +29,21 @@ pub enum LifecycleEventCtx {
    Destroy { unexpected: bool },
 }
 
-impl core::fmt::Debug for LifecycleEventCtx {
+impl core::fmt::Debug for LifecycleState {
    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
       match self {
-         LifecycleEventCtx::SelfReference(_) => {
+         Self::SelfReference(_) => {
             f.debug_tuple("LifecycleEventCtx::SelfReference").field(&"ref").finish()
          }
-         LifecycleEventCtx::Destroy { unexpected } => {
+         Self::Destroy { unexpected } => {
             f.debug_struct("LifecycleEventCtx::Destroy").field("unexpected", &unexpected).finish()
          }
       }
    }
+}
+
+pub struct LifecycleEventCtx {
+   pub state: LifecycleState,
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

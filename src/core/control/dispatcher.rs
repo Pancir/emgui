@@ -2,8 +2,8 @@ use super::*;
 
 use crate::core::control::runtime::Runtime;
 use crate::core::events::{
-   DrawEventCtx, KeyboardEventCtx, LayoutEventCtx, LifecycleEventCtx, MouseButtonsEventCtx,
-   MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
+   DrawEventCtx, KeyboardEventCtx, LayoutEventCtx, LifecycleEventCtx, LifecycleState,
+   MouseButtonsEventCtx, MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
 };
 use crate::core::{AppEnv, IWidget, Widget};
 use sim_draw::Canvas;
@@ -79,7 +79,7 @@ impl Dispatcher {
       Self::emit_inner_lifecycle(
          dispatcher,
          &child,
-         &LifecycleEventCtx::Destroy { unexpected: false },
+         &LifecycleEventCtx { state: LifecycleState::Destroy { unexpected: false } },
       );
    }
 }
@@ -196,8 +196,23 @@ impl Dispatcher {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 impl Dispatcher {
+   /// This event check if there are widgets to delete and perform deleting.
    #[cfg_attr(feature = "trace-dispatcher", tracing::instrument(level = "trace", skip_all))]
-   pub fn emit_update(&mut self, env: &mut AppEnv, event: &UpdateEvent) {
+   fn emit_check_delete(&mut self, _env: &mut AppEnv) {
+      Self::emit_inner_check_delete(&mut self.inner, &self.root);
+   }
+
+   fn emit_inner_check_delete(dispatcher: &mut InnerDispatcher, child: &Rc<RefCell<dyn IWidget>>) {}
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+impl Dispatcher {
+   /// This event should be called every program loop and actually will
+   /// not perform heavy operations if they are not actually needed.
+   #[cfg_attr(feature = "trace-dispatcher", tracing::instrument(level = "trace", skip_all))]
+   pub fn emit_tick(&mut self, env: &mut AppEnv, event: &UpdateEvent) {
+      Self::emit_inner_check_delete(&mut self.inner, &self.root);
       Self::emit_inner_update(&mut self.inner, &self.root, &UpdateEventCtx { env, data: event });
    }
 
@@ -278,7 +293,7 @@ impl Dispatcher {
             Self::emit_inner_lifecycle(
                dispatcher,
                &child,
-               &LifecycleEventCtx::Destroy { unexpected: false },
+               &LifecycleEventCtx { state: LifecycleState::Destroy { unexpected: false } },
             );
             //---------------------------------
             false
@@ -817,7 +832,7 @@ impl Dispatcher {
          Self::emit_inner_lifecycle(
             dispatcher,
             &child,
-            &LifecycleEventCtx::Destroy { unexpected: true },
+            &LifecycleEventCtx { state: LifecycleState::Destroy { unexpected: true } },
          );
       }
    }

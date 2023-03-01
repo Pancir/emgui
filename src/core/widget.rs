@@ -1,8 +1,8 @@
 use crate::core::control::Internal;
 use crate::core::derive::Derive;
 use crate::core::events::{
-   DrawEventCtx, KeyboardEventCtx, LayoutEventCtx, LifecycleEventCtx, MouseButtonsEventCtx,
-   MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
+   DrawEventCtx, KeyboardEventCtx, LayoutEventCtx, LifecycleEventCtx, LifecycleState,
+   MouseButtonsEventCtx, MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
 };
 use crate::core::{Geometry, WidgetId};
 use sim_draw::color::Rgba;
@@ -182,7 +182,10 @@ where
       let w = Rc::new(RefCell::new(self));
       let d = Rc::downgrade(&w);
       match w.try_borrow_mut() {
-         Ok(mut w) => (w.vtable.on_lifecycle)(&mut w, &LifecycleEventCtx::SelfReference(d)),
+         Ok(mut w) => (w.vtable.on_lifecycle)(
+            &mut w,
+            &LifecycleEventCtx { state: LifecycleState::SelfReference(d) },
+         ),
          Err(_) => {
             unreachable!()
          }
