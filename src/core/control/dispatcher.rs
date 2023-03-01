@@ -103,7 +103,7 @@ impl Dispatcher {
             }
             internal.set_children(children, internal.id)
          }
-         Err(e) => panic!("{}", e),
+         Err(e) => panic!("{:?}", e),
       }
    }
 }
@@ -130,7 +130,7 @@ impl Dispatcher {
       let children = match child.try_borrow_mut() {
          Ok(mut child) => child.internal_mut().take_children(id),
          Err(e) => {
-            log::error!("Can't borrow widget [{:?}] to process lifecycle event!\n\t{}", id, e);
+            log::error!("Can't borrow widget [{:?}] to process lifecycle event!\n\t{:?}", id, e);
             return;
          }
       };
@@ -148,7 +148,7 @@ impl Dispatcher {
          }
          Err(e) => {
             log::error!(
-               "Can't borrow widget [{:?}] to process lifecycle finalization! Children [{}] ARE LOST!\n\t{}",
+               "Can't borrow widget [{:?}] to process lifecycle finalization! Children [{}] ARE LOST!\n\t{:?}",
                id,
                children.len(),
                e
@@ -178,7 +178,7 @@ impl Dispatcher {
             child.internal_mut().take_children(id)
          }
          Err(e) => {
-            panic!("{}", e)
+            panic!("{:?}", e)
          }
       };
       //--------------------------------------------------
@@ -188,7 +188,7 @@ impl Dispatcher {
          }
       }
       //--------------------------------------------------
-      let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{}", e));
+      let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{:?}", e));
       let id = bor.id();
       bor.internal_mut().set_children(children, id);
    }
@@ -271,7 +271,7 @@ impl Dispatcher {
                Self::inform_lost_children(dispatcher, &children);
                //-----------------------
                log::error!(
-                  "Can't borrow widget [{:?}] to process delete finalization! Children [{}] ARE LOST!\n\t{}",
+                  "Can't borrow widget [{:?}] to process delete finalization! Children [{}] ARE LOST!\n\t{:?}",
                   id,
                   children.len(),
                   e
@@ -328,7 +328,7 @@ impl Dispatcher {
             child.internal_mut().take_children(id)
          }
          Err(e) => {
-            log::error!("Can't borrow widget [{:?}] to process update event!\n\t{}", id, e);
+            log::error!("Can't borrow widget [{:?}] to process update event!\n\t{:?}", id, e);
             return;
          }
       };
@@ -352,7 +352,7 @@ impl Dispatcher {
             Self::inform_lost_children(dispatcher, &children);
             //-----------------------
             log::error!(
-               "Can't borrow widget [{:?}] to process update finalization! Children [{}] ARE LOST!\n\t{}",
+               "Can't borrow widget [{:?}] to process update finalization! Children [{}] ARE LOST!\n\t{:?}",
                id,
                children.len(),
                e
@@ -411,7 +411,7 @@ impl Dispatcher {
             (internal.take_children(id), internal.take_regions(id))
          }
          Err(e) => {
-            log::error!("Can't borrow widget [{:?}] to process draw event!\n\t{}", id, e);
+            log::error!("Can't borrow widget [{:?}] to process draw event!\n\t{:?}", id, e);
             return;
          }
       };
@@ -450,7 +450,7 @@ impl Dispatcher {
             Self::inform_lost_children(dispatcher, &children);
             //-----------------------
             log::error!(
-               "Can't borrow widget [{:?}] to process draw finalization! Children [{}] ARE LOST!\n\t{}",
+               "Can't borrow widget [{:?}] to process draw finalization! Children [{}] ARE LOST!\n\t{:?}",
                id,
                children.len(),
                e
@@ -493,7 +493,7 @@ impl Dispatcher {
             internal.take_children(id)
          }
          Err(e) => {
-            log::error!("Can't borrow widget [{:?}] to process draw event!\n\t{}", id, e);
+            log::error!("Can't borrow widget [{:?}] to process draw event!\n\t{:?}", id, e);
             return;
          }
       };
@@ -515,7 +515,7 @@ impl Dispatcher {
             Self::inform_lost_children(dispatcher, &children);
             //-----------------------
             log::error!(
-               "Can't borrow widget [{:?}] to process draw finalization! Children [{}] ARE LOST!\n\t{}",
+               "Can't borrow widget [{:?}] to process draw finalization! Children [{}] ARE LOST!\n\t{:?}",
                id,
                children.len(),
                e
@@ -531,7 +531,6 @@ impl Dispatcher {
 impl Dispatcher {
    #[cfg_attr(feature = "trace-dispatcher", tracing::instrument(level = "trace", skip_all))]
    pub fn emit_mouse_move(&mut self, event: &MouseMoveEventCtx) -> bool {
-      let mut done = false;
       //--------------------------------------------------
       if let Some(wmo) = &self.inner.widget_mouse_over {
          if let Some(w) = wmo.upgrade() {
@@ -547,17 +546,7 @@ impl Dispatcher {
             //----------------------------------
             let is_inside = rect.is_inside(event.input.x, event.input.y);
 
-            if is_inside {
-               let accepted = Self::emit_inner_mouse_move(&mut self.inner, &w, event);
-               if accepted {
-                  let mut widget = w.borrow_mut();
-                  let internal = widget.internal_mut();
-
-                  internal.set_over(false);
-                  widget.emit_mouse_leave();
-               }
-               done = true;
-            } else {
+            if !is_inside {
                let mut widget = w.borrow_mut();
                let internal = widget.internal_mut();
 
@@ -568,11 +557,7 @@ impl Dispatcher {
          }
       }
       //--------------------------------------------------
-      if !done {
-         Self::emit_inner_mouse_move(&mut self.inner, &self.root, event)
-      } else {
-         false
-      }
+      Self::emit_inner_mouse_move(&mut self.inner, &self.root, event)
       //--------------------------------------------------
    }
 
@@ -597,14 +582,11 @@ impl Dispatcher {
       if !is_enabled || !is_inside {
          return false;
       }
-
-      // TODO optimization, probably a parameter "mouse tracking" maybe as draw/update way.
-      // TODO Enter/Leave events.
       //--------------------------------------------------
       let children = match input_child.try_borrow_mut() {
          Ok(mut child) => child.internal_mut().take_children(id),
          Err(e) => {
-            log::error!("Can't borrow widget [{:?}] to process mouse move event!\n\t{}", id, e);
+            log::error!("Can't borrow widget [{:?}] to process mouse move event!\n\t{:?}", id, e);
             return false;
          }
       };
@@ -624,8 +606,34 @@ impl Dispatcher {
             if !accepted {
                if !internal.is_over() {
                   internal.set_over(true);
-                  child.emit_mouse_enter();
+                  // child.emit_mouse_enter();
+                  // this is not needed anymore so, it is free from borrowing now
+                  // and the following code can be safely invoked.
+                  drop(child);
+
+                  if let Some(wmo) = &dispatcher.widget_mouse_over {
+                     if let Some(w) = wmo.upgrade() {
+                        let mut widget = w.borrow_mut();
+                        let internal = widget.internal_mut();
+
+                        internal.set_over(false);
+                        widget.emit_mouse_leave();
+                     }
+                  }
+
                   dispatcher.widget_mouse_over = Some(Rc::downgrade(input_child));
+
+                  // now enter mouse event is needed so, we again try to borrow.
+                  match input_child.try_borrow_mut() {
+                     Ok(mut child) => child.emit_mouse_enter(),
+                     Err(e) => {
+                        log::error!(
+                           "Can't borrow widget [{:?}] to process mouse enter! {:?}",
+                           id,
+                           e
+                        );
+                     }
+                  }
                }
             }
             accepted = true;
@@ -643,7 +651,7 @@ impl Dispatcher {
             );
          }
       };
-
+      //--------------------------------------------------
       accepted
    }
 }
@@ -681,7 +689,7 @@ impl Dispatcher {
       let children = match child.try_borrow_mut() {
          Ok(mut child) => child.internal_mut().take_children(id),
          Err(e) => {
-            log::error!("Can't borrow widget [{:?}] to process mouse button event!\n\t{}", id, e);
+            log::error!("Can't borrow widget [{:?}] to process mouse button event!\n\t{:?}", id, e);
             return false;
          }
       };
@@ -707,7 +715,7 @@ impl Dispatcher {
             Self::inform_lost_children(dispatcher, &children);
             //-----------------------
             log::error!(
-               "Can't borrow widget [{:?}] to process mouse button finalization! Children [{}] ARE LOST!\n\t{}",
+               "Can't borrow widget [{:?}] to process mouse button finalization! Children [{}] ARE LOST!\n\t{:?}",
                id,
                children.len(),
                e
@@ -752,7 +760,7 @@ impl Dispatcher {
       let children = match child.try_borrow_mut() {
          Ok(mut child) => child.internal_mut().take_children(id),
          Err(e) => {
-            log::error!("Can't borrow widget [{:?}] to process mouse wheel event!\n\t{}", id, e);
+            log::error!("Can't borrow widget [{:?}] to process mouse wheel event!\n\t{:?}", id, e);
             return false;
          }
       };
@@ -778,7 +786,7 @@ impl Dispatcher {
             Self::inform_lost_children(dispatcher, &children);
             //-----------------------
             log::error!(
-               "Can't borrow widget [{:?}] to process mouse wheel finalization! Children [{}] ARE LOST!\n\t{}",
+               "Can't borrow widget [{:?}] to process mouse wheel finalization! Children [{}] ARE LOST!\n\t{:?}",
                id,
                children.len(),
                e
@@ -821,7 +829,7 @@ impl Dispatcher {
       let children = match child.try_borrow_mut() {
          Ok(mut child) => child.internal_mut().take_children(id),
          Err(e) => {
-            log::error!("Can't borrow widget [{:?}] to process mouse wheel event!\n\t{}", id, e);
+            log::error!("Can't borrow widget [{:?}] to process mouse wheel event!\n\t{:?}", id, e);
             return false;
          }
       };
@@ -847,7 +855,7 @@ impl Dispatcher {
             Self::inform_lost_children(dispatcher, &children);
             //-----------------------
             log::error!(
-               "Can't borrow widget [{:?}] to process mouse wheel finalization! Children [{}] ARE LOST!\n\t{}",
+               "Can't borrow widget [{:?}] to process mouse wheel finalization! Children [{}] ARE LOST!\n\t{:?}",
                id,
                children.len(),
                e
