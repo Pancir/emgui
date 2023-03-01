@@ -317,7 +317,7 @@ impl Dispatcher {
          return;
       }
       //--------------------------------------------------
-      let mut children = match child.try_borrow_mut() {
+      let children = match child.try_borrow_mut() {
          Ok(mut child) => {
             if is_self_update {
                let internal = child.internal_mut();
@@ -531,24 +531,48 @@ impl Dispatcher {
 impl Dispatcher {
    #[cfg_attr(feature = "trace-dispatcher", tracing::instrument(level = "trace", skip_all))]
    pub fn emit_mouse_move(&mut self, event: &MouseMoveEventCtx) -> bool {
+      let mut done = false;
       //--------------------------------------------------
       if let Some(wmo) = &self.inner.widget_mouse_over {
          if let Some(w) = wmo.upgrade() {
-            let mut widget = w.borrow_mut();
-            let mut internal = widget.internal_mut();
-            let rect = internal.geometry.rect();
+            //----------------------------------
+            // # Safety
+            // It seems it is quite safe, we just read simple copiable variables.
+            // Just in case in debug mode we check availability.
+            debug_assert!(w.try_borrow_mut().is_ok());
+            let rect = unsafe {
+               let internal = (*w.as_ptr()).internal();
+               internal.geometry.rect()
+            };
+            //----------------------------------
             let is_inside = rect.is_inside(event.input.x, event.input.y);
 
-            if !is_inside {
-               internal.state_flags.get_mut().remove(StateFlags::IS_OVER);
+            if is_inside {
+               let accepted = Self::emit_inner_mouse_move(&mut self.inner, &w, event);
+               if accepted {
+                  let mut widget = w.borrow_mut();
+                  let internal = widget.internal_mut();
+
+                  internal.set_over(false);
+                  widget.emit_mouse_leave();
+               }
+               done = true;
+            } else {
+               let mut widget = w.borrow_mut();
+               let internal = widget.internal_mut();
+
+               internal.set_over(false);
                widget.emit_mouse_leave();
                self.inner.widget_mouse_over = None;
-               return true;
             }
          }
       }
       //--------------------------------------------------
-      Self::emit_inner_mouse_move(&mut self.inner, &self.root, event)
+      if !done {
+         Self::emit_inner_mouse_move(&mut self.inner, &self.root, event)
+      } else {
+         false
+      }
       //--------------------------------------------------
    }
 
@@ -595,11 +619,11 @@ impl Dispatcher {
       //--------------------------------------------------
       match input_child.try_borrow_mut() {
          Ok(mut child) => {
-            let mut internal = child.internal_mut();
+            let internal = child.internal_mut();
             internal.set_children(children, id);
             if !accepted {
-               if !state_flags.contains(StateFlags::IS_OVER) {
-                  internal.state_flags.get_mut().set(StateFlags::IS_OVER, true);
+               if !internal.is_over() {
+                  internal.set_over(true);
                   child.emit_mouse_enter();
                   dispatcher.widget_mouse_over = Some(Rc::downgrade(input_child));
                }

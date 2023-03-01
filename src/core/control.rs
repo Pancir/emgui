@@ -208,6 +208,16 @@ impl Internal {
       f.set(StateFlags::IS_TRANSPARENT, state);
       self.state_flags.set(f);
    }
+
+   pub(crate) fn is_over(&self) -> bool {
+      self.state_flags.get().contains(StateFlags::IS_OVER)
+   }
+
+   pub(crate) fn set_over(&self, state: bool) {
+      let mut f = self.state_flags.get();
+      f.set(StateFlags::IS_OVER, state);
+      self.state_flags.set(f);
+   }
 }
 
 impl Internal {

@@ -147,8 +147,9 @@ where
             on_update: |_, _| {},
             on_draw: Self::on_draw,
             //-------------------------------------------------
-            on_mouse_enter: |_| {},
-            on_mouse_leave: |_| {},
+            // TODO remove draw as it is for testing
+            on_mouse_enter: |w| w.request_draw(),
+            on_mouse_leave: |w| w.request_draw(),
             //-------------------------------------------------
             on_mouse_move: |_, _| false,
             on_mouse_button: |_, _| false,
@@ -388,7 +389,12 @@ where
    D: Derive,
 {
    fn on_draw(&mut self, canvas: &mut Canvas, _event: &DrawEventCtx) {
-      canvas.set_paint(Paint::new_color(self.internal.background_color));
+      // TODO remove over as it is for testing
+      if self.internal.is_over() {
+         canvas.set_paint(Paint::new_color(Rgba::RED));
+      } else {
+         canvas.set_paint(Paint::new_color(self.internal.background_color));
+      }
       canvas.fill(&self.internal.geometry.rect());
    }
 }
