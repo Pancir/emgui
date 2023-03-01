@@ -426,10 +426,10 @@ impl Dispatcher {
          return;
       }
       //--------------------------------------------------
-      let (children, regions) = match child.try_borrow_mut() {
+      let children = match child.try_borrow_mut() {
          Ok(mut child) => {
             let internal = child.internal_mut();
-            (internal.take_children(id), internal.take_regions(id))
+            internal.take_children(id)
          }
          Err(e) => {
             log::error!("Can't borrow widget [{:?}] to process draw event!\n\t{:?}", id, e);
@@ -463,7 +463,6 @@ impl Dispatcher {
             let f = internal.state_flags.get_mut();
             f.remove(StateFlags::CHILDREN_DRAW);
             internal.set_children(children, id);
-            internal.set_regions(regions, id, true);
          }
          Err(e) => {
             //-----------------------

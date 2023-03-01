@@ -8,10 +8,9 @@ pub use dispatcher::*;
 
 use crate::core::control::runtime::Runtime;
 use crate::core::{Geometry, IWidget, WidgetId};
-use crate::defines::{STATIC_CHILD_NUM, STATIC_REGIONS_NUM};
+use crate::defines::STATIC_CHILD_NUM;
 use bitflags::bitflags;
 use sim_draw::color::Rgba;
-use sim_draw::m::Rect;
 use smallvec::SmallVec;
 use std::cell::{Cell, RefCell};
 use std::rc::{Rc, Weak};
@@ -73,7 +72,6 @@ bitflags! {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub(crate) type ChildrenVec = SmallVec<[Rc<RefCell<dyn IWidget>>; STATIC_CHILD_NUM]>;
-pub(crate) type RegionsVec = SmallVec<[(WidgetId, Rect<f32>); STATIC_REGIONS_NUM]>;
 
 pub struct Internal {
    parent: Option<Weak<RefCell<dyn IWidget>>>,
@@ -84,9 +82,6 @@ pub struct Internal {
    //--------------------
    runtime: Option<Runtime>,
    state_flags: Cell<StateFlags>,
-   //--------------------
-   draw_regions_busy: Cell<WidgetId>,
-   draw_regions: RefCell<RegionsVec>,
    //--------------------
    children_busy: Cell<WidgetId>,
    children: RefCell<ChildrenVec>,
@@ -104,9 +99,6 @@ impl Internal {
          //--------------------
          runtime: None,
          state_flags: Cell::new(StateFlags::INIT),
-         //--------------------
-         draw_regions_busy: Cell::new(WidgetId::INVALID),
-         draw_regions: Default::default(),
          //--------------------
          children_busy: Cell::new(WidgetId::INVALID),
          children: Default::default(),
@@ -127,8 +119,6 @@ impl Internal {
                let mut bor = p.borrow_mut();
                let internal = bor.internal_mut();
                internal.state_flags.get_mut().set(StateFlags::CHILDREN_DRAW, true);
-               // TODO Regions and IDs are not used at this moment.
-               internal.draw_regions.get_mut().push((self.id, internal.geometry.rect()));
             }
          }
       }
@@ -230,36 +220,6 @@ impl Internal {
       let mut f = self.state_flags.get();
       f.set(StateFlags::HAS_MOUSE_TRACKING, state);
       self.state_flags.set(f);
-   }
-}
-
-impl Internal {
-   #[track_caller]
-   pub(crate) fn take_regions(&mut self, id: WidgetId) -> RegionsVec {
-      debug_assert!(
-         !self.draw_regions_busy.get().is_valid(),
-         "[{:?}] regions taken by [{:?}]",
-         id,
-         self.draw_regions_busy.get()
-      );
-      if !self.draw_regions_busy.get().is_valid() {
-         self.draw_regions_busy.set(id);
-      }
-      std::mem::take(self.draw_regions.get_mut())
-   }
-
-   #[track_caller]
-   pub(crate) fn set_regions(&mut self, mut ch: RegionsVec, id: WidgetId, clear: bool) {
-      debug_assert!(
-         self.draw_regions_busy.get().is_valid(),
-         "[{:?}] attempt to set regions into non free slot",
-         id
-      );
-      *self.draw_regions.get_mut() = std::mem::take(&mut ch);
-      self.draw_regions_busy.set(WidgetId::INVALID);
-      if clear {
-         self.draw_regions.get_mut().clear();
-      }
    }
 }
 
