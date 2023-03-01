@@ -10,6 +10,7 @@ use sim_draw::Canvas;
 use sim_run::UpdateEvent;
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::time::Duration;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -51,6 +52,26 @@ impl Dispatcher {
    #[inline]
    pub fn widget(&self) -> &Rc<RefCell<dyn IWidget>> {
       &self.root
+   }
+
+   #[inline]
+   pub fn set_tool_type_time(&self, duration: Duration) {
+      self.inner.runtime.set_tool_type_time(duration);
+   }
+
+   #[inline]
+   pub fn tool_type_time(&self) -> Duration {
+      self.inner.runtime.tool_type_time()
+   }
+
+   #[inline]
+   pub fn set_double_click_time(&self, duration: Duration) {
+      self.inner.runtime.set_double_click_time(duration);
+   }
+
+   #[inline]
+   pub fn double_click_time(&self) -> Duration {
+      self.inner.runtime.double_click_time()
    }
 }
 

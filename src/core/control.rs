@@ -58,8 +58,11 @@ bitflags! {
 
       //-----------------------------
 
-      // It is set when mouse is over the widgets rectangle.
+      /// It is set when mouse is over the widgets rectangle.
       const IS_OVER = 1<<9;
+
+      /// Mouse tracking state.
+      const HAS_MOUSE_TRACKING = 1<<10;
 
       //-----------------------------
 
@@ -216,6 +219,16 @@ impl Internal {
    pub(crate) fn set_over(&self, state: bool) {
       let mut f = self.state_flags.get();
       f.set(StateFlags::IS_OVER, state);
+      self.state_flags.set(f);
+   }
+
+   pub(crate) fn has_mouse_tracking(&self) -> bool {
+      self.state_flags.get().contains(StateFlags::HAS_MOUSE_TRACKING)
+   }
+
+   pub(crate) fn set_mouse_tracking(&self, state: bool) {
+      let mut f = self.state_flags.get();
+      f.set(StateFlags::HAS_MOUSE_TRACKING, state);
       self.state_flags.set(f);
    }
 }

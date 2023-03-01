@@ -76,6 +76,19 @@ pub trait IWidget: Any + 'static {
 
    //---------------------------------------
 
+   ///This property holds whether mouse tracking is enabled for the widget.
+   /// If mouse tracking is disabled (the default), the widget only receives
+   /// mouse move events when at least one mouse button is pressed while the mouse is being moved.
+   /// If mouse tracking is enabled, the widget receives mouse move events even if no buttons are pressed.
+   ///
+   /// See [Self::has_mouse_tracking]
+   fn set_mouse_tracking(&mut self, state: bool);
+
+   /// See [Self::set_mouse_tracking]
+   fn has_mouse_tracking(&mut self) -> bool;
+
+   //---------------------------------------
+
    fn emit_lifecycle(&mut self, _event: &LifecycleEventCtx);
    fn emit_layout(&mut self, _event: &LayoutEventCtx);
    fn emit_draw(&mut self, _canvas: &mut Canvas, event: &DrawEventCtx);
@@ -107,6 +120,10 @@ pub struct WidgetVt<D> {
    /// A leave event is sent to the widget when the mouse cursor leaves the widget.
    pub on_mouse_leave: fn(w: &mut D),
    //-------------------------------------------------
+   /// If mouse tracking is switched off, mouse move events only occur if
+   /// a mouse button is pressed while the mouse is being moved.
+   /// If [mouse tracking](IWidget::set_mouse_tracking) is switched on,
+   /// mouse move events occur even if **NO** mouse button is pressed.
    pub on_mouse_move: fn(w: &mut D, &MouseMoveEventCtx) -> bool,
    pub on_mouse_button: fn(w: &mut D, &MouseButtonsEventCtx) -> bool,
    pub on_mouse_wheel: fn(w: &mut D, &MouseWheelEventCtx) -> bool,
@@ -315,6 +332,16 @@ where
 
    fn set_transparent(&mut self, state: bool) {
       self.internal.set_transparent(state)
+   }
+
+   //---------------------------------------
+
+   fn has_mouse_tracking(&mut self) -> bool {
+      self.internal.has_mouse_tracking()
+   }
+
+   fn set_mouse_tracking(&mut self, state: bool) {
+      self.internal.set_mouse_tracking(state)
    }
 
    //---------------------------------------
