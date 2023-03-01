@@ -1,4 +1,5 @@
 use crate::core::control::focus::FocusManager;
+use std::cell::RefCell;
 use std::rc::Rc;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -11,12 +12,12 @@ struct InnerRuntime {
 
 #[derive(Clone)]
 pub struct Runtime {
-   inner: Rc<InnerRuntime>,
+   inner: RefCell<Rc<InnerRuntime>>,
 }
 
 impl Runtime {
    pub fn new() -> Self {
-      Self { inner: Rc::new(InnerRuntime { focus: FocusManager::new() }) }
+      Self { inner: RefCell::new(Rc::new(InnerRuntime { focus: FocusManager::new() })) }
    }
 }
 

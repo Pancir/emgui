@@ -1,5 +1,5 @@
 use crate::core::derive::Derive;
-use crate::core::events::{DrawEventCtx, MouseButtonsEventCtx, MouseMoveEventCtx};
+use crate::core::events::{DrawEventCtx, MouseButtonsEventCtx};
 use crate::core::{IWidget, Widget};
 use crate::elements::Label;
 use sim_draw::color::Rgba;
@@ -122,7 +122,8 @@ where
       Widget::new(
          |vt| {
             vt.on_draw = Self::on_draw;
-            vt.on_mouse_move = Self::on_mouse_move;
+            vt.on_mouse_enter = Self::on_mouse_enter;
+            vt.on_mouse_leave = Self::on_mouse_leave;
             vt.on_mouse_button = Self::on_mouse_button;
 
             Self {
@@ -198,19 +199,14 @@ where
       }
    }
 
-   pub fn on_mouse_move(w: &mut Widget<PushButton<H>>, event: &MouseMoveEventCtx) -> bool {
-      let rect = w.geometry().rect();
-      let is_over = rect.is_inside(event.input.x, event.input.y);
-
+   pub fn on_mouse_enter(w: &mut Widget<PushButton<H>>) {
       let mut d = w.derive_mut();
+      d.state.is_hover = true;
+   }
 
-      if d.state.is_hover != is_over {
-         d.state.is_hover = is_over;
-         w.request_draw();
-         is_over
-      } else {
-         false
-      }
+   pub fn on_mouse_leave(w: &mut Widget<PushButton<H>>) {
+      let mut d = w.derive_mut();
+      d.state.is_hover = false;
    }
 
    pub fn on_mouse_button(w: &mut Widget<PushButton<H>>, event: &MouseButtonsEventCtx) -> bool {

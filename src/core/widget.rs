@@ -80,6 +80,8 @@ pub trait IWidget: Any + 'static {
    fn emit_layout(&mut self, _event: &LayoutEventCtx);
    fn emit_draw(&mut self, _canvas: &mut Canvas, event: &DrawEventCtx);
    fn emit_update(&mut self, _event: &UpdateEventCtx);
+   fn emit_mouse_enter(&mut self);
+   fn emit_mouse_leave(&mut self);
    fn emit_mouse_move(&mut self, _event: &MouseMoveEventCtx) -> bool;
    fn emit_mouse_button(&mut self, _event: &MouseButtonsEventCtx) -> bool;
    fn emit_mouse_wheel(&mut self, _event: &MouseWheelEventCtx) -> bool;
@@ -100,10 +102,10 @@ pub struct WidgetVt<D> {
    pub on_draw: fn(w: &mut D, &mut Canvas, &DrawEventCtx),
    //-------------------------------------------------
    /// An event is sent to the widget when the mouse cursor enters the widget.
-   pub on_enter: fn(w: &mut D),
+   pub on_mouse_enter: fn(w: &mut D),
 
    /// A leave event is sent to the widget when the mouse cursor leaves the widget.
-   pub on_leave: fn(w: &mut D),
+   pub on_mouse_leave: fn(w: &mut D),
    //-------------------------------------------------
    pub on_mouse_move: fn(w: &mut D, &MouseMoveEventCtx) -> bool,
    pub on_mouse_button: fn(w: &mut D, &MouseButtonsEventCtx) -> bool,
@@ -145,8 +147,8 @@ where
             on_update: |_, _| {},
             on_draw: Self::on_draw,
             //-------------------------------------------------
-            on_enter: |_| {},
-            on_leave: |_| {},
+            on_mouse_enter: |_| {},
+            on_mouse_leave: |_| {},
             //-------------------------------------------------
             on_mouse_move: |_, _| false,
             on_mouse_button: |_, _| false,
@@ -339,7 +341,21 @@ where
 
    #[must_use]
    #[cfg_attr(feature = "trace-widget",
-   tracing::instrument(skip(self, event), fields(WidgetID = self.id().raw()), ret))]
+   tracing::instrument(skip(self), fields(WidgetID = self.id().raw()), ret))]
+   fn emit_mouse_enter(&mut self) {
+      (self.vtable.on_mouse_enter)(self)
+   }
+
+   #[must_use]
+   #[cfg_attr(feature = "trace-widget",
+   tracing::instrument(skip(self), fields(WidgetID = self.id().raw()), ret))]
+   fn emit_mouse_leave(&mut self) {
+      (self.vtable.on_mouse_leave)(self)
+   }
+
+   // #[must_use]
+   // #[cfg_attr(feature = "trace-widget",
+   // tracing::instrument(skip(self, event), fields(WidgetID = self.id().raw()), ret))]
    fn emit_mouse_move(&mut self, event: &MouseMoveEventCtx) -> bool {
       (self.vtable.on_mouse_move)(self, event)
    }

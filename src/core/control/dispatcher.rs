@@ -14,6 +14,7 @@ use std::rc::Rc;
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub struct InnerDispatcher {
+   widget_mouse_over: Option<Weak<RefCell<dyn IWidget>>>,
    runtime: Runtime,
 }
 
@@ -29,7 +30,7 @@ impl Dispatcher {
    #[inline]
    pub fn new(root: Option<Rc<RefCell<dyn IWidget>>>) -> Self {
       let mut out = Self {
-         inner: InnerDispatcher { runtime: Runtime::new() },
+         inner: InnerDispatcher { runtime: Runtime::new(), widget_mouse_over: None },
          root: root.unwrap_or_else(|| Widget::new(|_| (), |_| ())),
          destroyed: false,
       };
@@ -375,23 +376,24 @@ impl Dispatcher {
          }
       };
       //--------------------------------------------------
-      for child in &children {
-         Self::emit_inner_draw(dispatcher, &child, canvas, event);
-         // //---------------------------------
-         // // # Safety
-         // // It seems it is quite safe, we just read simple copiable variables.
-         // // Just in case in debug mode we check availability.
+      if is_children_draw {
+         //---------------------------------
+         // # Safety
+         // It seems it is quite safe, we just read simple copiable variables.
+         // Just in case in debug mode we check availability.
          // debug_assert!(child.try_borrow_mut().is_ok());
-         // let (child_rect, child_id, flags) = unsafe {
+         // let (state_flags, id) = unsafe {
          //    let internal = (*child.as_ptr()).internal();
-         //    (internal.geometry.rect(), internal.id, internal.state_flags.get())
+         //    (internal.state_flags.get(), internal.id)
          // };
-         // //---------------------------------
-         // if regions.iter().any(|v| v.0 == child_id) {
-         //    println!("{:?}\n  {:?} : {:?}\n{:?}\n", regions, child_id, child_rect, flags);
-         //    Self::emit_inner_draw(dispatcher, &child, canvas, event);
+         //
+         // if state_flags.contains(StateFlags::IS_TRANSPARENT) {
+         //    unimplemented!()
          // }
-         // //---------------------------------
+         //---------------------------------
+         for child in &children {
+            Self::emit_inner_draw(dispatcher, &child, canvas, event);
+         }
       }
       //--------------------------------------------------
       match child.try_borrow_mut() {
@@ -421,7 +423,7 @@ impl Dispatcher {
 
    fn emit_inner_draw_full(
       dispatcher: &mut InnerDispatcher,
-      child: &Rc<RefCell<dyn IWidget>>,
+      inout_child: &Rc<RefCell<dyn IWidget>>,
       canvas: &mut Canvas,
       event: &DrawEventCtx,
    ) {
@@ -429,9 +431,9 @@ impl Dispatcher {
       // # Safety
       // It seems it is quite safe, we just read simple copiable variables.
       // Just in case in debug mode we check availability.
-      debug_assert!(child.try_borrow_mut().is_ok());
+      debug_assert!(inout_child.try_borrow_mut().is_ok());
       let (state_flags, id) = unsafe {
-         let internal = (*child.as_ptr()).internal();
+         let internal = (*inout_child.as_ptr()).internal();
          (internal.state_flags.get(), internal.id)
       };
       //---------------------------------
@@ -440,7 +442,7 @@ impl Dispatcher {
          return;
       }
       //--------------------------------------------------
-      let children = match child.try_borrow_mut() {
+      let children = match inout_child.try_borrow_mut() {
          Ok(mut child) => {
             let internal = child.internal_mut();
             internal.state_flags.get_mut().remove(StateFlags::SELF_DRAW);
@@ -461,7 +463,7 @@ impl Dispatcher {
          Self::emit_inner_draw_full(dispatcher, &child, canvas, event);
       }
       //--------------------------------------------------
-      match child.try_borrow_mut() {
+      match inout_child.try_borrow_mut() {
          Ok(mut child) => {
             let internal = child.internal_mut();
             let f = internal.state_flags.get_mut();
@@ -491,21 +493,47 @@ impl Dispatcher {
 impl Dispatcher {
    #[cfg_attr(feature = "trace-dispatcher", tracing::instrument(level = "trace", skip_all))]
    pub fn emit_mouse_move(&mut self, event: &MouseMoveEventCtx) -> bool {
-      Self::emit_inner_mouse_move(&mut self.inner, &self.root, event)
+      //--------------------------------------------------
+      let accepted = if let Some(wmo) = &self.inner.widget_mouse_over {
+         if let Some(w) = wmo.upgrade() {
+            let mut widget = w.borrow_mut();
+            let is_inside =
+               widget.internal().geometry.rect().is_inside(event.input.x, event.input.y);
+
+            if !is_inside {
+               widget.emit_mouse_leave();
+               self.inner.widget_mouse_over = None;
+               false
+            } else {
+               widget.emit_mouse_move(event)
+            }
+         } else {
+            false
+         }
+      } else {
+         false
+      };
+      //--------------------------------------------------
+      if !accepted {
+         Self::emit_inner_mouse_move(&mut self.inner, &self.root, event)
+      } else {
+         false
+      }
+      //--------------------------------------------------
    }
 
    fn emit_inner_mouse_move(
       dispatcher: &mut InnerDispatcher,
-      child: &Rc<RefCell<dyn IWidget>>,
+      input_child: &Rc<RefCell<dyn IWidget>>,
       event: &MouseMoveEventCtx,
    ) -> bool {
       //--------------------------------------------------
       // # Safety
       // It seems it is quite safe, we just read simple copiable variables.
       // Just in case in debug mode we check availability.
-      debug_assert!(child.try_borrow_mut().is_ok());
+      debug_assert!(input_child.try_borrow_mut().is_ok());
       let (id, state_flags, rect) = unsafe {
-         let internal = (*child.as_ptr()).internal();
+         let internal = (*input_child.as_ptr()).internal();
          (internal.id, internal.state_flags.get(), internal.geometry.rect())
       };
       //---------------------------------
@@ -513,13 +541,13 @@ impl Dispatcher {
       let is_inside = rect.is_inside(event.input.x, event.input.y);
 
       if !is_enabled || !is_inside {
-         return is_inside;
+         return false;
       }
 
-      // TODO optimization, probably a parameter "mouse tracking" may as draw/update way.
+      // TODO optimization, probably a parameter "mouse tracking" maybe as draw/update way.
       // TODO Enter/Leave events.
       //--------------------------------------------------
-      let children = match child.try_borrow_mut() {
+      let children = match input_child.try_borrow_mut() {
          Ok(mut child) => child.internal_mut().take_children(id),
          Err(e) => {
             log::error!("Can't borrow widget [{:?}] to process mouse move event!\n\t{}", id, e);
@@ -535,9 +563,11 @@ impl Dispatcher {
          }
       }
       //--------------------------------------------------
-      match child.try_borrow_mut() {
+      match input_child.try_borrow_mut() {
          Ok(mut child) => {
             child.internal_mut().set_children(children, id);
+            child.emit_mouse_enter();
+            dispatcher.widget_mouse_over = Some(Rc::downgrade(input_child));
             if !accepted && child.emit_mouse_move(event) {
                accepted = true;
             }
@@ -790,6 +820,18 @@ impl Dispatcher {
             &LifecycleEventCtx::Destroy { unexpected: true },
          );
       }
+   }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#[cfg(test)]
+mod tests {
+   use super::*;
+
+   #[test]
+   fn sizes() {
+      dbg!(std::mem::size_of::<Dispatcher>());
    }
 }
 
