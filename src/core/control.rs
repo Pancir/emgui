@@ -82,6 +82,7 @@ pub struct Internal {
    //--------------------
    runtime: Option<Runtime>,
    state_flags: Cell<StateFlags>,
+   number_mouse_buttons_pressed: Cell<i8>,
    //--------------------
    children_busy: Cell<WidgetId>,
    children: RefCell<ChildrenVec>,
@@ -99,6 +100,7 @@ impl Internal {
          //--------------------
          runtime: None,
          state_flags: Cell::new(StateFlags::INIT),
+         number_mouse_buttons_pressed: Cell::new(0),
          //--------------------
          children_busy: Cell::new(WidgetId::INVALID),
          children: Default::default(),
@@ -220,6 +222,16 @@ impl Internal {
       let mut f = self.state_flags.get();
       f.set(StateFlags::HAS_MOUSE_TRACKING, state);
       self.state_flags.set(f);
+   }
+
+   pub(crate) fn add_mouse_btn_num(&self, num: i8) {
+      let res = self.mouse_btn_num() + num;
+      debug_assert!(res > -1, "inconsistent add/remove mouse buttons press");
+      self.number_mouse_buttons_pressed.set(res.max(0));
+   }
+
+   pub(crate) fn mouse_btn_num(&self) -> i8 {
+      self.number_mouse_buttons_pressed.get()
    }
 }
 

@@ -146,6 +146,8 @@ where
             // TODO check it when draw function is changed.
             // It is enabled for testing..
             // w.set_transparent(true);
+            // w.set_mouse_tracking(true);
+
             w.set_rect(rect);
          },
       )

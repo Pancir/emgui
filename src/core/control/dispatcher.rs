@@ -55,22 +55,22 @@ impl Dispatcher {
    }
 
    #[inline]
-   pub fn set_tool_type_time(&self, duration: Duration) {
+   pub fn set_tool_type_duration(&self, duration: Duration) {
       self.inner.runtime.set_tool_type_time(duration);
    }
 
    #[inline]
-   pub fn tool_type_time(&self) -> Duration {
+   pub fn tool_type_duration(&self) -> Duration {
       self.inner.runtime.tool_type_time()
    }
 
    #[inline]
-   pub fn set_double_click_time(&self, duration: Duration) {
+   pub fn set_double_click_duration(&self, duration: Duration) {
       self.inner.runtime.set_double_click_time(duration);
    }
 
    #[inline]
-   pub fn double_click_time(&self) -> Duration {
+   pub fn double_click_duration(&self) -> Duration {
       self.inner.runtime.double_click_time()
    }
 }
@@ -559,14 +559,19 @@ impl Dispatcher {
             // It seems it is quite safe, we just read simple copiable variables.
             // Just in case in debug mode we check availability.
             debug_assert!(w.try_borrow_mut().is_ok());
-            let rect = unsafe {
+            let (rect, mouse_btn_num, mouse_tracking) = unsafe {
                let internal = (*w.as_ptr()).internal();
-               internal.geometry.rect()
+               (internal.geometry.rect(), internal.mouse_btn_num(), internal.has_mouse_tracking())
             };
             //----------------------------------
             let is_inside = rect.is_inside(event.input.x, event.input.y);
 
-            if !is_inside {
+            if is_inside {
+               if mouse_btn_num > 0 || mouse_tracking {
+                  let mut widget = w.borrow_mut();
+                  widget.emit_mouse_move(event);
+               }
+            } else {
                let mut widget = w.borrow_mut();
                let internal = widget.internal_mut();
 
@@ -643,9 +648,15 @@ impl Dispatcher {
 
                   dispatcher.widget_mouse_over = Some(Rc::downgrade(input_child));
 
-                  // now enter mouse event is needed so, we again try to borrow.
+                  // now enter mouse event is needed so, we again trying to borrow.
                   match input_child.try_borrow_mut() {
-                     Ok(mut child) => child.emit_mouse_enter(),
+                     Ok(mut child) => {
+                        child.emit_mouse_enter();
+                        // checking buttons pressing does not make sense in this location.
+                        if child.internal().has_mouse_tracking() {
+                           child.emit_mouse_move(event);
+                        }
+                     }
                      Err(e) => {
                         log::error!(
                            "Can't borrow widget [{:?}] to process mouse enter! {:?}",
@@ -702,8 +713,8 @@ impl Dispatcher {
       let is_enabled = flow.contains(StateFlags::IS_ENABLED);
       let is_inside = rect.is_inside(event.input.x, event.input.y);
 
-      if !is_enabled {
-         return is_inside;
+      if !is_enabled || !is_inside {
+         return false;
       }
       //--------------------------------------------------
       let children = match child.try_borrow_mut() {
@@ -725,8 +736,10 @@ impl Dispatcher {
       match child.try_borrow_mut() {
          Ok(mut child) => {
             child.internal_mut().set_children(children, id);
-            if !accepted && child.emit_mouse_button(event) {
-               accepted = true;
+            if !accepted {
+               if child.emit_mouse_button(event) {
+                  accepted = true;
+               }
             }
          }
          Err(e) => {
