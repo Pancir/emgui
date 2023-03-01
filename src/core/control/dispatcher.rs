@@ -422,6 +422,8 @@ impl Dispatcher {
       }
       //--------------------------------------------------
       if is_self_draw {
+         // TODO it seems it is no a good idea to redraw children as well.
+         // Use case: heavy children but this widget change its background on mouse enter/leave.
          Self::emit_inner_draw_full(dispatcher, &child, canvas, event);
          return;
       }
@@ -439,6 +441,7 @@ impl Dispatcher {
       //--------------------------------------------------
       if is_children_draw {
          //---------------------------------
+         // TODO transparency processing.
          // # Safety
          // It seems it is quite safe, we just read simple copiable variables.
          // Just in case in debug mode we check availability.
