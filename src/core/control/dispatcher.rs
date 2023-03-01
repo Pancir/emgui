@@ -57,8 +57,10 @@ impl Dispatcher {
 impl std::ops::Drop for Dispatcher {
    fn drop(&mut self) {
       if !self.destroyed {
-         log::warn!("You forgot to call destroy on dispatcher. It is auto-called while dropping, \
-         but it may lead to unexpected behaviour because it can be too late, please call it yourself.");
+         log::warn!(
+            "You forgot to call destroy on dispatcher. It is auto-called while dropping, \
+but it may lead to unexpected behaviour because it can be too late, please call it yourself."
+         );
 
          self.destroy()
       }
@@ -146,8 +148,7 @@ impl Dispatcher {
          }
          Err(e) => {
             log::error!(
-               "Can't borrow widget [{:?}] to process lifecycle finalization! \
-               Children [{}] ARE LOST!\n\t{}",
+               "Can't borrow widget [{:?}] to process lifecycle finalization! Children [{}] ARE LOST!\n\t{}",
                id,
                children.len(),
                e
@@ -198,11 +199,88 @@ impl Dispatcher {
 impl Dispatcher {
    /// This event check if there are widgets to delete and perform deleting.
    #[cfg_attr(feature = "trace-dispatcher", tracing::instrument(level = "trace", skip_all))]
-   fn emit_check_delete(&mut self, _env: &mut AppEnv) {
-      Self::emit_inner_check_delete(&mut self.inner, &self.root);
-   }
+   fn emit_inner_check_delete(
+      dispatcher: &mut InnerDispatcher,
+      input_child: &Rc<RefCell<dyn IWidget>>,
+   ) {
+      //--------------------------------------------------
+      // # Safety
+      // It seems it is quite safe, we just read simple copiable variables.
+      // Just in case in debug mode we check availability.
+      debug_assert!(input_child.try_borrow_mut().is_ok());
+      let (state_flags, id) = unsafe {
+         let internal = (*input_child.as_ptr()).internal();
+         (internal.state_flags.get(), internal.id)
+      };
+      //---------------------------------
+      #[cfg(debug_assertions)]
+      {
+         // Only root widget can have self delete flag and it is should be
+         // processed by this function caller.
 
-   fn emit_inner_check_delete(dispatcher: &mut InnerDispatcher, child: &Rc<RefCell<dyn IWidget>>) {}
+         if state_flags.contains(StateFlags::SELF_DELETE) {
+            log::error!(
+               "Not expected flag [{:?}] in [{:?}] with all flags: [{:?}]. \
+               Possible problem that a root widget is market as self delete!",
+               StateFlags::SELF_DELETE,
+               id,
+               state_flags
+            )
+         }
+      }
+      //--------------------------------------------------
+      if state_flags.contains(StateFlags::CHILDREN_DELETE) {
+         let mut children = match input_child.try_borrow_mut() {
+            Ok(mut child) => child.internal_mut().take_children(id),
+            Err(e) => {
+               log::error!("Can't borrow widget [{:?}] to process delete event!\n\t{}", id, e);
+               return;
+            }
+         };
+         //-------------------------------------------
+         children.retain(|child| {
+            // # Safety
+            // It seems it is quite safe, we just read simple copiable variables.
+            // Just in case in debug mode we check availability.
+            debug_assert!(child.try_borrow_mut().is_ok());
+            let flags = unsafe { (*child.as_ptr()).internal().state_flags.get() };
+
+            if !flags.contains(StateFlags::SELF_DELETE) {
+               Self::emit_inner_check_delete(dispatcher, &child);
+               return true;
+            }
+
+            Self::emit_inner_lifecycle(
+               dispatcher,
+               &child,
+               &LifecycleEventCtx { state: LifecycleState::Destroy { unexpected: false } },
+            );
+            false
+         });
+         //-------------------------------------------
+         match input_child.try_borrow_mut() {
+            Ok(mut child) => {
+               let internal = child.internal_mut();
+               let f = internal.state_flags.get_mut();
+               f.remove(StateFlags::CHILDREN_DELETE);
+               internal.set_children(children, id);
+            }
+            Err(e) => {
+               //-----------------------
+               // Children are lost so, it is attempt to inform them.
+               Self::inform_lost_children(dispatcher, &children);
+               //-----------------------
+               log::error!(
+                  "Can't borrow widget [{:?}] to process delete finalization! Children [{}] ARE LOST!\n\t{}",
+                  id,
+                  children.len(),
+                  e
+               );
+               return;
+            }
+         };
+      }
+   }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -212,8 +290,8 @@ impl Dispatcher {
    /// not perform heavy operations if they are not actually needed.
    #[cfg_attr(feature = "trace-dispatcher", tracing::instrument(level = "trace", skip_all))]
    pub fn emit_tick(&mut self, env: &mut AppEnv, event: &UpdateEvent) {
-      Self::emit_inner_check_delete(&mut self.inner, &self.root);
       Self::emit_inner_update(&mut self.inner, &self.root, &UpdateEventCtx { env, data: event });
+      Self::emit_inner_check_delete(&mut self.inner, &self.root);
    }
 
    fn emit_inner_update(
@@ -226,44 +304,23 @@ impl Dispatcher {
       // It seems it is quite safe, we just read simple copiable variables.
       // Just in case in debug mode we check availability.
       debug_assert!(child.try_borrow_mut().is_ok());
-      let (flow, id) = unsafe {
+      let (state_flags, id) = unsafe {
          let internal = (*child.as_ptr()).internal();
          (internal.state_flags.get(), internal.id)
       };
       //---------------------------------
-      #[cfg(debug_assertions)]
-      {
-         if flow.contains(StateFlags::SELF_DELETE) {
-            log::error!(
-               "Not expected flag [{:?}] in [{:?}] with all flags: [{:?}]",
-               StateFlags::SELF_DELETE,
-               id,
-               flow
-            )
-         }
-      }
-      //---------------------------------
-      let is_self_delete = flow.contains(StateFlags::SELF_DELETE);
-      let is_self_update = flow.contains(StateFlags::SELF_UPDATE);
-      let is_children_delete = flow.contains(StateFlags::CHILDREN_DELETE);
-      let is_children_update = flow.contains(StateFlags::CHILDREN_UPDATE);
-      let is_continue =
-         is_self_delete || is_self_update || is_children_delete || is_children_update;
+      let is_self_update = state_flags.contains(StateFlags::SELF_UPDATE);
+      let is_children_update = state_flags.contains(StateFlags::CHILDREN_UPDATE);
+      let is_continue = is_self_update || is_children_update;
 
       if !is_continue {
          return;
       }
       //--------------------------------------------------
-      // SELF UPDATE AND CHILDREN
-
       let mut children = match child.try_borrow_mut() {
          Ok(mut child) => {
             if is_self_update {
                let internal = child.internal_mut();
-               // Only root widget can have self delete flag and it is should be
-               // processed by this function caller, so if it is not deletes we
-               // just assume that it is not necessary so, the flag is cleared.
-               internal.state_flags.get_mut().remove(StateFlags::SELF_DELETE);
                internal.state_flags.get_mut().remove(StateFlags::SELF_UPDATE);
                child.emit_update(event);
             }
@@ -276,48 +333,17 @@ impl Dispatcher {
          }
       };
       //--------------------------------------------------
-      // DELETE
-
-      if is_children_delete {
-         children.retain(|child| {
-            // # Safety
-            // It seems it is quite safe, we just read simple copiable variables.
-            // Just in case in debug mode we check availability.
-            debug_assert!(child.try_borrow_mut().is_ok());
-            let flow = unsafe { (*child.as_ptr()).internal().state_flags.get() };
-            //---------------------------------
-            if !flow.contains(StateFlags::SELF_DELETE) {
-               return true;
-            }
-            //---------------------------------
-            Self::emit_inner_lifecycle(
-               dispatcher,
-               &child,
-               &LifecycleEventCtx { state: LifecycleState::Destroy { unexpected: false } },
-            );
-            //---------------------------------
-            false
-         });
-      }
-      //--------------------------------------------------
-      // UPDATE CHILDREN
-
       if is_children_update {
          for child in &children {
             Self::emit_inner_update(dispatcher, &child, event);
          }
       }
       //--------------------------------------------------
-      // FINALIZE
-
       match child.try_borrow_mut() {
          Ok(mut child) => {
             let internal = child.internal_mut();
             let f = internal.state_flags.get_mut();
-            f.remove(StateFlags::SELF_UPDATE);
-            f.remove(StateFlags::SELF_DELETE);
             f.remove(StateFlags::CHILDREN_UPDATE);
-            f.remove(StateFlags::CHILDREN_DELETE);
             internal.set_children(children, id);
          }
          Err(e) => {
@@ -326,8 +352,7 @@ impl Dispatcher {
             Self::inform_lost_children(dispatcher, &children);
             //-----------------------
             log::error!(
-               "Can't borrow widget [{:?}] to process update finalization! \
-               Children [{}] ARE LOST!\n\t{}",
+               "Can't borrow widget [{:?}] to process update finalization! Children [{}] ARE LOST!\n\t{}",
                id,
                children.len(),
                e
@@ -425,8 +450,7 @@ impl Dispatcher {
             Self::inform_lost_children(dispatcher, &children);
             //-----------------------
             log::error!(
-               "Can't borrow widget [{:?}] to process draw finalization! \
-               Children [{}] ARE LOST!\n\t{}",
+               "Can't borrow widget [{:?}] to process draw finalization! Children [{}] ARE LOST!\n\t{}",
                id,
                children.len(),
                e
@@ -491,8 +515,7 @@ impl Dispatcher {
             Self::inform_lost_children(dispatcher, &children);
             //-----------------------
             log::error!(
-               "Can't borrow widget [{:?}] to process draw finalization! \
-               Children [{}] ARE LOST!\n\t{}",
+               "Can't borrow widget [{:?}] to process draw finalization! Children [{}] ARE LOST!\n\t{}",
                id,
                children.len(),
                e
@@ -593,8 +616,7 @@ impl Dispatcher {
             Self::inform_lost_children(dispatcher, &children);
             //-----------------------
             log::error!(
-               "Can't borrow widget [{:?}] to process mouse move finalization! \
-               Children [{}] ARE LOST!\n\t{}",
+               "Can't borrow widget [{:?}] to process mouse move finalization! Children [{}] ARE LOST!\n\t{}",
                id,
                children.len(),
                e
@@ -665,8 +687,7 @@ impl Dispatcher {
             Self::inform_lost_children(dispatcher, &children);
             //-----------------------
             log::error!(
-               "Can't borrow widget [{:?}] to process mouse button finalization! \
-                Children [{}] ARE LOST!\n\t{}",
+               "Can't borrow widget [{:?}] to process mouse button finalization! Children [{}] ARE LOST!\n\t{}",
                id,
                children.len(),
                e
@@ -737,8 +758,7 @@ impl Dispatcher {
             Self::inform_lost_children(dispatcher, &children);
             //-----------------------
             log::error!(
-               "Can't borrow widget [{:?}] to process mouse wheel finalization! \
-               Children [{}] ARE LOST!\n\t{}",
+               "Can't borrow widget [{:?}] to process mouse wheel finalization! Children [{}] ARE LOST!\n\t{}",
                id,
                children.len(),
                e
@@ -807,8 +827,7 @@ impl Dispatcher {
             Self::inform_lost_children(dispatcher, &children);
             //-----------------------
             log::error!(
-               "Can't borrow widget [{:?}] to process mouse wheel finalization! \
-               Children [{}] ARE LOST!\n\t{}",
+               "Can't borrow widget [{:?}] to process mouse wheel finalization! Children [{}] ARE LOST!\n\t{}",
                id,
                children.len(),
                e
