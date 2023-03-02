@@ -7,6 +7,8 @@ edition = "2021"
 
 [features]
 default = []
+# Pring id type name it was created from in debug.
+widget-id-type= []
 trace-dispatcher = ["tracing"]
 trace-widget = ["tracing"]
 

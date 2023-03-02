@@ -7,6 +7,7 @@ use crate::core::events::{
 };
 use crate::core::{AppEnv, IWidget, Widget};
 use sim_draw::Canvas;
+use sim_input::mouse::MouseState;
 use sim_run::UpdateEvent;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -16,6 +17,7 @@ use std::time::Duration;
 
 pub struct InnerDispatcher {
    widget_mouse_over: Option<Weak<RefCell<dyn IWidget>>>,
+   widget_mouse_button: Option<Weak<RefCell<dyn IWidget>>>,
    runtime: Runtime,
 }
 
@@ -31,7 +33,11 @@ impl Dispatcher {
    #[inline]
    pub fn new(root: Option<Rc<RefCell<dyn IWidget>>>) -> Self {
       let mut out = Self {
-         inner: InnerDispatcher { runtime: Runtime::new(), widget_mouse_over: None },
+         inner: InnerDispatcher {
+            runtime: Runtime::new(),
+            widget_mouse_over: None,
+            widget_mouse_button: None,
+         },
          root: root.unwrap_or_else(|| Widget::new(|_| (), |_| ())),
          destroyed: false,
       };
@@ -330,6 +336,7 @@ impl Dispatcher {
          (internal.state_flags.get(), internal.id)
       };
       //---------------------------------
+
       let is_self_update = state_flags.contains(StateFlags::SELF_UPDATE);
       let is_children_update = state_flags.contains(StateFlags::CHILDREN_UPDATE);
       let is_continue = is_self_update || is_children_update;
@@ -345,7 +352,6 @@ impl Dispatcher {
                internal.state_flags.get_mut().remove(StateFlags::SELF_UPDATE);
                child.emit_update(event);
             }
-
             child.internal_mut().take_children(id)
          }
          Err(e) => {
@@ -397,6 +403,13 @@ impl Dispatcher {
       }
    }
 
+   /// There are several situations.
+   ///
+   /// * Full redraw including all children
+   /// * Redraw without redraw children. Probably masked (clipped) draw.
+   /// * Redraw children without transparent pixels. Actually only children redrawn.
+   /// * Redraw children with transparent pixels. Probably masked + children.
+   /// * Redraw animated.
    fn emit_inner_draw(
       dispatcher: &mut InnerDispatcher,
       child: &Rc<RefCell<dyn IWidget>>,
@@ -700,16 +713,16 @@ impl Dispatcher {
 
    fn emit_inner_mouse_button(
       dispatcher: &mut InnerDispatcher,
-      child: &Rc<RefCell<dyn IWidget>>,
+      input_child: &Rc<RefCell<dyn IWidget>>,
       event: &MouseButtonsEventCtx,
    ) -> bool {
       //--------------------------------------------------
       // # Safety
       // It seems it is quite safe, we just read simple copiable variables.
       // Just in case in debug mode we check availability.
-      debug_assert!(child.try_borrow_mut().is_ok());
+      debug_assert!(input_child.try_borrow_mut().is_ok());
       let (id, flow, rect) = unsafe {
-         let internal = (*child.as_ptr()).internal();
+         let internal = (*input_child.as_ptr()).internal();
          (internal.id, internal.state_flags.get(), internal.geometry.rect())
       };
       //---------------------------------
@@ -720,7 +733,7 @@ impl Dispatcher {
          return false;
       }
       //--------------------------------------------------
-      let children = match child.try_borrow_mut() {
+      let children = match input_child.try_borrow_mut() {
          Ok(mut child) => child.internal_mut().take_children(id),
          Err(e) => {
             log::error!("Can't borrow widget [{:?}] to process mouse button event!\n\t{:?}", id, e);
@@ -736,10 +749,34 @@ impl Dispatcher {
          }
       }
       //--------------------------------------------------
-      match child.try_borrow_mut() {
+      match input_child.try_borrow_mut() {
          Ok(mut child) => {
             child.internal_mut().set_children(children, id);
             if !accepted {
+               if let Some(wmo) = &dispatcher.widget_mouse_button {
+                  if let Some(w) = wmo.upgrade() {
+                     if Rc::ptr_eq(&w, &input_child) {
+                        let internal = w.internal_mut();
+
+                        match event.input.state {
+                           MouseState::Pressed => internal.add_mouse_btn_num(1),
+                           MouseState::Released => internal.add_mouse_btn_num(-1),
+                        }
+                     } else {
+                        if event.input.state == MouseState::Released {
+                           let internal = w.internal_mut();
+                           internal.add_mouse_btn_num(-1);
+                           dispatcher.widget_mouse_button = None;
+                        }
+                     }
+                  }
+               } else {
+                  if event.input.state == MouseState::Pressed {
+                     child.internal_mut().add_mouse_btn_num(1);
+                     dispatcher.widget_mouse_button = Some(Rc::downgrade(&input_child));
+                  }
+               }
+
                if child.emit_mouse_button(event) {
                   accepted = true;
                }

@@ -2,10 +2,19 @@
 
 /// Unique within application instance widget id.
 #[derive(Copy, Clone, Debug, Hash)]
-pub struct WidgetId((usize, &'static str));
+pub struct WidgetId {
+   id: usize,
+
+   #[cfg(feature = "widget-id-type")]
+   type_name: &'static str,
+}
 
 impl WidgetId {
-   pub const INVALID: Self = Self((0, "none"));
+   #[cfg(feature = "widget-id-type")]
+   pub const INVALID: Self = Self { id: 0, type_name: "none" };
+
+   #[cfg(not(feature = "widget-id-type"))]
+   pub const INVALID: Self = Self { id: 0 };
 }
 
 impl Default for WidgetId {
@@ -18,28 +27,45 @@ impl WidgetId {
    pub fn new<T>() -> Self {
       static WIDGET_ID_COUNTER: std::sync::atomic::AtomicUsize =
          std::sync::atomic::AtomicUsize::new(1);
-      Self((
-         WIDGET_ID_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
-         std::any::type_name::<T>(),
-      ))
+
+      #[cfg(feature = "widget-id-type")]
+      {
+         Self {
+            id: WIDGET_ID_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
+            type_name: std::any::type_name::<T>(),
+         }
+      }
+
+      #[cfg(not(feature = "widget-id-type"))]
+      {
+         Self { id: WIDGET_ID_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed) }
+      }
    }
 
    pub fn from_raw<T>(v: usize) -> Self {
-      Self((v, std::any::type_name::<T>()))
+      #[cfg(feature = "widget-id-type")]
+      {
+         Self { id: v, type_name: std::any::type_name::<T>() }
+      }
+
+      #[cfg(not(feature = "widget-id-type"))]
+      {
+         Self { id: v }
+      }
    }
 
    pub fn raw(&self) -> usize {
-      self.0 .0
+      self.id
    }
 
    pub fn is_valid(self) -> bool {
-      self != Self::INVALID
+      self.id != Self::INVALID.id
    }
 }
 
 impl PartialEq for WidgetId {
    fn eq(&self, other: &Self) -> bool {
-      self.0 == other.0
+      self.id == other.id
    }
 }
 

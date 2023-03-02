@@ -13,6 +13,7 @@ struct InnerRuntime {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+/// Contains shared data and setting for all widgets.
 #[derive(Clone)]
 pub struct Runtime {
    inner: Rc<RefCell<InnerRuntime>>,

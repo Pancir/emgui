@@ -226,7 +226,7 @@ impl Internal {
 
    pub(crate) fn add_mouse_btn_num(&self, num: i8) {
       let res = self.mouse_btn_num() + num;
-      debug_assert!(res > -1, "inconsistent add/remove mouse buttons press");
+      debug_assert!(res > -1, "inconsistent add/remove mouse buttons press in {:?}", self.id);
       self.number_mouse_buttons_pressed.set(res.max(0));
    }
 
@@ -240,7 +240,7 @@ impl Internal {
    pub(crate) fn take_children(&mut self, id: WidgetId) -> ChildrenVec {
       debug_assert!(
          !self.children_busy.get().is_valid(),
-         "[{:?}] children taken by [{:?}]",
+         "[{:?}] children borrowed by [{:?}]",
          id,
          self.children_busy.get()
       );
@@ -254,7 +254,7 @@ impl Internal {
    pub(crate) fn set_children(&mut self, mut ch: ChildrenVec, id: WidgetId) {
       debug_assert!(
          self.children_busy.get().is_valid(),
-         "[{:?}] attempt to set children into non free slot",
+         "[{:?}] attempt to release borrowed children that already released.",
          id
       );
       *self.children.get_mut() = std::mem::take(&mut ch);
