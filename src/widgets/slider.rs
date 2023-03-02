@@ -9,32 +9,32 @@ use std::rc::Rc;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub trait ISlider1DHandler {
-   /// This is called  when [Slider1DState::is_down] is `true` and the slider moves.
+pub trait ISliderHandler {
+   /// This is called  when [SliderState::is_down] is `true` and the slider moves.
    ///
    /// This usually happens when the user is dragging the slider.
-   /// The [Slider1DState::value] is the new slider position.
-   fn slider_moved(&mut self, _state: &Slider1DState) {}
+   /// The [SliderState::value] is the new slider position.
+   fn slider_moved(&mut self, _state: &SliderState) {}
 
    /// This is called  when the slider range has changed.
    ///
-   /// The [Slider1DState::range] is the new slider range.
-   fn range_changed(&mut self, _state: &Slider1DState) {}
+   /// The [SliderState::range] is the new slider range.
+   fn range_changed(&mut self, _state: &SliderState) {}
 
    /// This is called when the user presses the slider with the mouse.
    ///
-   /// The [Slider1DState::is_down] is `true`.
-   fn slider_pressed(&mut self, _state: &Slider1DState) {}
+   /// The [SliderState::is_down] is `true`.
+   fn slider_pressed(&mut self, _state: &SliderState) {}
 
    /// This is called when the user releases the slider with the mouse.
    ///
-   /// The [Slider1DState::is_down] is `false`.
-   fn slider_released(&mut self, _state: &Slider1DState) {}
+   /// The [SliderState::is_down] is `false`.
+   fn slider_released(&mut self, _state: &SliderState) {}
 
    //----------------------------------------------
 
    /// This is called when slider should be drown.
-   fn draw(&mut self, _canvas: &mut Canvas, _state: &Slider1DState) {}
+   fn draw(&mut self, _canvas: &mut Canvas, _state: &SliderState) {}
 }
 
 /// Default Slider handler.
@@ -45,15 +45,15 @@ pub trait ISlider1DHandler {
 /// # Note
 /// Heap allocation happens only when you add a closure.
 #[derive(Default)]
-pub struct Slider1DHandler {
-   on_slider_moved: Option<Box<dyn FnMut(&Slider1DState)>>,
-   on_range_changed: Option<Box<dyn FnMut(&Slider1DState)>>,
-   on_slider_pressed: Option<Box<dyn FnMut(&Slider1DState)>>,
-   on_slider_released: Option<Box<dyn FnMut(&Slider1DState)>>,
-   on_draw: Option<Box<dyn FnMut(&mut Canvas, &Slider1DState)>>,
+pub struct SliderHandler {
+   on_slider_moved: Option<Box<dyn FnMut(&SliderState)>>,
+   on_range_changed: Option<Box<dyn FnMut(&SliderState)>>,
+   on_slider_pressed: Option<Box<dyn FnMut(&SliderState)>>,
+   on_slider_released: Option<Box<dyn FnMut(&SliderState)>>,
+   on_draw: Option<Box<dyn FnMut(&mut Canvas, &SliderState)>>,
 }
 
-impl Slider1DHandler {
+impl SliderHandler {
    /// Construct new.
    pub fn new() -> Self {
       Self::default()
@@ -62,7 +62,7 @@ impl Slider1DHandler {
    /// Set callback.
    ///
    /// It allocates memory in heap for the closure.
-   pub fn on_slider_moved(mut self, cb: impl FnMut(&Slider1DState) + 'static) -> Self {
+   pub fn on_slider_moved(mut self, cb: impl FnMut(&SliderState) + 'static) -> Self {
       self.on_slider_moved = Some(Box::new(cb));
       self
    }
@@ -70,7 +70,7 @@ impl Slider1DHandler {
    /// Set callback.
    ///
    /// It allocates memory in heap for the closure.
-   pub fn on_range_changed(mut self, cb: impl FnMut(&Slider1DState) + 'static) -> Self {
+   pub fn on_range_changed(mut self, cb: impl FnMut(&SliderState) + 'static) -> Self {
       self.on_range_changed = Some(Box::new(cb));
       self
    }
@@ -78,7 +78,7 @@ impl Slider1DHandler {
    /// Set callback.
    ///
    /// It allocates memory in heap for the closure.
-   pub fn on_slider_pressed(mut self, cb: impl FnMut(&Slider1DState) + 'static) -> Self {
+   pub fn on_slider_pressed(mut self, cb: impl FnMut(&SliderState) + 'static) -> Self {
       self.on_slider_pressed = Some(Box::new(cb));
       self
    }
@@ -86,7 +86,7 @@ impl Slider1DHandler {
    /// Set callback.
    ///
    /// It allocates memory in heap for the closure.
-   pub fn on_slider_released(mut self, cb: impl FnMut(&Slider1DState) + 'static) -> Self {
+   pub fn on_slider_released(mut self, cb: impl FnMut(&SliderState) + 'static) -> Self {
       self.on_slider_released = Some(Box::new(cb));
       self
    }
@@ -94,38 +94,38 @@ impl Slider1DHandler {
    /// Set callback.
    ///
    /// It allocates memory in heap for the closure.
-   pub fn on_draw(mut self, cb: impl FnMut(&mut Canvas, &Slider1DState) + 'static) -> Self {
+   pub fn on_draw(mut self, cb: impl FnMut(&mut Canvas, &SliderState) + 'static) -> Self {
       self.on_draw = Some(Box::new(cb));
       self
    }
 }
 
-impl ISlider1DHandler for Slider1DHandler {
-   fn slider_moved(&mut self, state: &Slider1DState) {
+impl ISliderHandler for SliderHandler {
+   fn slider_moved(&mut self, state: &SliderState) {
       if let Some(h) = &mut self.on_slider_moved {
          (h)(state)
       }
    }
 
-   fn range_changed(&mut self, state: &Slider1DState) {
+   fn range_changed(&mut self, state: &SliderState) {
       if let Some(h) = &mut self.on_range_changed {
          (h)(state)
       }
    }
 
-   fn slider_pressed(&mut self, state: &Slider1DState) {
+   fn slider_pressed(&mut self, state: &SliderState) {
       if let Some(h) = &mut self.on_slider_pressed {
          (h)(state)
       }
    }
 
-   fn slider_released(&mut self, state: &Slider1DState) {
+   fn slider_released(&mut self, state: &SliderState) {
       if let Some(h) = &mut self.on_slider_released {
          (h)(state)
       }
    }
 
-   fn draw(&mut self, canvas: &mut Canvas, state: &Slider1DState) {
+   fn draw(&mut self, canvas: &mut Canvas, state: &SliderState) {
       if let Some(h) = &mut self.on_draw {
          (h)(canvas, state)
       } else {
@@ -137,7 +137,7 @@ impl ISlider1DHandler for Slider1DHandler {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #[derive(Default)]
-pub struct Slider1DState {
+pub struct SliderState {
    /// Value range.
    pub range: Range<i32>,
 
@@ -159,17 +159,17 @@ pub struct Slider1DState {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub struct Slider1D<H = Slider1DHandler>
+pub struct Slider<H = SliderHandler>
 where
-   H: ISlider1DHandler,
+   H: ISliderHandler,
 {
-   state: Slider1DState,
+   state: SliderState,
    handler: H,
 }
 
-impl<H> Slider1D<H>
+impl<H> Slider<H>
 where
-   H: ISlider1DHandler,
+   H: ISliderHandler,
 {
    pub fn new(handler: H, rect: Rect<f32>) -> Rc<RefCell<Widget<Self>>> {
       let out = Widget::new(|vt| {
@@ -227,9 +227,9 @@ where
    }
 }
 
-impl<H> IWidget for Slider1D<H>
+impl<H> IWidget for Slider<H>
 where
-   H: ISlider1DHandler + 'static,
+   H: ISliderHandler + 'static,
 {
    fn base_state(&self) -> &BaseState {
       &self.state.base
@@ -276,7 +276,7 @@ where
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub fn default_draw(canvas: &mut Canvas, state: &Slider1DState) {
+pub fn default_draw(canvas: &mut Canvas, state: &SliderState) {
    canvas.set_paint(Paint::new_color(Rgba::GRAY));
    canvas.fill(&state.base.geometry.rect());
 }

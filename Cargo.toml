@@ -7,6 +7,7 @@ edition = "2021"
 
 [features]
 default = []
+app =["sim_run/app"]
 # Pring id type name it was created from in debug.
 widget-id-type= []
 trace-dispatcher = ["tracing"]
