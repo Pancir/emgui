@@ -586,6 +586,7 @@ impl Dispatcher {
                if mouse_btn_num > 0 || mouse_tracking {
                   let mut widget = w.borrow_mut();
                   widget.emit_mouse_move(event);
+                  return true;
                }
             } else {
                let mut widget = w.borrow_mut();
@@ -755,20 +756,20 @@ impl Dispatcher {
             if !accepted {
                if let Some(wmo) = &dispatcher.widget_mouse_button {
                   if let Some(w) = wmo.upgrade() {
-                     if Rc::ptr_eq(&w, &input_child) {
-                        let internal = w.internal_mut();
-
-                        match event.input.state {
-                           MouseState::Pressed => internal.add_mouse_btn_num(1),
-                           MouseState::Released => internal.add_mouse_btn_num(-1),
-                        }
-                     } else {
-                        if event.input.state == MouseState::Released {
-                           let internal = w.internal_mut();
-                           internal.add_mouse_btn_num(-1);
-                           dispatcher.widget_mouse_button = None;
-                        }
-                     }
+                     // if Rc::ptr_eq(&w, &input_child) {
+                     //    let internal = w.internal_mut();
+                     //
+                     //    match event.input.state {
+                     //       MouseState::Pressed => internal.add_mouse_btn_num(1),
+                     //       MouseState::Released => internal.add_mouse_btn_num(-1),
+                     //    }
+                     // } else {
+                     //    if event.input.state == MouseState::Released {
+                     //       let internal = w.internal_mut();
+                     //       internal.add_mouse_btn_num(-1);
+                     //       dispatcher.widget_mouse_button = None;
+                     //    }
+                     // }
                   }
                } else {
                   if event.input.state == MouseState::Pressed {
@@ -826,8 +827,8 @@ impl Dispatcher {
       let is_enabled = flow.contains(StateFlags::IS_ENABLED);
       let is_inside = rect.is_inside(event.input.x, event.input.y);
 
-      if !is_enabled {
-         return is_inside;
+      if !is_enabled || !is_inside {
+         return false;
       }
       //--------------------------------------------------
       let children = match child.try_borrow_mut() {
@@ -849,8 +850,8 @@ impl Dispatcher {
       match child.try_borrow_mut() {
          Ok(mut child) => {
             child.internal_mut().set_children(children, id);
-            if !accepted && child.emit_mouse_wheel(event) {
-               accepted = true;
+            if !accepted {
+               accepted = child.emit_mouse_wheel(event);
             }
          }
          Err(e) => {
@@ -963,6 +964,124 @@ impl Dispatcher {
 #[cfg(test)]
 mod tests {
    use super::*;
+   use crate::core::derive::Derive;
+   use sim_draw::m::Rect;
+   use sim_input::mouse::MouseMoveInput;
+   use sim_input::{DeviceId, Modifiers};
+   use std::any::Any;
+
+   //---------------------------------------------------
+
+   pub struct TestWidget {
+      pub mouse_enter: usize,
+      pub mouse_leave: usize,
+   }
+
+   impl TestWidget {
+      pub fn new(rect: Rect<f32>) -> Rc<RefCell<Widget<Self>>> {
+         Widget::new(
+            |vt| {
+               vt.on_mouse_enter = |w: &mut Widget<Self>| w.derive_mut().mouse_enter += 1;
+               vt.on_mouse_leave = |w: &mut Widget<Self>| w.derive_mut().mouse_leave += 1;
+               Self { mouse_enter: 0, mouse_leave: 0 }
+            },
+            |w| {
+               w.set_rect(rect);
+            },
+         )
+      }
+   }
+
+   impl Derive for TestWidget {
+      fn as_any(&self) -> &dyn Any {
+         self
+      }
+
+      fn as_any_mut(&mut self) -> &mut dyn Any {
+         self
+      }
+   }
+
+   //---------------------------------------------------
+
+   fn mouse_move_ctx(x: f32, y: f32) -> MouseMoveEventCtx {
+      MouseMoveEventCtx {
+         input: MouseMoveInput {
+            device_id: DeviceId::default(),
+            modifiers: Modifiers::default(),
+            x,
+            y,
+         },
+      }
+   }
+
+   //---------------------------------------------------
+
+   ///
+   ///      +---------------------+
+   ///      |     WIDGET 1        |
+   ///      |                     |
+   ///      |        +------------+
+   ///  1   |     2  |  WIDGET 2  |
+   ///  X------>  X----->         |
+   ///      |        |            |
+   ///  <------X  <-----X         |
+   ///      |  4     |  3         |
+   ///      |        +------------+
+   ///      |                     |
+   ///      +---------------------+
+   ///
+   /// 1 - move from outside into the widget(1).
+   ///     a) widget(1) enter event.
+   /// 2 - move from widget(1) into the widget(2).
+   ///     a) widget(1) leave event.
+   ///     b) widget(2) enter event.
+   /// 3 - move from widget(2) back to the widget(1).
+   ///     a) widget(2) leave event.
+   ///     b) widget(1) enter event.
+   /// 4 - move from widget(1) back to outside.
+   ///     a) widget(1) leave event.
+   #[test]
+   fn test_mouse_move() {
+      let root = TestWidget::new(Rect::new(0.0, 0.0, 200.0, 200.0));
+      let child = TestWidget::new(Rect::new(50.0, 50.0, 100.0, 100.0));
+
+      let mut dispatcher = Dispatcher::new(Some(root.clone()));
+      add_child(dispatcher.widget(), child.clone());
+      //----------------------
+      dispatcher.emit_mouse_move(&mouse_move_ctx(-10.0, 100.0));
+      assert_eq!(root.borrow_mut().derive_mut().mouse_enter, 0);
+      assert_eq!(root.borrow_mut().derive_mut().mouse_leave, 0);
+      assert_eq!(child.borrow_mut().derive_mut().mouse_enter, 0);
+      assert_eq!(child.borrow_mut().derive_mut().mouse_leave, 0);
+      //----------------------
+      dispatcher.emit_mouse_move(&mouse_move_ctx(25.0, 100.0));
+      assert_eq!(root.borrow_mut().derive_mut().mouse_enter, 1);
+      assert_eq!(root.borrow_mut().derive_mut().mouse_leave, 0);
+      assert_eq!(child.borrow_mut().derive_mut().mouse_enter, 0);
+      assert_eq!(child.borrow_mut().derive_mut().mouse_leave, 0);
+      //----------------------
+      dispatcher.emit_mouse_move(&mouse_move_ctx(75.0, 100.0));
+      assert_eq!(root.borrow_mut().derive_mut().mouse_enter, 1);
+      assert_eq!(root.borrow_mut().derive_mut().mouse_leave, 1);
+      assert_eq!(child.borrow_mut().derive_mut().mouse_enter, 1);
+      assert_eq!(child.borrow_mut().derive_mut().mouse_leave, 0);
+      //----------------------
+      dispatcher.emit_mouse_move(&mouse_move_ctx(25.0, 100.0));
+      assert_eq!(root.borrow_mut().derive_mut().mouse_enter, 2);
+      assert_eq!(root.borrow_mut().derive_mut().mouse_leave, 1);
+      assert_eq!(child.borrow_mut().derive_mut().mouse_enter, 1);
+      assert_eq!(child.borrow_mut().derive_mut().mouse_leave, 1);
+      //----------------------
+      dispatcher.emit_mouse_move(&mouse_move_ctx(-10.0, 100.0));
+      assert_eq!(root.borrow_mut().derive_mut().mouse_enter, 2);
+      assert_eq!(root.borrow_mut().derive_mut().mouse_leave, 2);
+      assert_eq!(child.borrow_mut().derive_mut().mouse_enter, 1);
+      assert_eq!(child.borrow_mut().derive_mut().mouse_leave, 1);
+      //----------------------
+   }
+
+   //---------------------------------------------------
 
    #[test]
    fn sizes() {

@@ -168,9 +168,9 @@ where
             on_mouse_enter: |w| w.request_draw(),
             on_mouse_leave: |w| w.request_draw(),
             //-------------------------------------------------
-            on_mouse_move: |_, _| false,
-            on_mouse_button: |_, _| false,
-            on_mouse_wheel: |_, _| false,
+            on_mouse_move: |_, _| true,
+            on_mouse_button: |_, _| true,
+            on_mouse_wheel: |_, _| true,
             //-------------------------------------------------
             on_keyboard: |_, _| false,
          },
@@ -336,12 +336,12 @@ where
 
    //---------------------------------------
 
-   fn has_mouse_tracking(&mut self) -> bool {
-      self.internal.has_mouse_tracking()
-   }
-
    fn set_mouse_tracking(&mut self, state: bool) {
       self.internal.set_mouse_tracking(state)
+   }
+
+   fn has_mouse_tracking(&mut self) -> bool {
+      self.internal.has_mouse_tracking()
    }
 
    //---------------------------------------
@@ -399,6 +399,8 @@ where
    }
 
    #[must_use]
+   #[cfg_attr(feature = "trace-widget",
+   tracing::instrument(skip(self, event), fields(WidgetID = self.id().raw()), ret))]
    fn emit_mouse_wheel(&mut self, event: &MouseWheelEventCtx) -> bool {
       (self.vtable.on_mouse_wheel)(self, event)
    }
