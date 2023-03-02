@@ -590,6 +590,12 @@ impl Dispatcher {
                }
             } else {
                let mut widget = w.borrow_mut();
+
+               if mouse_btn_num > 0 {
+                  widget.emit_mouse_move(event);
+                  return true;
+               }
+
                let internal = widget.internal_mut();
 
                internal.set_over(false);
@@ -709,7 +715,47 @@ impl Dispatcher {
 impl Dispatcher {
    #[cfg_attr(feature = "trace-dispatcher", tracing::instrument(level = "trace", skip_all))]
    pub fn emit_mouse_button(&mut self, event: &MouseButtonsEventCtx) -> bool {
+      //--------------------------------------------------
+      if let Some(wmo) = &self.inner.widget_mouse_button {
+         if let Some(w) = wmo.upgrade() {
+            //----------------------------------
+            // # Safety
+            // It seems it is quite safe, we just read simple copiable variables.
+            // Just in case in debug mode we check availability.
+            debug_assert!(w.try_borrow_mut().is_ok());
+            let rect = unsafe {
+               let internal = (*w.as_ptr()).internal();
+               internal.geometry.rect()
+            };
+            //----------------------------------
+            let is_inside = rect.is_inside(event.input.x, event.input.y);
+            let mut widget = w.borrow_mut();
+
+            return match event.input.state {
+               MouseState::Pressed => {
+                  if is_inside {
+                     widget.emit_mouse_button(event);
+                     let internal = widget.internal_mut();
+                     internal.add_mouse_btn_num(1);
+                  }
+                  true
+               }
+               MouseState::Released => {
+                  widget.emit_mouse_button(event);
+                  let internal = widget.internal_mut();
+
+                  internal.add_mouse_btn_num(-1);
+                  if internal.mouse_btn_num() == 0 {
+                     self.inner.widget_mouse_button = None;
+                  }
+                  true
+               }
+            };
+         }
+      }
+      //--------------------------------------------------
       Self::emit_inner_mouse_button(&mut self.inner, &self.root, event)
+      //--------------------------------------------------
    }
 
    fn emit_inner_mouse_button(
@@ -754,33 +800,13 @@ impl Dispatcher {
          Ok(mut child) => {
             child.internal_mut().set_children(children, id);
             if !accepted {
-               if let Some(wmo) = &dispatcher.widget_mouse_button {
-                  if let Some(w) = wmo.upgrade() {
-                     // if Rc::ptr_eq(&w, &input_child) {
-                     //    let internal = w.internal_mut();
-                     //
-                     //    match event.input.state {
-                     //       MouseState::Pressed => internal.add_mouse_btn_num(1),
-                     //       MouseState::Released => internal.add_mouse_btn_num(-1),
-                     //    }
-                     // } else {
-                     //    if event.input.state == MouseState::Released {
-                     //       let internal = w.internal_mut();
-                     //       internal.add_mouse_btn_num(-1);
-                     //       dispatcher.widget_mouse_button = None;
-                     //    }
-                     // }
-                  }
-               } else {
-                  if event.input.state == MouseState::Pressed {
-                     child.internal_mut().add_mouse_btn_num(1);
-                     dispatcher.widget_mouse_button = Some(Rc::downgrade(&input_child));
-                  }
-               }
-
-               if child.emit_mouse_button(event) {
-                  accepted = true;
-               }
+               debug_assert!(
+                  event.input.state != MouseState::Released,
+                  "expected to be processed before"
+               );
+               child.internal_mut().add_mouse_btn_num(1);
+               accepted = child.emit_mouse_button(event);
+               dispatcher.widget_mouse_button = Some(Rc::downgrade(&input_child));
             }
          }
          Err(e) => {
