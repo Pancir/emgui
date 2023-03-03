@@ -1,8 +1,11 @@
-use crate::core::events::{LifecycleEvent, MouseButtonsEvent, MouseMoveEvent};
+use crate::core::derive::Derive;
+use crate::core::events::{DrawEventCtx, MouseButtonsEventCtx, MouseMoveEventCtx};
 use crate::core::{IWidget, Widget};
 use sim_draw::color::Rgba;
 use sim_draw::m::{Point2, Rect};
 use sim_draw::{Canvas, Paint};
+use sim_input::mouse::MouseState;
+use std::any::Any;
 use std::cell::RefCell;
 use std::ops::Range;
 use std::rc::Rc;
@@ -30,11 +33,6 @@ pub trait ISliderHandler {
    ///
    /// The [SliderState::is_down] is `false`.
    fn slider_released(&mut self, _state: &SliderState) {}
-
-   //----------------------------------------------
-
-   /// This is called when slider should be drown.
-   fn draw(&mut self, _canvas: &mut Canvas, _state: &SliderState) {}
 }
 
 /// Default Slider handler.
@@ -90,14 +88,6 @@ impl SliderHandler {
       self.on_slider_released = Some(Box::new(cb));
       self
    }
-
-   /// Set callback.
-   ///
-   /// It allocates memory in heap for the closure.
-   pub fn on_draw(mut self, cb: impl FnMut(&mut Canvas, &SliderState) + 'static) -> Self {
-      self.on_draw = Some(Box::new(cb));
-      self
-   }
 }
 
 impl ISliderHandler for SliderHandler {
@@ -124,14 +114,6 @@ impl ISliderHandler for SliderHandler {
          (h)(state)
       }
    }
-
-   fn draw(&mut self, canvas: &mut Canvas, state: &SliderState) {
-      if let Some(h) = &mut self.on_draw {
-         (h)(canvas, state)
-      } else {
-         default_draw(canvas, state)
-      }
-   }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -145,7 +127,7 @@ pub struct SliderState {
    pub value: i32,
 
    /// `True` if horizon orientation, false for vertical.
-   pub is_horizon: bool,
+   pub is_vertical: bool,
 
    /// Geometry of the handle.
    pub handle_rect: Rect<f32>,
@@ -167,118 +149,118 @@ where
    handler: H,
 }
 
-impl<H> Slider<H>
-where
-   H: ISliderHandler,
-{
-   pub fn new(handler: H, rect: Rect<f32>) -> Rc<RefCell<Widget<Self>>> {
-      let out = Widget::new(|vt| {
-         vt.on_draw = Self::on_draw;
-         vt.on_mouse_move = Self::on_mouse_move;
-         vt.on_mouse_button = Self::on_mouse_button;
-
-         Self {
-            handler,
-            state: PushButtonState {
-               label: Label::new(
-                  label,
-                  rect.center(),
-                  text_patin,
-                  TextAlign::new().center().middle(),
-               ),
-               is_toggled: false,
-               is_hover: false,
-               is_down: false,
-            },
-         }
-      });
-
-      match out.try_borrow_mut() {
-         Ok(mut w) => {
-            w.set_rect(rect);
-         }
-         Err(_) => {
-            unreachable!()
-         }
-      }
-
-      out
-   }
-
-   #[inline]
-   pub fn set_rect(&mut self, rect: Rect<f32>) {
-      self.state.base.geometry.set_rect(rect);
-   }
-
-   #[inline]
-   pub fn set_range(&mut self, range: Range<i32>) {
-      self.state.range = range;
-   }
-
-   #[inline]
-   pub fn set_value(&mut self, value: i32) {
-      self.state.value = value;
-   }
-
-   #[inline]
-   pub fn set_enabled(&mut self, state: bool) {
-      self.state.needs_draw = self.state.base.is_enabled != state;
-      self.state.base.is_enabled = state;
-   }
-}
-
-impl<H> IWidget for Slider<H>
+impl<H> Derive for Slider<H>
 where
    H: ISliderHandler + 'static,
 {
-   fn base_state(&self) -> &BaseState {
-      &self.state.base
+   fn as_any(&self) -> &dyn Any {
+      self
    }
 
-   fn set_parent(&mut self, parent: Option<WidgetRef>) {
-      self.state.base.parent = parent
-   }
-
-   fn set_rect(&mut self, rect: Rect<f32>) {
-      self.state.base.geometry.set_rect(rect);
-   }
-
-   fn on_lifecycle(&mut self, event: &mut LifecycleEvent) {
-      self.state.base.self_ref = event.self_ref.clone()
-   }
-
-   fn on_draw(&mut self, canvas: &mut Canvas) {
-      self.handler.draw(canvas, &self.state);
-   }
-
-   fn on_mouse_move(&mut self, event: &MouseMoveEvent) -> bool {
-      let is_over = self.state.base.geometry.rect().is_inside(event.input.x, event.input.y);
-      if self.state.base.is_hover != is_over {
-         self.request_draw();
-      }
-      self.state.base.is_hover = is_over;
-      self.state.base.is_hover
-   }
-
-   fn on_mouse_button(&mut self, _event: &MouseButtonsEvent) -> bool {
-      // let down =
-      //    event.input.state == MouseState::Pressed && event.input.button == MouseButton::Left;
-      //
-      // let is_click = !down && self.is_hover && self.is_down;
-      // self.is_down = down && self.is_hover;
-      // if is_click {
-      //    self.is_toggle = !self.is_toggle;
-      // }
-      // is_click
-      false
+   fn as_any_mut(&mut self) -> &mut dyn Any {
+      self
    }
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
+impl<H> Slider<H>
+where
+   H: ISliderHandler + 'static,
+{
+   pub fn new(handler: H, rect: Rect<f32>) -> Rc<RefCell<Widget<Self>>> {
+      Widget::new(
+         |vt| {
+            vt.on_draw = Self::on_draw;
+            vt.on_mouse_enter = Self::on_mouse_enter;
+            vt.on_mouse_leave = Self::on_mouse_leave;
+            vt.on_mouse_button = Self::on_mouse_button;
 
-pub fn default_draw(canvas: &mut Canvas, state: &SliderState) {
-   canvas.set_paint(Paint::new_color(Rgba::GRAY));
-   canvas.fill(&state.base.geometry.rect());
+            Self {
+               handler,
+               state: SliderState {
+                  range: Range { start: 0, end: 100 },
+                  value: 0,
+                  is_vertical: false,
+                  handle_rect: Default::default(),
+                  handle_position: Default::default(),
+                  is_down: false,
+               },
+            }
+         },
+         |w| {
+            w.set_rect(rect);
+         },
+      )
+   }
+}
+
+impl<H> Slider<H>
+where
+   H: ISliderHandler + 'static,
+{
+   fn on_draw(w: &mut Widget<Self>, canvas: &mut Canvas, _event: &DrawEventCtx) {
+      // let d = w.derive_ref();
+      //
+      // canvas.set_paint(Paint::new_color(Rgba::GREEN.with_alpha_mul(0.5)));
+      //
+      // if d.state.is_hover {
+      //    canvas.set_color(Rgba::GRAY);
+      // }
+      //
+      // if d.state.is_down {
+      //    canvas.set_color(Rgba::GRAY_LIGHT);
+      // }
+      //
+      // canvas.fill(&w.geometry().rect());
+      // if !d.state.label.text.is_empty() {
+      //    d.state.label.on_draw(canvas);
+      // }
+   }
+
+   pub fn on_mouse_enter(w: &mut Widget<Self>) {
+      // let mut d = w.derive_mut();
+      // d.state.is_hover = true;
+      // w.request_draw();
+   }
+
+   pub fn on_mouse_leave(w: &mut Widget<Self>) {
+      // let mut d = w.derive_mut();
+      // d.state.is_hover = false;
+      // w.request_draw();
+   }
+
+   pub fn on_mouse_button(w: &mut Widget<Self>, event: &MouseButtonsEventCtx) -> bool {
+      let mut d = w.derive_mut();
+
+      // match event.input.state {
+      //    MouseState::Pressed => {
+      //       if d.state.is_hover {
+      //          d.state.is_down = true;
+      //          d.handler.pressed(&d.state, event.input.button);
+      //          w.request_draw();
+      //          return true;
+      //       }
+      //    }
+      //    MouseState::Released => {
+      //       if d.state.is_down {
+      //          d.state.is_down = false;
+      //          d.handler.released(&d.state, event.input.button);
+      //
+      //          if d.state.is_hover {
+      //             d.state.toggle += 1;
+      //             if d.state.toggle == d.state.toggle_num {
+      //                d.state.toggle = 0;
+      //             }
+      //
+      //             d.handler.click(&d.state);
+      //          }
+      //          w.request_draw();
+      //          return true;
+      //       }
+      //    }
+      // }
+
+      false
+   }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

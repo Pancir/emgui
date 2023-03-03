@@ -182,7 +182,7 @@ impl<H> PushButton<H>
 where
    H: IPushButtonHandler + 'static,
 {
-   fn on_draw(w: &mut Widget<PushButton<H>>, canvas: &mut Canvas, _event: &DrawEventCtx) {
+   fn on_draw(w: &mut Widget<Self>, canvas: &mut Canvas, _event: &DrawEventCtx) {
       let d = w.derive_ref();
 
       canvas.set_paint(Paint::new_color(Rgba::GREEN.with_alpha_mul(0.5)));
@@ -201,19 +201,19 @@ where
       }
    }
 
-   pub fn on_mouse_enter(w: &mut Widget<PushButton<H>>) {
+   pub fn on_mouse_enter(w: &mut Widget<Self>) {
       let mut d = w.derive_mut();
       d.state.is_hover = true;
       w.request_draw();
    }
 
-   pub fn on_mouse_leave(w: &mut Widget<PushButton<H>>) {
+   pub fn on_mouse_leave(w: &mut Widget<Self>) {
       let mut d = w.derive_mut();
       d.state.is_hover = false;
       w.request_draw();
    }
 
-   pub fn on_mouse_button(w: &mut Widget<PushButton<H>>, event: &MouseButtonsEventCtx) -> bool {
+   pub fn on_mouse_button(w: &mut Widget<Self>, event: &MouseButtonsEventCtx) -> bool {
       let mut d = w.derive_mut();
 
       match event.input.state {
