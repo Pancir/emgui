@@ -203,6 +203,52 @@ impl<H> Slider2d<H>
 where
    H: ISlider2dHandler + 'static,
 {
+   pub fn map_to_unit(start: f32, end: f32, v: f32) -> f32 {
+      (v - start) / (end - start)
+   }
+
+   fn read_handle_position(&self) -> (f32, f32) {
+      let width = self.state.grab_area.width();
+      let height = self.state.grab_area.height();
+
+      let x = if width > 0.0 {
+         Self::map_to_unit(
+            self.state.grab_area.min.x,
+            self.state.grab_area.max.x,
+            self.state.handle_position.x,
+         )
+      } else {
+         0.0
+      };
+
+      let y = if height > 0.0 {
+         Self::map_to_unit(
+            self.state.grab_area.min.y,
+            self.state.grab_area.max.y,
+            self.state.handle_position.y,
+         )
+      } else {
+         0.0
+      };
+
+      (x, y)
+   }
+
+   fn write_handle_position(&mut self, x: f32, y: f32) {
+      debug_assert!((0.0..=1.0).contains(&x));
+      debug_assert!((0.0..=1.0).contains(&y));
+
+      let x_offset = self.state.grab_area.width() * x;
+      let y_offset = self.state.grab_area.height() * y;
+      self.state.handle_position =
+         Point2::new(self.state.grab_area.min.x + x_offset, self.state.grab_area.min.y + y_offset)
+   }
+}
+
+impl<H> Slider2d<H>
+where
+   H: ISlider2dHandler + 'static,
+{
    fn on_set_rect(w: &mut Widget<Self>, rect: Rect<f32>) -> Option<Rect<f32>> {
       let d = w.derive_mut();
       let l_off = d.state.handle_rect.x;
@@ -210,13 +256,14 @@ where
       let t_off = d.state.handle_rect.y;
       let b_off = d.state.handle_rect.height + d.state.handle_rect.y;
       d.state.grab_area = rect.margin(l_off, -r_off, t_off, -b_off).into();
+      d.write_handle_position(d.state.value_x, d.state.value_y);
 
       Some(rect)
    }
 
    fn on_draw(w: &mut Widget<Self>, canvas: &mut Canvas, _event: &DrawEventCtx) {
       let d = w.derive_ref();
-      let rect = &w.geometry().rect();
+      let _rect = &w.geometry().rect();
 
       canvas.set_paint(Paint::new_color(Rgba::AMBER));
       canvas.fill(&w.geometry().rect());

@@ -429,7 +429,7 @@ where
    fn on_draw(&mut self, canvas: &mut Canvas, _event: &DrawEventCtx) {
       // TODO remove over as it is for testing
       if self.internal.is_over() {
-         canvas.set_paint(Paint::new_color(Rgba::RED));
+         canvas.set_paint(Paint::new_color(Rgba::RED.with_alpha_mul(0.2)));
       } else {
          canvas.set_paint(Paint::new_color(self.internal.background_color));
       }
