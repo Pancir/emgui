@@ -16,23 +16,17 @@ pub trait ISlider2dHandler {
    /// This is called  when [Slider2dState::is_down] is `true` and the slider moves.
    ///
    /// This usually happens when the user is dragging the slider.
-   /// The [Slider2dState::value] is the new slider position.
-   fn slider_moved(&mut self, _state: &Slider2dState) {}
-
-   /// This is called  when the slider range has changed.
-   ///
-   /// The [Slider2dState::range] is the new slider range.
-   fn range_changed(&mut self, _state: &Slider2dState) {}
+   fn slider_moved(&mut self, _x: f32, _y: f32) {}
 
    /// This is called when the user presses the slider with the mouse.
    ///
    /// The [Slider2dState::is_down] is `true`.
-   fn slider_pressed(&mut self, _state: &Slider2dState) {}
+   fn slider_pressed(&mut self, _x: f32, _y: f32) {}
 
    /// This is called when the user releases the slider with the mouse.
    ///
    /// The [Slider2dState::is_down] is `false`.
-   fn slider_released(&mut self, _state: &Slider2dState) {}
+   fn slider_released(&mut self, _x: f32, _y: f32) {}
 }
 
 /// Default Slider handler.
@@ -44,11 +38,9 @@ pub trait ISlider2dHandler {
 /// Heap allocation happens only when you add a closure.
 #[derive(Default)]
 pub struct Slider2dHandler {
-   on_slider_moved: Option<Box<dyn FnMut(&Slider2dState)>>,
-   on_range_changed: Option<Box<dyn FnMut(&Slider2dState)>>,
-   on_slider_pressed: Option<Box<dyn FnMut(&Slider2dState)>>,
-   on_slider_released: Option<Box<dyn FnMut(&Slider2dState)>>,
-   on_draw: Option<Box<dyn FnMut(&mut Canvas, &Slider2dState)>>,
+   on_slider_moved: Option<Box<dyn FnMut(f32, f32)>>,
+   on_slider_pressed: Option<Box<dyn FnMut(f32, f32)>>,
+   on_slider_released: Option<Box<dyn FnMut(f32, f32)>>,
 }
 
 impl Slider2dHandler {
@@ -60,23 +52,14 @@ impl Slider2dHandler {
    /// Set callback.
    ///
    /// It allocates memory in heap for the closure.
-   pub fn on_slider_moved(mut self, cb: impl FnMut(&Slider2dState) + 'static) -> Self {
+   pub fn on_slider_moved(mut self, cb: impl FnMut(f32, f32) + 'static) -> Self {
       self.on_slider_moved = Some(Box::new(cb));
       self
    }
-
    /// Set callback.
    ///
    /// It allocates memory in heap for the closure.
-   pub fn on_range_changed(mut self, cb: impl FnMut(&Slider2dState) + 'static) -> Self {
-      self.on_range_changed = Some(Box::new(cb));
-      self
-   }
-
-   /// Set callback.
-   ///
-   /// It allocates memory in heap for the closure.
-   pub fn on_slider_pressed(mut self, cb: impl FnMut(&Slider2dState) + 'static) -> Self {
+   pub fn on_slider_pressed(mut self, cb: impl FnMut(f32, f32) + 'static) -> Self {
       self.on_slider_pressed = Some(Box::new(cb));
       self
    }
@@ -84,34 +67,28 @@ impl Slider2dHandler {
    /// Set callback.
    ///
    /// It allocates memory in heap for the closure.
-   pub fn on_slider_released(mut self, cb: impl FnMut(&Slider2dState) + 'static) -> Self {
+   pub fn on_slider_released(mut self, cb: impl FnMut(f32, f32) + 'static) -> Self {
       self.on_slider_released = Some(Box::new(cb));
       self
    }
 }
 
 impl ISlider2dHandler for Slider2dHandler {
-   fn slider_moved(&mut self, state: &Slider2dState) {
+   fn slider_moved(&mut self, x: f32, y: f32) {
       if let Some(h) = &mut self.on_slider_moved {
-         (h)(state)
+         (h)(x, y)
       }
    }
 
-   fn range_changed(&mut self, state: &Slider2dState) {
-      if let Some(h) = &mut self.on_range_changed {
-         (h)(state)
-      }
-   }
-
-   fn slider_pressed(&mut self, state: &Slider2dState) {
+   fn slider_pressed(&mut self, x: f32, y: f32) {
       if let Some(h) = &mut self.on_slider_pressed {
-         (h)(state)
+         (h)(x, y)
       }
    }
 
-   fn slider_released(&mut self, state: &Slider2dState) {
+   fn slider_released(&mut self, x: f32, y: f32) {
       if let Some(h) = &mut self.on_slider_released {
-         (h)(state)
+         (h)(x, y)
       }
    }
 }
@@ -316,16 +293,17 @@ where
    }
 
    pub fn on_mouse_move(w: &mut Widget<Self>, event: &MouseMoveEventCtx) -> bool {
-      // let rect = &w.geometry().rect();
       let mut d = w.derive_mut();
 
       if d.state.is_handle_down {
-         let mouse_pos = Point2::new(
-            event.input.x.clamp(d.state.grab_area.min.x, d.state.grab_area.max.x),
-            event.input.y.clamp(d.state.grab_area.min.y, d.state.grab_area.max.y),
-         );
+         let mouse_pos = Point2::new(event.input.x, event.input.y);
 
-         d.state.handle_position = mouse_pos - d.click_pos;
+         d.state.handle_position =
+            (mouse_pos - d.click_pos).clamp(d.state.grab_area.min, d.state.grab_area.max);
+
+         let (x, y) = d.read_handle_position();
+         d.handler.slider_moved(x, y);
+
          w.request_draw();
       } else {
          let h_rect = d.state.handle_rect.offset(d.state.handle_position);
@@ -336,7 +314,6 @@ where
    }
 
    pub fn on_mouse_button(w: &mut Widget<Self>, event: &MouseButtonsEventCtx) -> bool {
-      let rect = &w.geometry().rect();
       let mut d = w.derive_mut();
       let h_rect = d.state.handle_rect.offset(d.state.handle_position);
       let is_inside_handle = h_rect.is_inside(event.input.x, event.input.y);
@@ -350,20 +327,27 @@ where
             if is_inside_handle {
                d.click_pos = Point2::new(event.input.x, event.input.y) - d.state.handle_position;
                d.state.is_handle_down = true;
+               d.handler.slider_pressed(d.state.value_x, d.state.value_y);
                w.request_draw();
             }
          }
          MouseState::Released => {
-            d.state.is_handle_down = false;
+            if d.state.is_handle_down {
+               d.state.is_handle_down = false;
+               d.handler.slider_released(d.state.value_x, d.state.value_y);
 
-            if is_inside_handle {
-               if d.released_at.elapsed() < Duration::from_millis(200) {
-                  d.reset_handle_position();
+               if is_inside_handle {
+                  if d.released_at.elapsed() < Duration::from_millis(200) {
+                     d.reset_handle_position();
+
+                     let (x, y) = d.read_handle_position();
+                     d.handler.slider_moved(x, y);
+                  }
                }
-            }
 
-            d.released_at = Instant::now();
-            w.request_draw();
+               d.released_at = Instant::now();
+               w.request_draw();
+            }
          }
       }
 
