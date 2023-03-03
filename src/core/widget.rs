@@ -58,7 +58,6 @@ pub trait IWidget: Any + 'static {
    fn derive_mut(&mut self) -> &mut dyn Derive;
 
    fn geometry(&self) -> &Geometry;
-   fn set_geometry(&mut self, g: Geometry);
 
    fn set_rect(&mut self, r: Rect<f32>);
    fn set_background_color(&mut self, color: Rgba);
@@ -108,12 +107,15 @@ pub trait IWidget: Any + 'static {
 
 #[derive(Copy, Clone)]
 pub struct WidgetVt<D> {
+   /// It is called when a new rectangle has to be set.
+   pub on_set_rect: fn(w: &mut D, Rect<f32>) -> Option<Rect<f32>>,
+   //-------------------------------------------------
    pub on_visible: fn(w: &mut D, bool),
    pub on_disable: fn(w: &mut D, bool),
-
+   //-------------------------------------------------
    pub on_lifecycle: fn(w: &mut D, &LifecycleEventCtx),
    pub on_layout: fn(w: &mut D, &LayoutEventCtx),
-
+   //-------------------------------------------------
    pub on_update: fn(w: &mut D, &UpdateEventCtx),
    pub on_draw: fn(w: &mut D, &mut Canvas, &DrawEventCtx),
    //-------------------------------------------------
@@ -158,23 +160,25 @@ where
       let mut out = Self {
          derive: unsafe { std::mem::zeroed() },
          vtable: WidgetVt {
+            on_set_rect: |_, v| Some(v),
+            //--------------------------------------
             on_visible: |_, _| {},
             on_disable: |_, _| {},
-            //-------------------------------------------------
+            //--------------------------------------
             on_lifecycle: |_, _| {},
             on_layout: |_, _| {},
-            //-------------------------------------------------
+            //--------------------------------------
             on_update: |_, _| {},
             on_draw: Self::on_draw,
-            //-------------------------------------------------
+            //--------------------------------------
             // TODO remove draw as it is for testing
             on_mouse_enter: |w| w.request_draw(),
             on_mouse_leave: |w| w.request_draw(),
-            //-------------------------------------------------
+            //--------------------------------------
             on_mouse_move: |_, _| true,
             on_mouse_button: |_, _| true,
             on_mouse_wheel: |_, _| true,
-            //-------------------------------------------------
+            //--------------------------------------
             on_keyboard: |_, _| false,
          },
          internal: Internal::new::<Self>(),
@@ -293,12 +297,10 @@ where
       &self.internal.geometry
    }
 
-   fn set_geometry(&mut self, g: Geometry) {
-      self.internal.geometry = g;
-   }
-
    fn set_rect(&mut self, r: Rect<f32>) {
-      self.internal.geometry.set_rect(r);
+      if let Some(rect) = (self.vtable.on_set_rect)(self, r) {
+         self.internal.geometry.set_rect(rect);
+      }
    }
 
    fn set_background_color(&mut self, color: Rgba) {
