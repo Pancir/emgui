@@ -4,7 +4,7 @@ use crate::core::{IWidget, Widget};
 use sim_draw::color::Rgba;
 use sim_draw::m::{Point2, Rect};
 use sim_draw::{Canvas, Paint};
-use sim_input::mouse::MouseState;
+use sim_input::mouse::{MouseButton, MouseState};
 use std::any::Any;
 use std::cell::RefCell;
 use std::ops::Range;
@@ -126,6 +126,10 @@ pub struct Slider2dState {
    /// Current Y value from `0.0..=1.0`
    pub value_y: f32,
 
+   //---------------------------
+   /// Mouse pressed on handle.
+   pub is_down: bool,
+
    /// Geometry of the handle relative to the [Self::handle_position].
    pub handle_rect: Rect<f32>,
 
@@ -141,6 +145,8 @@ where
 {
    state: Slider2dState,
    handler: H,
+
+   click_pos: Point2<f32>,
 }
 
 impl<H> Derive for Slider2d<H>
@@ -164,17 +170,18 @@ where
       Widget::new(
          |vt| {
             vt.on_draw = Self::on_draw;
-            vt.on_mouse_enter = Self::on_mouse_enter;
-            vt.on_mouse_leave = Self::on_mouse_leave;
+            vt.on_mouse_move = Self::on_mouse_move;
             vt.on_mouse_button = Self::on_mouse_button;
 
             Self {
                handler,
+               click_pos: Point2::ZERO,
                state: Slider2dState {
                   value_x: 0.0,
                   value_y: 0.0,
+                  is_down: false,
                   handle_rect: Rect::new(0.0, 0.0, 30.0, 30.0),
-                  handle_position: Default::default(),
+                  handle_position: rect.pos(),
                },
             }
          },
@@ -196,56 +203,50 @@ where
       canvas.set_paint(Paint::new_color(Rgba::AMBER));
       canvas.fill(&w.geometry().rect());
 
-      let w_pos = d.state.handle_position + rect.pos();
-      let h_rect = d.state.handle_rect.offset(w_pos);
-      canvas.set_paint(Paint::new_color(Rgba::CYAN));
+      // let w_pos = d.state.handle_position + rect.pos();
+      let h_rect = d.state.handle_rect.offset(d.state.handle_position);
+
+      if d.state.is_down {
+         canvas.set_paint(Paint::new_color(Rgba::CYAN));
+      } else {
+         canvas.set_paint(Paint::new_color(Rgba::GREEN));
+      }
       canvas.fill(&h_rect);
    }
 
-   pub fn on_mouse_enter(w: &mut Widget<Self>) {
-      // let mut d = w.derive_mut();
-      // d.state.is_hover = true;
-      // w.request_draw();
-   }
+   pub fn on_mouse_move(w: &mut Widget<Self>, event: &MouseMoveEventCtx) -> bool {
+      // let rect = &w.geometry().rect();
+      let mut d = w.derive_mut();
 
-   pub fn on_mouse_leave(w: &mut Widget<Self>) {
-      // let mut d = w.derive_mut();
-      // d.state.is_hover = false;
-      // w.request_draw();
+      let mouse_pos = Point2::new(event.input.x, event.input.y);
+      // let delta = mouse_pos - d.state.handle_position;
+      d.state.handle_position = mouse_pos - d.click_pos;
+      w.request_draw();
+      true
    }
 
    pub fn on_mouse_button(w: &mut Widget<Self>, event: &MouseButtonsEventCtx) -> bool {
+      let rect = &w.geometry().rect();
       let mut d = w.derive_mut();
+      let h_rect = d.state.handle_rect.offset(d.state.handle_position);
 
-      // match event.input.state {
-      //    MouseState::Pressed => {
-      //       if d.state.is_hover {
-      //          d.state.is_down = true;
-      //          d.handler.pressed(&d.state, event.input.button);
-      //          w.request_draw();
-      //          return true;
-      //       }
-      //    }
-      //    MouseState::Released => {
-      //       if d.state.is_down {
-      //          d.state.is_down = false;
-      //          d.handler.released(&d.state, event.input.button);
-      //
-      //          if d.state.is_hover {
-      //             d.state.toggle += 1;
-      //             if d.state.toggle == d.state.toggle_num {
-      //                d.state.toggle = 0;
-      //             }
-      //
-      //             d.handler.click(&d.state);
-      //          }
-      //          w.request_draw();
-      //          return true;
-      //       }
-      //    }
-      // }
+      if event.input.button != MouseButton::Left || !rect.is_inside(event.input.x, event.input.y) {
+         return true;
+      }
 
-      false
+      match event.input.state {
+         MouseState::Pressed => {
+            d.click_pos = Point2::new(event.input.x, event.input.y) - d.state.handle_position;
+            d.state.is_down = true;
+            w.request_draw();
+         }
+         MouseState::Released => {
+            d.state.is_down = false;
+            w.request_draw();
+         }
+      }
+
+      true
    }
 }
 
