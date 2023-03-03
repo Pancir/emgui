@@ -5,6 +5,7 @@ use crate::core::events::{
    MouseButtonsEventCtx, MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
 };
 use crate::core::{Geometry, WidgetId};
+use crate::defines::{DEFAULT_DOUBLE_CLICK_TIME, DEFAULT_TOOL_TIP_TIME};
 use sim_draw::color::Rgba;
 use sim_draw::m::Rect;
 use sim_draw::{Canvas, Paint};
@@ -12,6 +13,7 @@ use std::any::Any;
 use std::cell::RefCell;
 use std::mem::MaybeUninit;
 use std::rc::{Rc, Weak};
+use std::time::Duration;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -51,6 +53,14 @@ pub trait IWidget: Any + 'static {
 
    fn internal(&self) -> &Internal;
    fn internal_mut(&mut self) -> &mut Internal;
+
+   //---------------------------------------
+
+   fn set_tool_type_time(&mut self, duration: Option<Duration>);
+   fn tool_type_time(&self) -> Duration;
+
+   fn set_double_click_time(&mut self, duration: Option<Duration>);
+   fn double_click_time(&self) -> Duration;
 
    //---------------------------------------
 
@@ -218,12 +228,14 @@ where
       w
    }
 
+   #[inline]
    pub fn derive_ref(&self) -> &D {
       // # Safety
       // All initialization happen in new function.
       unsafe { self.derive.assume_init_ref() }
    }
 
+   #[inline]
    pub fn derive_mut(&mut self) -> &mut D {
       // # Safety
       // All initialization happen in new function.
@@ -281,6 +293,40 @@ where
 
    fn internal_mut(&mut self) -> &mut Internal {
       &mut self.internal
+   }
+
+   //---------------------------------------
+
+   fn set_tool_type_time(&mut self, duration: Option<Duration>) {
+      self.internal.tool_type_time = duration;
+   }
+
+   fn tool_type_time(&self) -> Duration {
+      if let Some(v) = self.internal.tool_type_time {
+         v
+      } else {
+         if let Some(r) = &self.internal.runtime {
+            r.tool_type_time()
+         } else {
+            DEFAULT_TOOL_TIP_TIME
+         }
+      }
+   }
+
+   fn set_double_click_time(&mut self, duration: Option<Duration>) {
+      self.internal.double_click_time = duration;
+   }
+
+   fn double_click_time(&self) -> Duration {
+      if let Some(v) = self.internal.double_click_time {
+         v
+      } else {
+         if let Some(r) = &self.internal.runtime {
+            r.double_click_time()
+         } else {
+            DEFAULT_DOUBLE_CLICK_TIME
+         }
+      }
    }
 
    //---------------------------------------

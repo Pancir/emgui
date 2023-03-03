@@ -1,5 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+use std::time::Duration;
+
 /// Number of widget children that are stored without storage heap allocation.
 ///
 /// In technical term it is [smallvec::SmallVec] number value.
@@ -9,5 +11,10 @@
 ///  SmallVec<[Rc<RefCell<dyn IWidget>>; STATIC_CHILD_NUM]>
 /// ```
 pub const STATIC_CHILD_NUM: usize = 3;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+pub const DEFAULT_DOUBLE_CLICK_TIME: Duration = Duration::from_millis(200);
+pub const DEFAULT_TOOL_TIP_TIME: Duration = Duration::from_secs(2);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

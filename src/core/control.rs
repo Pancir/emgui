@@ -14,6 +14,7 @@ use sim_draw::color::Rgba;
 use smallvec::SmallVec;
 use std::cell::{Cell, RefCell};
 use std::rc::{Rc, Weak};
+use std::time::Duration;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -80,7 +81,11 @@ pub struct Internal {
    pub(crate) geometry: Geometry,
    pub(crate) background_color: Rgba,
    //--------------------
-   runtime: Option<Runtime>,
+   pub(crate) tool_type_time: Option<Duration>,
+   pub(crate) double_click_time: Option<Duration>,
+   //--------------------
+   pub(crate) runtime: Option<Runtime>,
+   //--------------------
    state_flags: Cell<StateFlags>,
    number_mouse_buttons_pressed: Cell<i8>,
    //--------------------
@@ -97,6 +102,9 @@ impl Internal {
          id: WidgetId::new::<T>(),
          geometry: Geometry::default(),
          background_color: Rgba::GRAY,
+         //--------------------
+         tool_type_time: None,
+         double_click_time: None,
          //--------------------
          runtime: None,
          state_flags: Cell::new(StateFlags::INIT),

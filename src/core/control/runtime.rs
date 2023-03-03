@@ -1,4 +1,5 @@
 use crate::core::control::focus::FocusManager;
+use crate::defines::{DEFAULT_DOUBLE_CLICK_TIME, DEFAULT_TOOL_TIP_TIME};
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::time::Duration;
@@ -24,8 +25,8 @@ impl Runtime {
       Self {
          inner: Rc::new(RefCell::new(InnerRuntime {
             focus: FocusManager::new(),
-            tool_type_time: Cell::new(Duration::from_secs(2)),
-            double_click_time: Cell::new(Duration::from_millis(200)),
+            tool_type_time: Cell::new(DEFAULT_TOOL_TIP_TIME),
+            double_click_time: Cell::new(DEFAULT_DOUBLE_CLICK_TIME),
          })),
       }
    }

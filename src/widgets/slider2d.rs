@@ -314,17 +314,21 @@ where
    }
 
    pub fn on_mouse_button(w: &mut Widget<Self>, event: &MouseButtonsEventCtx) -> bool {
-      let mut d = w.derive_mut();
-      let h_rect = d.state.handle_rect.offset(d.state.handle_position);
-      let is_inside_handle = h_rect.is_inside(event.input.x, event.input.y);
-
       if event.input.button != MouseButton::Left {
          return true;
       }
 
+      let is_inside_handle = {
+         let d = w.derive_ref();
+         let h_rect = d.state.handle_rect.offset(d.state.handle_position);
+         let is_inside_handle = h_rect.is_inside(event.input.x, event.input.y);
+         is_inside_handle
+      };
+
       match event.input.state {
          MouseState::Pressed => {
             if is_inside_handle {
+               let mut d = w.derive_mut();
                d.click_pos = Point2::new(event.input.x, event.input.y) - d.state.handle_position;
                d.state.is_handle_down = true;
                d.handler.slider_pressed(d.state.value_x, d.state.value_y);
@@ -332,12 +336,16 @@ where
             }
          }
          MouseState::Released => {
+            let mut d = w.derive_mut();
             if d.state.is_handle_down {
                d.state.is_handle_down = false;
                d.handler.slider_released(d.state.value_x, d.state.value_y);
 
                if is_inside_handle {
-                  if d.released_at.elapsed() < Duration::from_millis(200) {
+                  let db_time = w.double_click_time();
+                  let d = w.derive_mut();
+
+                  if d.released_at.elapsed() < db_time {
                      d.reset_handle_position();
 
                      let (x, y) = d.read_handle_position();
@@ -345,6 +353,7 @@ where
                   }
                }
 
+               let mut d = w.derive_mut();
                d.released_at = Instant::now();
                w.request_draw();
             }
