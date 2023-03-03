@@ -87,6 +87,9 @@ pub trait IWidget: Any + 'static {
    /// See [Self::set_mouse_tracking]
    fn has_mouse_tracking(&mut self) -> bool;
 
+   /// `True` if mouse is over the widget.
+   fn is_mouse_over(&self) -> bool;
+
    //---------------------------------------
 
    fn emit_lifecycle(&mut self, _event: &LifecycleEventCtx);
@@ -342,6 +345,10 @@ where
 
    fn has_mouse_tracking(&mut self) -> bool {
       self.internal.has_mouse_tracking()
+   }
+
+   fn is_mouse_over(&self) -> bool {
+      self.internal.is_over()
    }
 
    //---------------------------------------

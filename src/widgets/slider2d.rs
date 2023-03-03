@@ -12,27 +12,27 @@ use std::rc::Rc;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub trait ISliderHandler {
-   /// This is called  when [SliderState::is_down] is `true` and the slider moves.
+pub trait ISlider2dHandler {
+   /// This is called  when [Slider2dState::is_down] is `true` and the slider moves.
    ///
    /// This usually happens when the user is dragging the slider.
-   /// The [SliderState::value] is the new slider position.
-   fn slider_moved(&mut self, _state: &SliderState) {}
+   /// The [Slider2dState::value] is the new slider position.
+   fn slider_moved(&mut self, _state: &Slider2dState) {}
 
    /// This is called  when the slider range has changed.
    ///
-   /// The [SliderState::range] is the new slider range.
-   fn range_changed(&mut self, _state: &SliderState) {}
+   /// The [Slider2dState::range] is the new slider range.
+   fn range_changed(&mut self, _state: &Slider2dState) {}
 
    /// This is called when the user presses the slider with the mouse.
    ///
-   /// The [SliderState::is_down] is `true`.
-   fn slider_pressed(&mut self, _state: &SliderState) {}
+   /// The [Slider2dState::is_down] is `true`.
+   fn slider_pressed(&mut self, _state: &Slider2dState) {}
 
    /// This is called when the user releases the slider with the mouse.
    ///
-   /// The [SliderState::is_down] is `false`.
-   fn slider_released(&mut self, _state: &SliderState) {}
+   /// The [Slider2dState::is_down] is `false`.
+   fn slider_released(&mut self, _state: &Slider2dState) {}
 }
 
 /// Default Slider handler.
@@ -43,15 +43,15 @@ pub trait ISliderHandler {
 /// # Note
 /// Heap allocation happens only when you add a closure.
 #[derive(Default)]
-pub struct SliderHandler {
-   on_slider_moved: Option<Box<dyn FnMut(&SliderState)>>,
-   on_range_changed: Option<Box<dyn FnMut(&SliderState)>>,
-   on_slider_pressed: Option<Box<dyn FnMut(&SliderState)>>,
-   on_slider_released: Option<Box<dyn FnMut(&SliderState)>>,
-   on_draw: Option<Box<dyn FnMut(&mut Canvas, &SliderState)>>,
+pub struct Slider2dHandler {
+   on_slider_moved: Option<Box<dyn FnMut(&Slider2dState)>>,
+   on_range_changed: Option<Box<dyn FnMut(&Slider2dState)>>,
+   on_slider_pressed: Option<Box<dyn FnMut(&Slider2dState)>>,
+   on_slider_released: Option<Box<dyn FnMut(&Slider2dState)>>,
+   on_draw: Option<Box<dyn FnMut(&mut Canvas, &Slider2dState)>>,
 }
 
-impl SliderHandler {
+impl Slider2dHandler {
    /// Construct new.
    pub fn new() -> Self {
       Self::default()
@@ -60,7 +60,7 @@ impl SliderHandler {
    /// Set callback.
    ///
    /// It allocates memory in heap for the closure.
-   pub fn on_slider_moved(mut self, cb: impl FnMut(&SliderState) + 'static) -> Self {
+   pub fn on_slider_moved(mut self, cb: impl FnMut(&Slider2dState) + 'static) -> Self {
       self.on_slider_moved = Some(Box::new(cb));
       self
    }
@@ -68,7 +68,7 @@ impl SliderHandler {
    /// Set callback.
    ///
    /// It allocates memory in heap for the closure.
-   pub fn on_range_changed(mut self, cb: impl FnMut(&SliderState) + 'static) -> Self {
+   pub fn on_range_changed(mut self, cb: impl FnMut(&Slider2dState) + 'static) -> Self {
       self.on_range_changed = Some(Box::new(cb));
       self
    }
@@ -76,7 +76,7 @@ impl SliderHandler {
    /// Set callback.
    ///
    /// It allocates memory in heap for the closure.
-   pub fn on_slider_pressed(mut self, cb: impl FnMut(&SliderState) + 'static) -> Self {
+   pub fn on_slider_pressed(mut self, cb: impl FnMut(&Slider2dState) + 'static) -> Self {
       self.on_slider_pressed = Some(Box::new(cb));
       self
    }
@@ -84,32 +84,32 @@ impl SliderHandler {
    /// Set callback.
    ///
    /// It allocates memory in heap for the closure.
-   pub fn on_slider_released(mut self, cb: impl FnMut(&SliderState) + 'static) -> Self {
+   pub fn on_slider_released(mut self, cb: impl FnMut(&Slider2dState) + 'static) -> Self {
       self.on_slider_released = Some(Box::new(cb));
       self
    }
 }
 
-impl ISliderHandler for SliderHandler {
-   fn slider_moved(&mut self, state: &SliderState) {
+impl ISlider2dHandler for Slider2dHandler {
+   fn slider_moved(&mut self, state: &Slider2dState) {
       if let Some(h) = &mut self.on_slider_moved {
          (h)(state)
       }
    }
 
-   fn range_changed(&mut self, state: &SliderState) {
+   fn range_changed(&mut self, state: &Slider2dState) {
       if let Some(h) = &mut self.on_range_changed {
          (h)(state)
       }
    }
 
-   fn slider_pressed(&mut self, state: &SliderState) {
+   fn slider_pressed(&mut self, state: &Slider2dState) {
       if let Some(h) = &mut self.on_slider_pressed {
          (h)(state)
       }
    }
 
-   fn slider_released(&mut self, state: &SliderState) {
+   fn slider_released(&mut self, state: &Slider2dState) {
       if let Some(h) = &mut self.on_slider_released {
          (h)(state)
       }
@@ -119,39 +119,33 @@ impl ISliderHandler for SliderHandler {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #[derive(Default)]
-pub struct SliderState {
-   /// Value range.
-   pub range: Range<i32>,
+pub struct Slider2dState {
+   /// Current X value from `0.0..=1.0`
+   pub value_x: f32,
 
-   /// Current values within the [Self::range].
-   pub value: i32,
+   /// Current Y value from `0.0..=1.0`
+   pub value_y: f32,
 
-   /// `True` if horizon orientation, false for vertical.
-   pub is_vertical: bool,
-
-   /// Geometry of the handle.
+   /// Geometry of the handle relative to the [Self::handle_position].
    pub handle_rect: Rect<f32>,
 
    /// Position of the handle.
    pub handle_position: Point2<f32>,
-
-   /// `True` if mouse pressed over handle.
-   pub is_down: bool,
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub struct Slider<H = SliderHandler>
+pub struct Slider2d<H = Slider2dHandler>
 where
-   H: ISliderHandler,
+   H: ISlider2dHandler,
 {
-   state: SliderState,
+   state: Slider2dState,
    handler: H,
 }
 
-impl<H> Derive for Slider<H>
+impl<H> Derive for Slider2d<H>
 where
-   H: ISliderHandler + 'static,
+   H: ISlider2dHandler + 'static,
 {
    fn as_any(&self) -> &dyn Any {
       self
@@ -162,9 +156,9 @@ where
    }
 }
 
-impl<H> Slider<H>
+impl<H> Slider2d<H>
 where
-   H: ISliderHandler + 'static,
+   H: ISlider2dHandler + 'static,
 {
    pub fn new(handler: H, rect: Rect<f32>) -> Rc<RefCell<Widget<Self>>> {
       Widget::new(
@@ -176,13 +170,11 @@ where
 
             Self {
                handler,
-               state: SliderState {
-                  range: Range { start: 0, end: 100 },
-                  value: 0,
-                  is_vertical: false,
-                  handle_rect: Default::default(),
+               state: Slider2dState {
+                  value_x: 0.0,
+                  value_y: 0.0,
+                  handle_rect: Rect::new(0.0, 0.0, 30.0, 30.0),
                   handle_position: Default::default(),
-                  is_down: false,
                },
             }
          },
@@ -193,27 +185,21 @@ where
    }
 }
 
-impl<H> Slider<H>
+impl<H> Slider2d<H>
 where
-   H: ISliderHandler + 'static,
+   H: ISlider2dHandler + 'static,
 {
    fn on_draw(w: &mut Widget<Self>, canvas: &mut Canvas, _event: &DrawEventCtx) {
-      // let d = w.derive_ref();
-      //
-      // canvas.set_paint(Paint::new_color(Rgba::GREEN.with_alpha_mul(0.5)));
-      //
-      // if d.state.is_hover {
-      //    canvas.set_color(Rgba::GRAY);
-      // }
-      //
-      // if d.state.is_down {
-      //    canvas.set_color(Rgba::GRAY_LIGHT);
-      // }
-      //
-      // canvas.fill(&w.geometry().rect());
-      // if !d.state.label.text.is_empty() {
-      //    d.state.label.on_draw(canvas);
-      // }
+      let d = w.derive_ref();
+      let rect = &w.geometry().rect();
+
+      canvas.set_paint(Paint::new_color(Rgba::AMBER));
+      canvas.fill(&w.geometry().rect());
+
+      let w_pos = d.state.handle_position + rect.pos();
+      let h_rect = d.state.handle_rect.offset(w_pos);
+      canvas.set_paint(Paint::new_color(Rgba::CYAN));
+      canvas.fill(&h_rect);
    }
 
    pub fn on_mouse_enter(w: &mut Widget<Self>) {
