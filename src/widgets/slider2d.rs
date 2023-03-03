@@ -8,6 +8,7 @@ use sim_input::mouse::{MouseButton, MouseState};
 use std::any::Any;
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::time::{Duration, Instant};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -125,9 +126,18 @@ pub struct Slider2dState {
    /// Current Y value from `0.0..=1.0`
    pub value_y: f32,
 
+   /// Default [Self::value_x] that is used when the slider is reset.
+   pub default_value_x: f32,
+
+   /// Default [Self::value_y] that is used when the slider is reset.
+   pub default_value_y: f32,
+
    //---------------------------
    /// Mouse pressed on handle.
-   pub is_down: bool,
+   pub is_handle_down: bool,
+
+   /// Mouse is over handle.
+   pub is_over_handle: bool,
 
    /// Grab mouse position area, it is usually less than the
    /// widget rectangle, because it need a room for handle draw.
@@ -150,6 +160,7 @@ where
    handler: H,
 
    click_pos: Point2<f32>,
+   released_at: Instant,
 }
 
 impl<H> Derive for Slider2d<H>
@@ -182,10 +193,14 @@ where
             Self {
                handler,
                click_pos: Point2::ZERO,
+               released_at: Instant::now(),
                state: Slider2dState {
                   value_x: 0.5,
                   value_y: 0.5,
-                  is_down: false,
+                  default_value_x: 0.5,
+                  default_value_y: 0.5,
+                  is_handle_down: false,
+                  is_over_handle: false,
                   grab_area: Box2::ZERO,
                   handle_rect,
                   handle_position: -handle_rect.pos() + rect.pos(),
@@ -193,9 +208,20 @@ where
             }
          },
          |w| {
+            w.set_mouse_tracking(true);
             w.set_rect(rect);
          },
       )
+   }
+
+   pub fn set_handle_current_pos(&mut self, x: f32, y: f32) {
+      self.state.value_x = x.clamp(0.0, 1.0);
+      self.state.value_y = y.clamp(0.0, 1.0);
+   }
+
+   pub fn set_handle_default_pos(&mut self, x: f32, y: f32) {
+      self.state.default_value_x = x.clamp(0.0, 1.0);
+      self.state.default_value_y = y.clamp(0.0, 1.0);
    }
 }
 
@@ -243,6 +269,10 @@ where
       self.state.handle_position =
          Point2::new(self.state.grab_area.min.x + x_offset, self.state.grab_area.min.y + y_offset)
    }
+
+   fn reset_handle_position(&mut self) {
+      self.write_handle_position(self.state.default_value_x, self.state.default_value_y)
+   }
 }
 
 impl<H> Slider2d<H>
@@ -273,10 +303,14 @@ where
 
       // let w_pos = d.state.handle_position + rect.pos();
       let h_rect = d.state.handle_rect.offset(d.state.handle_position);
-      if d.state.is_down {
+      if d.state.is_handle_down {
          canvas.set_paint(Paint::new_color(Rgba::CYAN));
       } else {
-         canvas.set_paint(Paint::new_color(Rgba::GREEN));
+         if d.state.is_over_handle {
+            canvas.set_paint(Paint::new_color(Rgba::GREEN.with_alpha_mul(0.9)));
+         } else {
+            canvas.set_paint(Paint::new_color(Rgba::GREEN));
+         }
       }
       canvas.fill(&h_rect);
    }
@@ -285,13 +319,19 @@ where
       // let rect = &w.geometry().rect();
       let mut d = w.derive_mut();
 
-      let mouse_pos = Point2::new(
-         event.input.x.clamp(d.state.grab_area.min.x, d.state.grab_area.max.x),
-         event.input.y.clamp(d.state.grab_area.min.y, d.state.grab_area.max.y),
-      );
+      if d.state.is_handle_down {
+         let mouse_pos = Point2::new(
+            event.input.x.clamp(d.state.grab_area.min.x, d.state.grab_area.max.x),
+            event.input.y.clamp(d.state.grab_area.min.y, d.state.grab_area.max.y),
+         );
 
-      d.state.handle_position = mouse_pos - d.click_pos;
-      w.request_draw();
+         d.state.handle_position = mouse_pos - d.click_pos;
+         w.request_draw();
+      } else {
+         let h_rect = d.state.handle_rect.offset(d.state.handle_position);
+         d.state.is_over_handle = h_rect.is_inside(event.input.x, event.input.y);
+         w.request_draw();
+      }
       true
    }
 
@@ -299,19 +339,30 @@ where
       let rect = &w.geometry().rect();
       let mut d = w.derive_mut();
       let h_rect = d.state.handle_rect.offset(d.state.handle_position);
+      let is_inside_handle = h_rect.is_inside(event.input.x, event.input.y);
 
-      if event.input.button != MouseButton::Left || !rect.is_inside(event.input.x, event.input.y) {
+      if event.input.button != MouseButton::Left {
          return true;
       }
 
       match event.input.state {
          MouseState::Pressed => {
-            d.click_pos = Point2::new(event.input.x, event.input.y) - d.state.handle_position;
-            d.state.is_down = true;
-            w.request_draw();
+            if is_inside_handle {
+               d.click_pos = Point2::new(event.input.x, event.input.y) - d.state.handle_position;
+               d.state.is_handle_down = true;
+               w.request_draw();
+            }
          }
          MouseState::Released => {
-            d.state.is_down = false;
+            d.state.is_handle_down = false;
+
+            if is_inside_handle {
+               if d.released_at.elapsed() < Duration::from_millis(200) {
+                  d.reset_handle_position();
+               }
+            }
+
+            d.released_at = Instant::now();
             w.request_draw();
          }
       }
