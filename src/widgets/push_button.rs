@@ -188,14 +188,20 @@ where
       canvas.set_paint(Paint::new_color(Rgba::GREEN.with_alpha_mul(0.5)));
 
       if d.state.is_hover {
-         canvas.set_color(Rgba::GRAY);
+         canvas.set_color(Rgba::AMBER);
       }
 
       if d.state.is_down {
-         canvas.set_color(Rgba::GRAY_LIGHT);
+         canvas.set_color(Rgba::RED);
       }
 
       canvas.fill(&w.geometry().rect());
+
+      canvas.set_color(Rgba::BLACK);
+      canvas.set_aa_fringe(Some(1.0));
+      canvas.set_stroke_width(2.0);
+      canvas.stroke(&w.geometry().rect());
+
       if !d.state.label.text.is_empty() {
          d.state.label.on_draw(canvas);
       }
