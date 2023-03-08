@@ -1,4 +1,4 @@
-use crate::core::control::focus::FocusManager;
+use crate::core::widget_base::focus::FocusManager;
 use crate::defines::{DEFAULT_DOUBLE_CLICK_TIME, DEFAULT_TOOL_TIP_TIME};
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;

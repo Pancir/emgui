@@ -3,9 +3,9 @@
 #[cfg(feature = "app")]
 pub mod app;
 
-pub mod control;
 pub mod derive;
 pub mod events;
+pub mod widget_base;
 
 mod app_env;
 mod geometry;

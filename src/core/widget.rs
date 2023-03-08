@@ -1,11 +1,10 @@
-use crate::core::control::Internal;
 use crate::core::derive::Derive;
 use crate::core::events::{
    DrawEventCtx, KeyboardEventCtx, LayoutEventCtx, LifecycleEventCtx, LifecycleState,
    MouseButtonsEventCtx, MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
 };
+use crate::core::widget_base::WidgetBase;
 use crate::core::{Geometry, WidgetId};
-use crate::defines::{DEFAULT_DOUBLE_CLICK_TIME, DEFAULT_TOOL_TIP_TIME};
 use sim_draw::color::Rgba;
 use sim_draw::m::Rect;
 use sim_draw::{Canvas, Paint};
@@ -51,8 +50,8 @@ pub trait IWidget: Any + 'static {
 
    //---------------------------------------
 
-   fn internal(&self) -> &Internal;
-   fn internal_mut(&mut self) -> &mut Internal;
+   fn base(&self) -> &WidgetBase;
+   fn base_mut(&mut self) -> &mut WidgetBase;
 
    //---------------------------------------
 
@@ -154,7 +153,7 @@ where
 {
    derive: MaybeUninit<D>,
    vtable: WidgetVt<Self>,
-   internal: Internal,
+   internal: WidgetBase,
 }
 
 impl<D: 'static> Widget<D>
@@ -191,7 +190,7 @@ where
             //--------------------------------------
             on_keyboard: |_, _| false,
          },
-         internal: Internal::new::<Self>(),
+         internal: WidgetBase::new::<Self>(),
       };
 
       let derive = vt_cb(&mut out.vtable);
@@ -256,7 +255,7 @@ where
    }
 
    fn id(&self) -> WidgetId {
-      self.internal.id
+      self.internal.id()
    }
 
    //---------------------------------------
@@ -287,46 +286,30 @@ where
 
    //---------------------------------------
 
-   fn internal(&self) -> &Internal {
+   fn base(&self) -> &WidgetBase {
       &self.internal
    }
 
-   fn internal_mut(&mut self) -> &mut Internal {
+   fn base_mut(&mut self) -> &mut WidgetBase {
       &mut self.internal
    }
 
    //---------------------------------------
 
    fn set_tool_type_time(&mut self, duration: Option<Duration>) {
-      self.internal.tool_type_time = duration;
+      self.internal.set_tool_type_time(duration);
    }
 
    fn tool_type_time(&self) -> Duration {
-      if let Some(v) = self.internal.tool_type_time {
-         v
-      } else {
-         if let Some(r) = &self.internal.runtime {
-            r.tool_type_time()
-         } else {
-            DEFAULT_TOOL_TIP_TIME
-         }
-      }
+      self.internal.tool_type_time()
    }
 
    fn set_double_click_time(&mut self, duration: Option<Duration>) {
-      self.internal.double_click_time = duration;
+      self.internal.set_double_click_time(duration);
    }
 
    fn double_click_time(&self) -> Duration {
-      if let Some(v) = self.internal.double_click_time {
-         v
-      } else {
-         if let Some(r) = &self.internal.runtime {
-            r.double_click_time()
-         } else {
-            DEFAULT_DOUBLE_CLICK_TIME
-         }
-      }
+      self.internal.double_click_time()
    }
 
    //---------------------------------------
@@ -340,18 +323,17 @@ where
    }
 
    fn geometry(&self) -> &Geometry {
-      &self.internal.geometry
+      &self.internal.geometry()
    }
 
    fn set_rect(&mut self, r: Rect<f32>) {
       if let Some(rect) = (self.vtable.on_set_rect)(self, r) {
-         self.internal.geometry.set_rect(rect);
+         self.internal.geometry_mut().set_rect(rect);
       }
    }
 
    fn set_background_color(&mut self, color: Rgba) {
-      debug_assert!(color.a > (0.0 - f32::EPSILON) && color.a < 1.0 + f32::EPSILON);
-      self.internal.background_color = color;
+      self.internal.set_background_color(color);
       self.set_transparent(color.a < 1.0);
    }
 
@@ -477,9 +459,9 @@ where
       if self.internal.is_over() {
          canvas.set_paint(Paint::new_color(Rgba::RED.with_alpha_mul(0.2)));
       } else {
-         canvas.set_paint(Paint::new_color(self.internal.background_color));
+         canvas.set_paint(Paint::new_color(self.internal.background_color()));
       }
-      canvas.fill(&self.internal.geometry.rect());
+      canvas.fill(&self.internal.geometry().rect());
    }
 }
 

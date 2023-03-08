@@ -6,9 +6,9 @@ pub use dispatcher::*;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-use crate::core::control::runtime::Runtime;
+use crate::core::widget_base::runtime::Runtime;
 use crate::core::{Geometry, IWidget, WidgetId};
-use crate::defines::STATIC_CHILD_NUM;
+use crate::defines::{DEFAULT_DOUBLE_CLICK_TIME, DEFAULT_TOOL_TIP_TIME, STATIC_CHILD_NUM};
 use bitflags::bitflags;
 use sim_draw::color::Rgba;
 use smallvec::SmallVec;
@@ -74,17 +74,17 @@ bitflags! {
 
 pub(crate) type ChildrenVec = SmallVec<[Rc<RefCell<dyn IWidget>>; STATIC_CHILD_NUM]>;
 
-pub struct Internal {
+pub struct WidgetBase {
    parent: Option<Weak<RefCell<dyn IWidget>>>,
    //--------------------
-   pub(crate) id: WidgetId,
-   pub(crate) geometry: Geometry,
-   pub(crate) background_color: Rgba,
+   id: WidgetId,
+   geometry: Geometry,
+   background_color: Rgba,
    //--------------------
-   pub(crate) tool_type_time: Option<Duration>,
-   pub(crate) double_click_time: Option<Duration>,
+   tool_type_time: Option<Duration>,
+   double_click_time: Option<Duration>,
    //--------------------
-   pub(crate) runtime: Option<Runtime>,
+   runtime: Option<Runtime>,
    //--------------------
    state_flags: Cell<StateFlags>,
    number_mouse_buttons_pressed: Cell<i8>,
@@ -94,8 +94,8 @@ pub struct Internal {
    //--------------------
 }
 
-impl Internal {
-   pub(crate) fn new<T>() -> Self {
+impl WidgetBase {
+   pub fn new<T>() -> Self {
       Self {
          parent: None,
          //--------------------
@@ -114,9 +114,30 @@ impl Internal {
          children: Default::default(),
       }
    }
+
+   pub fn id(&self) -> WidgetId {
+      self.id
+   }
+
+   pub fn geometry(&self) -> &Geometry {
+      &self.geometry
+   }
+
+   pub fn geometry_mut(&mut self) -> &mut Geometry {
+      &mut self.geometry
+   }
+
+   pub fn set_background_color(&mut self, color: Rgba) {
+      debug_assert!(color.a > (0.0 - f32::EPSILON) && color.a < 1.0 + f32::EPSILON);
+      self.background_color = color;
+   }
+
+   pub fn background_color(&mut self) -> Rgba {
+      self.background_color
+   }
 }
 
-impl Internal {
+impl WidgetBase {
    pub(crate) fn request_draw(&self) {
       let mut f = self.state_flags.get();
 
@@ -127,7 +148,7 @@ impl Internal {
          if let Some(parent) = &self.parent {
             if let Some(p) = parent.upgrade() {
                let mut bor = p.borrow_mut();
-               let internal = bor.internal_mut();
+               let internal = bor.base_mut();
                internal.state_flags.get_mut().set(StateFlags::CHILDREN_DRAW, true);
             }
          }
@@ -144,7 +165,7 @@ impl Internal {
          if let Some(parent) = &self.parent {
             if let Some(p) = parent.upgrade() {
                let mut bor = p.borrow_mut();
-               let internal = bor.internal_mut();
+               let internal = bor.base_mut();
                internal.state_flags.get_mut().set(StateFlags::CHILDREN_UPDATE, true);
             }
          }
@@ -161,7 +182,7 @@ impl Internal {
          if let Some(parent) = &self.parent {
             if let Some(p) = parent.upgrade() {
                let mut bor = p.borrow_mut();
-               let internal = bor.internal_mut();
+               let internal = bor.base_mut();
                internal.state_flags.get_mut().set(StateFlags::CHILDREN_DELETE, true);
             }
          }
@@ -169,7 +190,7 @@ impl Internal {
    }
 }
 
-impl Internal {
+impl WidgetBase {
    pub(crate) fn is_visible(&self) -> bool {
       self.state_flags.get().contains(StateFlags::IS_VISIBLE)
    }
@@ -243,7 +264,41 @@ impl Internal {
    }
 }
 
-impl Internal {
+impl WidgetBase {
+   pub(crate) fn set_tool_type_time(&mut self, duration: Option<Duration>) {
+      self.tool_type_time = duration;
+   }
+
+   pub(crate) fn tool_type_time(&self) -> Duration {
+      if let Some(v) = self.tool_type_time {
+         v
+      } else {
+         if let Some(r) = &self.runtime {
+            r.tool_type_time()
+         } else {
+            DEFAULT_TOOL_TIP_TIME
+         }
+      }
+   }
+
+   pub(crate) fn set_double_click_time(&mut self, duration: Option<Duration>) {
+      self.double_click_time = duration;
+   }
+
+   pub(crate) fn double_click_time(&self) -> Duration {
+      if let Some(v) = self.double_click_time {
+         v
+      } else {
+         if let Some(r) = &self.runtime {
+            r.double_click_time()
+         } else {
+            DEFAULT_DOUBLE_CLICK_TIME
+         }
+      }
+   }
+}
+
+impl WidgetBase {
    #[track_caller]
    pub(crate) fn take_children(&mut self, id: WidgetId) -> ChildrenVec {
       debug_assert!(
@@ -290,7 +345,7 @@ pub fn add_child(
    let w = Rc::downgrade(&child);
    {
       let bor = parent.borrow();
-      let pch = bor.internal();
+      let pch = bor.base();
 
       debug_assert!(!pch.children_busy.get().is_valid());
 
@@ -300,7 +355,7 @@ pub fn add_child(
 
    {
       let mut bor = child.borrow_mut();
-      let c = bor.internal_mut();
+      let c = bor.base_mut();
 
       #[cfg(debug_assertions)]
       {
@@ -323,7 +378,7 @@ mod tests {
 
    #[test]
    fn sizes() {
-      dbg!(std::mem::size_of::<Internal>());
+      dbg!(std::mem::size_of::<WidgetBase>());
    }
 }
 

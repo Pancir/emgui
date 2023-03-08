@@ -1,4 +1,4 @@
-use crate::core::control::Dispatcher;
+use crate::core::widget_base::Dispatcher;
 use crate::core::{AppEnv, Theme};
 use sim_input::keyboard::KeyboardInput;
 use sim_input::mouse::{MouseButtonsInput, MouseMoveInput, MouseWheelInput};

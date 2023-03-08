@@ -1,10 +1,10 @@
 use super::*;
 
-use crate::core::control::runtime::Runtime;
 use crate::core::events::{
    DrawEventCtx, KeyboardEventCtx, LayoutEventCtx, LifecycleEventCtx, LifecycleState,
    MouseButtonsEventCtx, MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
 };
+use crate::core::widget_base::runtime::Runtime;
 use crate::core::{AppEnv, IWidget, Widget};
 use sim_draw::Canvas;
 use sim_input::mouse::MouseState;
@@ -121,7 +121,7 @@ impl Dispatcher {
    fn set_runtime_to_widget_inner(runtime: Runtime, child: &Rc<RefCell<dyn IWidget>>) {
       match child.try_borrow_mut() {
          Ok(mut bor) => {
-            let mut internal = bor.internal_mut();
+            let mut internal = bor.base_mut();
             internal.runtime = Some(runtime.clone());
 
             let children = internal.take_children(internal.id);
@@ -150,12 +150,12 @@ impl Dispatcher {
       // Just in case in debug mode we check availability.
       debug_assert!(child.try_borrow_mut().is_ok());
       let id = unsafe {
-         let internal = (*child.as_ptr()).internal();
+         let internal = (*child.as_ptr()).base();
          internal.id
       };
       //---------------------------------
       let children = match child.try_borrow_mut() {
-         Ok(mut child) => child.internal_mut().take_children(id),
+         Ok(mut child) => child.base_mut().take_children(id),
          Err(e) => {
             log::error!("Can't borrow widget [{:?}] to process lifecycle event!\n\t{:?}", id, e);
             return;
@@ -170,7 +170,7 @@ impl Dispatcher {
       //--------------------------------------------------
       match child.try_borrow_mut() {
          Ok(mut child) => {
-            child.internal_mut().set_children(children, id);
+            child.base_mut().set_children(children, id);
             child.emit_lifecycle(event);
          }
          Err(e) => {
@@ -202,7 +202,7 @@ impl Dispatcher {
          Ok(mut child) => {
             child.emit_layout(event);
             let id = child.id();
-            child.internal_mut().take_children(id)
+            child.base_mut().take_children(id)
          }
          Err(e) => {
             panic!("{:?}", e)
@@ -217,7 +217,7 @@ impl Dispatcher {
       //--------------------------------------------------
       let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{:?}", e));
       let id = bor.id();
-      bor.internal_mut().set_children(children, id);
+      bor.base_mut().set_children(children, id);
    }
 }
 
@@ -236,7 +236,7 @@ impl Dispatcher {
       // Just in case in debug mode we check availability.
       debug_assert!(input_child.try_borrow_mut().is_ok());
       let (state_flags, id) = unsafe {
-         let internal = (*input_child.as_ptr()).internal();
+         let internal = (*input_child.as_ptr()).base();
          (internal.state_flags.get(), internal.id)
       };
       //---------------------------------
@@ -258,7 +258,7 @@ impl Dispatcher {
       //--------------------------------------------------
       if state_flags.contains(StateFlags::CHILDREN_DELETE) {
          let mut children = match input_child.try_borrow_mut() {
-            Ok(mut child) => child.internal_mut().take_children(id),
+            Ok(mut child) => child.base_mut().take_children(id),
             Err(e) => {
                log::error!("Can't borrow widget [{:?}] to process delete event!\n\t{}", id, e);
                return;
@@ -270,7 +270,7 @@ impl Dispatcher {
             // It seems it is quite safe, we just read simple copiable variables.
             // Just in case in debug mode we check availability.
             debug_assert!(child.try_borrow_mut().is_ok());
-            let flags = unsafe { (*child.as_ptr()).internal().state_flags.get() };
+            let flags = unsafe { (*child.as_ptr()).base().state_flags.get() };
 
             if !flags.contains(StateFlags::SELF_DELETE) {
                Self::emit_inner_check_delete(dispatcher, &child);
@@ -287,7 +287,7 @@ impl Dispatcher {
          //-------------------------------------------
          match input_child.try_borrow_mut() {
             Ok(mut child) => {
-               let internal = child.internal_mut();
+               let internal = child.base_mut();
                let f = internal.state_flags.get_mut();
                f.remove(StateFlags::CHILDREN_DELETE);
                internal.set_children(children, id);
@@ -332,7 +332,7 @@ impl Dispatcher {
       // Just in case in debug mode we check availability.
       debug_assert!(child.try_borrow_mut().is_ok());
       let (state_flags, id) = unsafe {
-         let internal = (*child.as_ptr()).internal();
+         let internal = (*child.as_ptr()).base();
          (internal.state_flags.get(), internal.id)
       };
       //---------------------------------
@@ -348,11 +348,11 @@ impl Dispatcher {
       let children = match child.try_borrow_mut() {
          Ok(mut child) => {
             if is_self_update {
-               let internal = child.internal_mut();
+               let internal = child.base_mut();
                internal.state_flags.get_mut().remove(StateFlags::SELF_UPDATE);
                child.emit_update(event);
             }
-            child.internal_mut().take_children(id)
+            child.base_mut().take_children(id)
          }
          Err(e) => {
             log::error!("Can't borrow widget [{:?}] to process update event!\n\t{:?}", id, e);
@@ -368,7 +368,7 @@ impl Dispatcher {
       //--------------------------------------------------
       match child.try_borrow_mut() {
          Ok(mut child) => {
-            let internal = child.internal_mut();
+            let internal = child.base_mut();
             let f = internal.state_flags.get_mut();
             f.remove(StateFlags::CHILDREN_UPDATE);
             internal.set_children(children, id);
@@ -422,7 +422,7 @@ impl Dispatcher {
       // Just in case in debug mode we check availability.
       debug_assert!(child.try_borrow_mut().is_ok());
       let (state_flags, id) = unsafe {
-         let internal = (*child.as_ptr()).internal();
+         let internal = (*child.as_ptr()).base();
          (internal.state_flags.get(), internal.id)
       };
       //---------------------------------
@@ -443,7 +443,7 @@ impl Dispatcher {
       //--------------------------------------------------
       let children = match child.try_borrow_mut() {
          Ok(mut child) => {
-            let internal = child.internal_mut();
+            let internal = child.base_mut();
             internal.take_children(id)
          }
          Err(e) => {
@@ -475,7 +475,7 @@ impl Dispatcher {
       //--------------------------------------------------
       match child.try_borrow_mut() {
          Ok(mut child) => {
-            let internal = child.internal_mut();
+            let internal = child.base_mut();
             let f = internal.state_flags.get_mut();
             f.remove(StateFlags::CHILDREN_DRAW);
             internal.set_children(children, id);
@@ -508,7 +508,7 @@ impl Dispatcher {
       // Just in case in debug mode we check availability.
       debug_assert!(inout_child.try_borrow_mut().is_ok());
       let (state_flags, id) = unsafe {
-         let internal = (*inout_child.as_ptr()).internal();
+         let internal = (*inout_child.as_ptr()).base();
          (internal.state_flags.get(), internal.id)
       };
       //---------------------------------
@@ -519,13 +519,13 @@ impl Dispatcher {
       //--------------------------------------------------
       let children = match inout_child.try_borrow_mut() {
          Ok(mut child) => {
-            let internal = child.internal_mut();
+            let internal = child.base_mut();
             internal.state_flags.get_mut().remove(StateFlags::SELF_DRAW);
 
             // TODO draw debug bounds frame
             child.emit_draw(canvas, event);
 
-            let internal = child.internal_mut();
+            let internal = child.base_mut();
             internal.take_children(id)
          }
          Err(e) => {
@@ -540,7 +540,7 @@ impl Dispatcher {
       //--------------------------------------------------
       match inout_child.try_borrow_mut() {
          Ok(mut child) => {
-            let internal = child.internal_mut();
+            let internal = child.base_mut();
             let f = internal.state_flags.get_mut();
             f.remove(StateFlags::CHILDREN_DRAW);
             internal.set_children(children, id);
@@ -576,7 +576,7 @@ impl Dispatcher {
             // Just in case in debug mode we check availability.
             debug_assert!(w.try_borrow_mut().is_ok());
             let (rect, mouse_btn_num, mouse_tracking) = unsafe {
-               let internal = (*w.as_ptr()).internal();
+               let internal = (*w.as_ptr()).base();
                (internal.geometry.rect(), internal.mouse_btn_num(), internal.has_mouse_tracking())
             };
             //----------------------------------
@@ -596,7 +596,7 @@ impl Dispatcher {
                   return true;
                }
 
-               let internal = widget.internal_mut();
+               let internal = widget.base_mut();
 
                internal.set_over(false);
                widget.emit_mouse_leave();
@@ -620,7 +620,7 @@ impl Dispatcher {
       // Just in case in debug mode we check availability.
       debug_assert!(input_child.try_borrow_mut().is_ok());
       let (id, state_flags, rect) = unsafe {
-         let internal = (*input_child.as_ptr()).internal();
+         let internal = (*input_child.as_ptr()).base();
          (internal.id, internal.state_flags.get(), internal.geometry.rect())
       };
       //---------------------------------
@@ -632,7 +632,7 @@ impl Dispatcher {
       }
       //--------------------------------------------------
       let children = match input_child.try_borrow_mut() {
-         Ok(mut child) => child.internal_mut().take_children(id),
+         Ok(mut child) => child.base_mut().take_children(id),
          Err(e) => {
             log::error!("Can't borrow widget [{:?}] to process mouse move event!\n\t{:?}", id, e);
             return false;
@@ -649,7 +649,7 @@ impl Dispatcher {
       //--------------------------------------------------
       match input_child.try_borrow_mut() {
          Ok(mut child) => {
-            let internal = child.internal_mut();
+            let internal = child.base_mut();
             internal.set_children(children, id);
             if !accepted {
                if !internal.is_over() {
@@ -662,7 +662,7 @@ impl Dispatcher {
                   if let Some(wmo) = &dispatcher.widget_mouse_over {
                      if let Some(w) = wmo.upgrade() {
                         let mut widget = w.borrow_mut();
-                        let internal = widget.internal_mut();
+                        let internal = widget.base_mut();
 
                         internal.set_over(false);
                         widget.emit_mouse_leave();
@@ -676,7 +676,7 @@ impl Dispatcher {
                      Ok(mut child) => {
                         child.emit_mouse_enter();
                         // checking buttons pressing does not make sense in this location.
-                        if child.internal().has_mouse_tracking() {
+                        if child.base().has_mouse_tracking() {
                            child.emit_mouse_move(event);
                         }
                      }
@@ -724,7 +724,7 @@ impl Dispatcher {
             // Just in case in debug mode we check availability.
             debug_assert!(w.try_borrow_mut().is_ok());
             let rect = unsafe {
-               let internal = (*w.as_ptr()).internal();
+               let internal = (*w.as_ptr()).base();
                internal.geometry.rect()
             };
             //----------------------------------
@@ -735,14 +735,14 @@ impl Dispatcher {
                MouseState::Pressed => {
                   if is_inside {
                      widget.emit_mouse_button(event);
-                     let internal = widget.internal_mut();
+                     let internal = widget.base_mut();
                      internal.add_mouse_btn_num(1);
                   }
                   true
                }
                MouseState::Released => {
                   widget.emit_mouse_button(event);
-                  let internal = widget.internal_mut();
+                  let internal = widget.base_mut();
 
                   internal.add_mouse_btn_num(-1);
                   if internal.mouse_btn_num() == 0 {
@@ -769,7 +769,7 @@ impl Dispatcher {
       // Just in case in debug mode we check availability.
       debug_assert!(input_child.try_borrow_mut().is_ok());
       let (id, flow, rect) = unsafe {
-         let internal = (*input_child.as_ptr()).internal();
+         let internal = (*input_child.as_ptr()).base();
          (internal.id, internal.state_flags.get(), internal.geometry.rect())
       };
       //---------------------------------
@@ -781,7 +781,7 @@ impl Dispatcher {
       }
       //--------------------------------------------------
       let children = match input_child.try_borrow_mut() {
-         Ok(mut child) => child.internal_mut().take_children(id),
+         Ok(mut child) => child.base_mut().take_children(id),
          Err(e) => {
             log::error!("Can't borrow widget [{:?}] to process mouse button event!\n\t{:?}", id, e);
             return false;
@@ -798,13 +798,13 @@ impl Dispatcher {
       //--------------------------------------------------
       match input_child.try_borrow_mut() {
          Ok(mut child) => {
-            child.internal_mut().set_children(children, id);
+            child.base_mut().set_children(children, id);
             if !accepted {
                debug_assert!(
                   event.input.state != MouseState::Released,
                   "expected to be processed before"
                );
-               child.internal_mut().add_mouse_btn_num(1);
+               child.base_mut().add_mouse_btn_num(1);
                accepted = child.emit_mouse_button(event);
                dispatcher.widget_mouse_button = Some(Rc::downgrade(&input_child));
             }
@@ -846,7 +846,7 @@ impl Dispatcher {
       // Just in case in debug mode we check availability.
       debug_assert!(child.try_borrow_mut().is_ok());
       let (id, flow, rect) = unsafe {
-         let internal = (*child.as_ptr()).internal();
+         let internal = (*child.as_ptr()).base();
          (internal.id, internal.state_flags.get(), internal.geometry.rect())
       };
       //---------------------------------
@@ -858,7 +858,7 @@ impl Dispatcher {
       }
       //--------------------------------------------------
       let children = match child.try_borrow_mut() {
-         Ok(mut child) => child.internal_mut().take_children(id),
+         Ok(mut child) => child.base_mut().take_children(id),
          Err(e) => {
             log::error!("Can't borrow widget [{:?}] to process mouse wheel event!\n\t{:?}", id, e);
             return false;
@@ -875,7 +875,7 @@ impl Dispatcher {
       //--------------------------------------------------
       match child.try_borrow_mut() {
          Ok(mut child) => {
-            child.internal_mut().set_children(children, id);
+            child.base_mut().set_children(children, id);
             if !accepted {
                accepted = child.emit_mouse_wheel(event);
             }
@@ -917,7 +917,7 @@ impl Dispatcher {
       // Just in case in debug mode we check availability.
       debug_assert!(child.try_borrow_mut().is_ok());
       let (id, flow) = unsafe {
-         let internal = (*child.as_ptr()).internal();
+         let internal = (*child.as_ptr()).base();
          (internal.id, internal.state_flags.get())
       };
       //---------------------------------
@@ -927,7 +927,7 @@ impl Dispatcher {
       }
       //--------------------------------------------------
       let children = match child.try_borrow_mut() {
-         Ok(mut child) => child.internal_mut().take_children(id),
+         Ok(mut child) => child.base_mut().take_children(id),
          Err(e) => {
             log::error!("Can't borrow widget [{:?}] to process mouse wheel event!\n\t{:?}", id, e);
             return false;
@@ -944,7 +944,7 @@ impl Dispatcher {
       //--------------------------------------------------
       match child.try_borrow_mut() {
          Ok(mut child) => {
-            child.internal_mut().set_children(children, id);
+            child.base_mut().set_children(children, id);
             if !accepted && child.emit_keyboard(event) {
                accepted = true;
             }
