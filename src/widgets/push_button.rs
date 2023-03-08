@@ -84,6 +84,18 @@ impl IPushButtonHandler for PushButtonHandler {
          (h)(state)
       }
    }
+
+   fn pressed(&mut self, state: &PushButtonState, mb: MouseButton) {
+      if let Some(h) = &mut self.on_pressed {
+         (h)(state, mb)
+      }
+   }
+
+   fn released(&mut self, state: &PushButtonState, mb: MouseButton) {
+      if let Some(h) = &mut self.on_released {
+         (h)(state, mb)
+      }
+   }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
