@@ -69,7 +69,6 @@ pub trait IWidget: Any + 'static {
    fn geometry(&self) -> &Geometry;
 
    fn set_rect(&mut self, r: Rect<f32>);
-   fn set_background_color(&mut self, color: Rgba);
 
    //---------------------------------------
 
@@ -154,6 +153,7 @@ where
    derive: MaybeUninit<D>,
    vtable: WidgetVt<Self>,
    internal: WidgetBase,
+   background_color: Rgba,
 }
 
 impl<D: 'static> Widget<D>
@@ -168,6 +168,7 @@ where
    {
       let mut out = Self {
          derive: unsafe { std::mem::zeroed() },
+         background_color: Rgba::GRAY,
          vtable: WidgetVt {
             on_set_rect: |_, v| Some(v),
             //--------------------------------------
@@ -239,6 +240,16 @@ where
       // # Safety
       // All initialization happen in new function.
       unsafe { self.derive.assume_init_mut() }
+   }
+
+   pub fn set_background_color(&mut self, color: Rgba) {
+      debug_assert!(color.a > (0.0 - f32::EPSILON) && color.a < 1.0 + f32::EPSILON);
+      self.background_color = color;
+      self.set_transparent(color.a < 1.0);
+   }
+
+   pub fn background_color(&mut self) -> Rgba {
+      self.background_color
    }
 }
 
@@ -330,11 +341,6 @@ where
       if let Some(rect) = (self.vtable.on_set_rect)(self, r) {
          self.internal.geometry_mut().set_rect(rect);
       }
-   }
-
-   fn set_background_color(&mut self, color: Rgba) {
-      self.internal.set_background_color(color);
-      self.set_transparent(color.a < 1.0);
    }
 
    //---------------------------------------
@@ -459,7 +465,7 @@ where
       if self.internal.is_over() {
          canvas.set_paint(Paint::new_color(Rgba::RED.with_alpha_mul(0.2)));
       } else {
-         canvas.set_paint(Paint::new_color(self.internal.background_color()));
+         canvas.set_paint(Paint::new_color(self.background_color()));
       }
       canvas.fill(&self.internal.geometry().rect());
    }

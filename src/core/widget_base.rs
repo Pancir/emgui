@@ -10,7 +10,6 @@ use crate::core::widget_base::runtime::Runtime;
 use crate::core::{Geometry, IWidget, WidgetId};
 use crate::defines::{DEFAULT_DOUBLE_CLICK_TIME, DEFAULT_TOOL_TIP_TIME, STATIC_CHILD_NUM};
 use bitflags::bitflags;
-use sim_draw::color::Rgba;
 use smallvec::SmallVec;
 use std::cell::{Cell, RefCell};
 use std::rc::{Rc, Weak};
@@ -79,7 +78,6 @@ pub struct WidgetBase {
    //--------------------
    id: WidgetId,
    geometry: Geometry,
-   background_color: Rgba,
    //--------------------
    tool_type_time: Option<Duration>,
    double_click_time: Option<Duration>,
@@ -101,7 +99,6 @@ impl WidgetBase {
          //--------------------
          id: WidgetId::new::<T>(),
          geometry: Geometry::default(),
-         background_color: Rgba::GRAY,
          //--------------------
          tool_type_time: None,
          double_click_time: None,
@@ -126,19 +123,11 @@ impl WidgetBase {
    pub fn geometry_mut(&mut self) -> &mut Geometry {
       &mut self.geometry
    }
-
-   pub fn set_background_color(&mut self, color: Rgba) {
-      debug_assert!(color.a > (0.0 - f32::EPSILON) && color.a < 1.0 + f32::EPSILON);
-      self.background_color = color;
-   }
-
-   pub fn background_color(&mut self) -> Rgba {
-      self.background_color
-   }
 }
 
 impl WidgetBase {
-   pub(crate) fn request_draw(&self) {
+   /// Request redraw event.
+   pub fn request_draw(&self) {
       let mut f = self.state_flags.get();
 
       if !f.contains(StateFlags::SELF_DRAW) {
@@ -155,7 +144,8 @@ impl WidgetBase {
       }
    }
 
-   pub(crate) fn request_update(&self) {
+   /// Request update event.
+   pub fn request_update(&self) {
       let mut f = self.state_flags.get();
 
       if !f.contains(StateFlags::SELF_UPDATE) {
@@ -172,7 +162,11 @@ impl WidgetBase {
       }
    }
 
-   pub(crate) fn request_delete(&self) {
+   /// Request to delete the widget.
+   ///
+   /// It schedules widget to delete the library will choose time to do it so,
+   /// it will not be deleted immediately.
+   pub fn request_delete(&self) {
       let mut f = self.state_flags.get();
 
       if !f.contains(StateFlags::SELF_DELETE) {
@@ -191,11 +185,16 @@ impl WidgetBase {
 }
 
 impl WidgetBase {
-   pub(crate) fn is_visible(&self) -> bool {
+   /// Check if widget is visible.
+   pub fn is_visible(&self) -> bool {
       self.state_flags.get().contains(StateFlags::IS_VISIBLE)
    }
 
-   pub(crate) fn set_visible(&self, state: bool) -> bool {
+   /// Set widget visible state.
+   ///
+   /// # Return
+   /// `true` - if values was changed otherwise false.
+   pub fn set_visible(&self, state: bool) -> bool {
       let mut f = self.state_flags.get();
       let curr = f.contains(StateFlags::IS_VISIBLE);
       if curr != state {
@@ -207,11 +206,18 @@ impl WidgetBase {
       }
    }
 
-   pub(crate) fn is_enabled(&self) -> bool {
+   /// Check if widget is enabled.
+   ///
+   /// Disabled widget does not receive mouse ans keyboard inputs.
+   pub fn is_enabled(&self) -> bool {
       self.state_flags.get().contains(StateFlags::IS_ENABLED)
    }
 
-   pub(crate) fn set_enabled(&self, state: bool) -> bool {
+   /// Set widget enabled state.
+   ///
+   /// # Return
+   /// `true` - if values was changed otherwise false.
+   pub fn set_enabled(&self, state: bool) -> bool {
       let mut f = self.state_flags.get();
       let curr = f.contains(StateFlags::IS_ENABLED);
       if curr != state {
@@ -223,31 +229,44 @@ impl WidgetBase {
       }
    }
 
-   pub(crate) fn is_transparent(&self) -> bool {
+   /// Check if widget has transparent pixels.
+   pub fn is_transparent(&self) -> bool {
       self.state_flags.get().contains(StateFlags::IS_TRANSPARENT)
    }
 
-   pub(crate) fn set_transparent(&self, state: bool) {
+   /// Set if widget has transparent pixels.
+   ///
+   /// The draw engine should know if there are transparent pixels for
+   /// selecting necessary algorithm to draw.
+   pub fn set_transparent(&self, state: bool) {
       let mut f = self.state_flags.get();
       f.set(StateFlags::IS_TRANSPARENT, state);
       self.state_flags.set(f);
    }
 
-   pub(crate) fn is_over(&self) -> bool {
+   /// Check if mouse is over the widget's rectangle geometry.
+   pub fn is_over(&self) -> bool {
       self.state_flags.get().contains(StateFlags::IS_OVER)
    }
 
+   /// Set if mouse is over the widget's rectangle geometry.
    pub(crate) fn set_over(&self, state: bool) {
       let mut f = self.state_flags.get();
       f.set(StateFlags::IS_OVER, state);
       self.state_flags.set(f);
    }
 
-   pub(crate) fn has_mouse_tracking(&self) -> bool {
+   /// Check if the widget wants mouse tracking.
+   pub fn has_mouse_tracking(&self) -> bool {
       self.state_flags.get().contains(StateFlags::HAS_MOUSE_TRACKING)
    }
 
-   pub(crate) fn set_mouse_tracking(&self, state: bool) {
+   /// Set if the widget wants mouse tracking.
+   ///
+   /// If tracking is enabled then the widget always receive mouse
+   /// move event if it is disabled the mouse move event is sent
+   /// if a mouse button is pressed.
+   pub fn set_mouse_tracking(&self, state: bool) {
       let mut f = self.state_flags.get();
       f.set(StateFlags::HAS_MOUSE_TRACKING, state);
       self.state_flags.set(f);
@@ -265,11 +284,15 @@ impl WidgetBase {
 }
 
 impl WidgetBase {
-   pub(crate) fn set_tool_type_time(&mut self, duration: Option<Duration>) {
+   /// Set waiting time for tooltip showing.
+   ///
+   /// If it is `None` the default is used.
+   pub fn set_tool_type_time(&mut self, duration: Option<Duration>) {
       self.tool_type_time = duration;
    }
 
-   pub(crate) fn tool_type_time(&self) -> Duration {
+   /// Waiting time for tooltip showing.
+   pub fn tool_type_time(&self) -> Duration {
       if let Some(v) = self.tool_type_time {
          v
       } else {
@@ -281,11 +304,15 @@ impl WidgetBase {
       }
    }
 
-   pub(crate) fn set_double_click_time(&mut self, duration: Option<Duration>) {
+   /// Set waiting time for double click detection.
+   ///
+   /// If it is `None` the default is used.
+   pub fn set_double_click_time(&mut self, duration: Option<Duration>) {
       self.double_click_time = duration;
    }
 
-   pub(crate) fn double_click_time(&self) -> Duration {
+   /// Waiting time for double click detection.
+   pub fn double_click_time(&self) -> Duration {
       if let Some(v) = self.double_click_time {
          v
       } else {
