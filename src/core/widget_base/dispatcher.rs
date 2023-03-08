@@ -5,7 +5,8 @@ use crate::core::events::{
    MouseButtonsEventCtx, MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
 };
 use crate::core::widget_base::runtime::Runtime;
-use crate::core::{AppEnv, IWidget, Widget};
+use crate::core::{AppEnv, IWidget};
+use crate::widgets::Widget;
 use sim_draw::Canvas;
 use sim_input::mouse::MouseState;
 use sim_run::UpdateEvent;
