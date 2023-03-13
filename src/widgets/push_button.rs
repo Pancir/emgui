@@ -166,6 +166,18 @@ where
       )
    }
 
+   //---------------------------------------
+
+   #[inline]
+   pub fn handler(&self) -> &H {
+      &self.handler
+   }
+
+   #[inline]
+   pub fn handler_mut(&mut self) -> &mut H {
+      &mut self.handler
+   }
+
    #[inline]
    pub fn set_toggle_num(&mut self, num: u8) {
       self.state.toggle_num = num.max(2);

@@ -3,7 +3,7 @@ use crate::core::events::{
    DrawEventCtx, KeyboardEventCtx, LayoutEventCtx, LifecycleEventCtx, LifecycleState,
    MouseButtonsEventCtx, MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
 };
-use crate::core::{Geometry, IWidget, WidgetBase, WidgetId};
+use crate::core::{IWidget, WidgetBase};
 use sim_draw::color::Rgba;
 use sim_draw::m::Rect;
 use sim_draw::{Canvas, Paint};
@@ -11,7 +11,6 @@ use std::any::Any;
 use std::cell::RefCell;
 use std::mem::MaybeUninit;
 use std::rc::Rc;
-use std::time::Duration;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -54,7 +53,7 @@ where
 {
    derive: MaybeUninit<D>,
    vtable: WidgetVt<Self>,
-   internal: WidgetBase,
+   base: WidgetBase,
    background_color: Rgba,
 }
 
@@ -93,7 +92,7 @@ where
             //--------------------------------------
             on_keyboard: |_, _| false,
          },
-         internal: WidgetBase::new::<Self>(),
+         base: WidgetBase::new::<Self>(),
       };
 
       let derive = vt_cb(&mut out.vtable);
@@ -116,19 +115,19 @@ where
    ///
    /// TODO maybe Pin?
    pub fn to_rc(self) -> Rc<RefCell<Self>> {
-      let w = Rc::new(RefCell::new(self));
-      let d = Rc::downgrade(&w);
-      match w.try_borrow_mut() {
-         Ok(mut w) => (w.vtable.on_lifecycle)(
-            &mut w,
-            &LifecycleEventCtx { state: LifecycleState::SelfReference(d) },
-         ),
-         Err(_) => {
-            unreachable!()
+      let s = Rc::new(RefCell::new(self));
+      let w = Rc::downgrade(&s);
+      match s.try_borrow_mut() {
+         Ok(mut widget) => {
+            let event = LifecycleEventCtx { state: LifecycleState::SelfReference(w) };
+            (widget.vtable.on_lifecycle)(&mut widget, &event)
          }
+         Err(_) => unreachable!(),
       }
-      w
+      s
    }
+
+   //---------------------------------------
 
    #[inline]
    pub fn derive_ref(&self) -> &D {
@@ -167,65 +166,15 @@ where
       self
    }
 
-   fn id(&self) -> WidgetId {
-      self.internal.id()
-   }
-
-   //---------------------------------------
-
-   #[cfg_attr(feature = "trace-widget",
-   tracing::instrument(skip(self), fields(WidgetID = self.id().raw())))]
-   fn request_draw(&self) {
-      self.internal.request_draw();
-   }
-
-   #[cfg_attr(feature = "trace-widget",
-   tracing::instrument(skip(self), fields(WidgetID = self.id().raw())))]
-   fn request_delete(&self) {
-      self.internal.request_delete();
-   }
-
-   #[cfg_attr(feature = "trace-widget",
-   tracing::instrument(skip(self), fields(WidgetID = self.id().raw())))]
-   fn request_update(&self) {
-      self.internal.request_update();
-   }
-
-   #[cfg_attr(feature = "trace-widget",
-   tracing::instrument(skip(self), fields(WidgetID = self.id().raw())))]
-   fn request_focus(&self) {
-      unimplemented!()
-   }
-
    //---------------------------------------
 
    fn base(&self) -> &WidgetBase {
-      &self.internal
+      &self.base
    }
 
    fn base_mut(&mut self) -> &mut WidgetBase {
-      &mut self.internal
+      &mut self.base
    }
-
-   //---------------------------------------
-
-   fn set_tool_type_time(&mut self, duration: Option<Duration>) {
-      self.internal.set_tool_type_time(duration);
-   }
-
-   fn tool_type_time(&self) -> Duration {
-      self.internal.tool_type_time()
-   }
-
-   fn set_double_click_time(&mut self, duration: Option<Duration>) {
-      self.internal.set_double_click_time(duration);
-   }
-
-   fn double_click_time(&self) -> Duration {
-      self.internal.double_click_time()
-   }
-
-   //---------------------------------------
 
    fn derive(&self) -> &dyn Derive {
       self.derive_ref()
@@ -235,58 +184,30 @@ where
       self.derive_mut()
    }
 
-   fn geometry(&self) -> &Geometry {
-      &self.internal.geometry()
-   }
+   //---------------------------------------
 
    fn set_rect(&mut self, r: Rect<f32>) {
       if let Some(rect) = (self.vtable.on_set_rect)(self, r) {
-         self.internal.geometry_mut().set_rect(rect);
+         self.base.geometry_mut().set_rect(rect);
       }
    }
 
    //---------------------------------------
 
-   fn is_visible(&self) -> bool {
-      self.internal.is_visible()
-   }
-
    fn set_visible(&mut self, state: bool) {
-      if self.internal.set_visible(state) {
+      if self.base.set_visible(state) {
          (self.vtable.on_visible)(self, state)
       }
    }
 
-   fn is_enabled(&self) -> bool {
-      self.internal.is_enabled()
-   }
-
    fn set_enabled(&mut self, state: bool) {
-      if self.internal.set_enabled(state) {
+      if self.base.set_enabled(state) {
          (self.vtable.on_disable)(self, !state)
       }
    }
 
-   fn is_transparent(&self) -> bool {
-      self.internal.is_transparent()
-   }
-
    fn set_transparent(&mut self, state: bool) {
-      self.internal.set_transparent(state)
-   }
-
-   //---------------------------------------
-
-   fn set_mouse_tracking(&mut self, state: bool) {
-      self.internal.set_mouse_tracking(state)
-   }
-
-   fn has_mouse_tracking(&mut self) -> bool {
-      self.internal.has_mouse_tracking()
-   }
-
-   fn is_mouse_over(&self) -> bool {
-      self.internal.is_over()
+      self.base.set_transparent(state)
    }
 
    //---------------------------------------
@@ -364,12 +285,12 @@ where
 {
    fn on_draw(&mut self, canvas: &mut Canvas, _event: &DrawEventCtx) {
       // TODO remove over as it is for testing
-      if self.internal.is_over() {
+      if self.base.is_over() {
          canvas.set_paint(Paint::new_color(Rgba::RED.with_alpha_mul(0.2)));
       } else {
          canvas.set_paint(Paint::new_color(self.background_color()));
       }
-      canvas.fill(&self.internal.geometry().rect());
+      canvas.fill(&self.base.geometry().rect());
    }
 }
 

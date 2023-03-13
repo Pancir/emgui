@@ -16,8 +16,11 @@ pub trait IWidget: Any + 'static {
    fn as_any(&self) -> &dyn Any;
    fn as_any_mut(&mut self) -> &mut dyn Any;
 
+   //---------------------------------------
+
    /// Get the widget type name for debugging purposes.
    /// Developers should not override this method.
+   #[inline]
    fn type_name(&self) -> &'static str {
       std::any::type_name::<Self>()
    }
@@ -25,51 +28,103 @@ pub trait IWidget: Any + 'static {
    /// Get the widget type name for debugging purposes.
    ///
    /// Developers should not override this method.
+   #[inline]
    fn type_name_short(&self) -> &'static str {
       let name = self.type_name();
       name.split('<').next().unwrap_or(name).split("::").last().unwrap_or(name)
    }
 
-   fn id(&self) -> WidgetId;
-
-   //---------------------------------------
-
-   fn request_draw(&self);
-   fn request_delete(&self);
-   fn request_update(&self);
-   fn request_focus(&self);
+   #[inline]
+   fn id(&self) -> WidgetId {
+      self.base().id()
+   }
 
    //---------------------------------------
 
    fn base(&self) -> &WidgetBase;
    fn base_mut(&mut self) -> &mut WidgetBase;
 
-   //---------------------------------------
-
-   fn set_tool_type_time(&mut self, duration: Option<Duration>);
-   fn tool_type_time(&self) -> Duration;
-
-   fn set_double_click_time(&mut self, duration: Option<Duration>);
-   fn double_click_time(&self) -> Duration;
-
-   //---------------------------------------
-
    fn derive(&self) -> &dyn Derive;
    fn derive_mut(&mut self) -> &mut dyn Derive;
 
-   fn geometry(&self) -> &Geometry;
+   //---------------------------------------
+
+   #[cfg_attr(feature = "trace-widget",
+   tracing::instrument(skip(self), fields(WidgetID = self.id().raw())))]
+   fn request_draw(&self) {
+      self.base().request_draw();
+   }
+
+   #[cfg_attr(feature = "trace-widget",
+   tracing::instrument(skip(self), fields(WidgetID = self.id().raw())))]
+   fn request_delete(&self) {
+      self.base().request_delete();
+   }
+
+   #[cfg_attr(feature = "trace-widget",
+   tracing::instrument(skip(self), fields(WidgetID = self.id().raw())))]
+   fn request_update(&self) {
+      self.base().request_update();
+   }
+
+   #[cfg_attr(feature = "trace-widget",
+   tracing::instrument(skip(self), fields(WidgetID = self.id().raw())))]
+   fn request_focus(&self) {
+      unimplemented!()
+   }
+
+   //---------------------------------------
+
+   #[inline]
+   fn set_tool_type_time(&mut self, duration: Option<Duration>) {
+      self.base_mut().set_tool_type_time(duration);
+   }
+
+   #[inline]
+   fn tool_type_time(&self) -> Duration {
+      self.base().tool_type_time()
+   }
+
+   #[inline]
+   fn set_double_click_time(&mut self, duration: Option<Duration>) {
+      self.base_mut().set_double_click_time(duration);
+   }
+
+   #[inline]
+   fn double_click_time(&self) -> Duration {
+      self.base().double_click_time()
+   }
+
+   //---------------------------------------
+
+   #[inline]
+   fn geometry(&self) -> &Geometry {
+      self.base().geometry()
+   }
 
    fn set_rect(&mut self, r: Rect<f32>);
 
    //---------------------------------------
 
-   fn is_visible(&self) -> bool;
+   #[inline]
+   fn is_visible(&self) -> bool {
+      self.base().is_visible()
+   }
+
    fn set_visible(&mut self, state: bool);
 
-   fn is_enabled(&self) -> bool;
+   #[inline]
+   fn is_enabled(&self) -> bool {
+      self.base().is_enabled()
+   }
+
    fn set_enabled(&mut self, state: bool);
 
-   fn is_transparent(&self) -> bool;
+   #[inline]
+   fn is_transparent(&self) -> bool {
+      self.base().is_transparent()
+   }
+
    fn set_transparent(&mut self, state: bool);
 
    //---------------------------------------
@@ -80,19 +135,28 @@ pub trait IWidget: Any + 'static {
    /// If mouse tracking is enabled, the widget receives mouse move events even if no buttons are pressed.
    ///
    /// See [Self::has_mouse_tracking]
-   fn set_mouse_tracking(&mut self, state: bool);
+   #[inline]
+   fn set_mouse_tracking(&mut self, state: bool) {
+      self.base_mut().set_mouse_tracking(state);
+   }
 
    /// See [Self::set_mouse_tracking]
-   fn has_mouse_tracking(&mut self) -> bool;
+   #[inline]
+   fn has_mouse_tracking(&mut self) -> bool {
+      self.base().has_mouse_tracking()
+   }
 
    /// `True` if mouse is over the widget.
-   fn is_mouse_over(&self) -> bool;
+   #[inline]
+   fn is_mouse_over(&self) -> bool {
+      self.base().is_over()
+   }
 
    //---------------------------------------
 
    fn emit_lifecycle(&mut self, _event: &LifecycleEventCtx);
    fn emit_layout(&mut self, _event: &LayoutEventCtx);
-   fn emit_draw(&mut self, _canvas: &mut Canvas, event: &DrawEventCtx);
+   fn emit_draw(&mut self, _canvas: &mut Canvas, _event: &DrawEventCtx);
    fn emit_update(&mut self, _event: &UpdateEventCtx);
    fn emit_mouse_enter(&mut self);
    fn emit_mouse_leave(&mut self);
