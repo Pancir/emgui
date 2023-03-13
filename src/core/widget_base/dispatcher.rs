@@ -408,6 +408,7 @@ impl Dispatcher {
    ///
    /// * Full redraw including all children
    /// * Redraw without redraw children. Probably masked (clipped) draw.
+   ///   - What if children have transparent pixels? It seems we need to redraw the whole tree part.
    /// * Redraw children without transparent pixels. Actually only children redrawn.
    /// * Redraw children with transparent pixels. Probably masked + children.
    /// * Redraw animated.

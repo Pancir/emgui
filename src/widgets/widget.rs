@@ -15,7 +15,7 @@ use std::time::Duration;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct WidgetVt<D> {
    /// It is called when a new rectangle has to be set.
    pub on_set_rect: fn(w: &mut D, Rect<f32>) -> Option<Rect<f32>>,
