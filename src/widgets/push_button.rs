@@ -146,7 +146,7 @@ where
                      label,
                      rect.center(),
                      text_patin,
-                     TextAlign::new().center().middle(),
+                     TextAlign::new().center().middle().tight(),
                   ),
                   toggle_num: 2,
                   toggle: 0,
