@@ -1,0 +1,52 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "test and trace",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "test",
+                "--color=always",
+                "--no-fail-fast",
+                "--features",
+                "trace-widget ",
+                "--",
+                "--show-output"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "clear": true
+            },
+            "problemMatcher": [
+                "$rustc"
+            ]
+        },
+        {
+            "label": "Ex-7-counter",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "run",
+                "--color=always"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/examples/7gui_counter"
+            },
+            "group": {
+                "kind": "build",
+            },
+            "presentation": {
+                "clear": true
+            },
+            "problemMatcher": [
+                "$rustc"
+            ]
+        }
+    ]
+}

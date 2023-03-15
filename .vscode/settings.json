@@ -1,0 +1,12 @@
+{
+    "files.exclude": {
+        "examples/**/.idea": true,
+        "examples/**/.vscode": true,
+        "examples/**/.gitignore": true,
+        "examples/**/.github": true,
+        "examples/**/rustfmt.toml": true,
+        "examples/**/Cargo.lock": true,
+        "examples/**/target": true,
+    },
+    "cSpell.userWords": []
+}
