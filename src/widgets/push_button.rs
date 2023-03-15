@@ -220,12 +220,14 @@ where
          canvas.set_color(Rgba::RED);
       }
 
-      canvas.fill(&w.geometry().rect());
+      let rect = w.base().geometry().rect();
+
+      canvas.fill(&rect);
 
       canvas.set_color(Rgba::BLACK);
       canvas.set_aa_fringe(Some(1.0));
       canvas.set_stroke_width(2.0);
-      canvas.stroke(&w.geometry().rect());
+      canvas.stroke(&rect);
 
       if !d.state.label.text.is_empty() {
          d.state.label.on_draw(canvas);
@@ -233,15 +235,13 @@ where
    }
 
    pub fn on_mouse_enter(w: &mut Widget<Self>) {
-      let mut d = w.derive_mut();
-      d.state.is_hover = true;
-      w.request_draw();
+      w.base().request_draw();
+      w.derive_mut().state.is_hover = true;
    }
 
    pub fn on_mouse_leave(w: &mut Widget<Self>) {
-      let mut d = w.derive_mut();
-      d.state.is_hover = false;
-      w.request_draw();
+      w.base().request_draw();
+      w.derive_mut().state.is_hover = false;
    }
 
    pub fn on_mouse_button(w: &mut Widget<Self>, event: &MouseButtonsEventCtx) -> bool {
@@ -252,7 +252,7 @@ where
             if d.state.is_hover {
                d.state.is_down = true;
                d.handler.pressed(&d.state, event.input.button);
-               w.request_draw();
+               w.base().request_draw();
                return true;
             }
          }
@@ -269,7 +269,7 @@ where
 
                   d.handler.click(&d.state);
                }
-               w.request_draw();
+               w.base().request_draw();
                return true;
             }
          }

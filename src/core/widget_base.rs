@@ -112,6 +112,7 @@ impl WidgetBase {
       }
    }
 
+   /// Unique id of the widget.
    pub fn id(&self) -> WidgetId {
       self.id
    }
@@ -257,15 +258,18 @@ impl WidgetBase {
    }
 
    /// Check if the widget wants mouse tracking.
+   ///
+   /// See [Self::set_mouse_tracking]
    pub fn has_mouse_tracking(&self) -> bool {
       self.state_flags.get().contains(StateFlags::HAS_MOUSE_TRACKING)
    }
 
    /// Set if the widget wants mouse tracking.
    ///
-   /// If tracking is enabled then the widget always receive mouse
-   /// move event if it is disabled the mouse move event is sent
-   /// if a mouse button is pressed.
+   /// If mouse tracking is disabled (the default), the widget only receives
+   /// mouse move events when at least one mouse button is pressed while the mouse is being moved.
+   /// If mouse tracking is enabled, the widget receives mouse move events even
+   /// if **NO** buttons are pressed.
    pub fn set_mouse_tracking(&self, state: bool) {
       let mut f = self.state_flags.get();
       f.set(StateFlags::HAS_MOUSE_TRACKING, state);

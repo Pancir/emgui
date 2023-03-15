@@ -215,7 +215,7 @@ where
             }
          },
          |w| {
-            w.set_mouse_tracking(true);
+            w.base().set_mouse_tracking(true);
             w.set_rect(rect);
          },
       )
@@ -404,10 +404,10 @@ where
 
    fn on_draw(w: &mut Widget<Self>, canvas: &mut Canvas, _event: &DrawEventCtx) {
       let d = w.derive_ref();
-      let _rect = &w.geometry().rect();
+      let rect = w.base().geometry().rect();
 
       canvas.set_paint(Paint::new_color(Rgba::AMBER));
-      canvas.fill(&w.geometry().rect());
+      canvas.fill(&rect);
 
       canvas.set_paint(Paint::new_color(Rgba::GRAY));
       canvas.fill(&d.state.grab_area);
@@ -440,7 +440,7 @@ where
          d.set_handle_value_to_values(d.get_handle_position());
          d.handler.slider_moved(d.state.x.clone(), d.state.y.clone());
 
-         w.request_draw();
+         w.base().request_draw();
          // }
       } else {
          let h_rect = d.state.handle_rect.offset(d.state.handle_position);
@@ -448,7 +448,7 @@ where
 
          if is_inside != d.state.is_over_handle {
             d.state.is_over_handle = is_inside;
-            w.request_draw();
+            w.base().request_draw();
          }
       }
       true
@@ -473,7 +473,7 @@ where
                d.click_pos = Point2::new(event.input.x, event.input.y) - d.state.handle_position;
                d.state.is_handle_down = true;
                d.handler.slider_pressed(d.state.x.clone(), d.state.y.clone());
-               w.request_draw();
+               w.base().request_draw();
             }
          }
          MouseState::Released => {
@@ -483,7 +483,7 @@ where
                d.handler.slider_released(d.state.x.clone(), d.state.y.clone());
 
                if is_inside_handle {
-                  let db_time = w.double_click_time();
+                  let db_time = w.base().double_click_time();
                   let d = w.derive_mut();
 
                   if d.released_at.elapsed() < db_time {
@@ -496,7 +496,7 @@ where
 
                let mut d = w.derive_mut();
                d.released_at = Instant::now();
-               w.request_draw();
+               w.base().request_draw();
             }
          }
       }

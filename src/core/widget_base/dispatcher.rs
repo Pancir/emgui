@@ -202,8 +202,9 @@ impl Dispatcher {
       let children = match child.try_borrow_mut() {
          Ok(mut child) => {
             child.emit_layout(event);
-            let id = child.id();
-            child.base_mut().take_children(id)
+            let base = child.base_mut();
+            let id = base.id();
+            base.take_children(id)
          }
          Err(e) => {
             panic!("{:?}", e)
@@ -217,8 +218,9 @@ impl Dispatcher {
       }
       //--------------------------------------------------
       let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{:?}", e));
-      let id = bor.id();
-      bor.base_mut().set_children(children, id);
+      let base = bor.base_mut();
+      let id = base.id();
+      base.set_children(children, id);
    }
 }
 

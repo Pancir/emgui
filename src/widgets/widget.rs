@@ -17,23 +17,31 @@ use std::rc::Rc;
 #[derive(Clone)]
 pub struct WidgetVt<D> {
    /// It is called when a new rectangle has to be set.
+   ///
+   /// # Return
+   /// `Some` - rect to set. `None` - means there is no rect to set.
    pub on_set_rect: fn(w: &mut D, Rect<f32>) -> Option<Rect<f32>>,
    //-------------------------------------------------
+   /// It is called when visible state is changed.
    pub on_visible: fn(w: &mut D, bool),
+   /// It is called when disable state is changed.
    pub on_disable: fn(w: &mut D, bool),
    //-------------------------------------------------
    pub on_lifecycle: fn(w: &mut D, &LifecycleEventCtx),
    pub on_layout: fn(w: &mut D, &LayoutEventCtx),
    //-------------------------------------------------
+   /// It is called when there is a request to update.
    pub on_update: fn(w: &mut D, &UpdateEventCtx),
+   /// It is called whenever the widget must be re-drawn,
    pub on_draw: fn(w: &mut D, &mut Canvas, &DrawEventCtx),
    //-------------------------------------------------
-   /// An event is sent to the widget when the mouse cursor enters the widget.
+   /// It is called when the mouse cursor enters the widget.
    pub on_mouse_enter: fn(w: &mut D),
-
-   /// A leave event is sent to the widget when the mouse cursor leaves the widget.
+   /// It is called when the mouse cursor leaves the widget.
    pub on_mouse_leave: fn(w: &mut D),
    //-------------------------------------------------
+   /// It is called when the mouse cursor is moved inside the widget rectangle.
+   ///
    /// If mouse tracking is switched off, mouse move events only occur if
    /// a mouse button is pressed while the mouse is being moved.
    /// If [mouse tracking](IWidget::set_mouse_tracking) is switched on,
@@ -83,8 +91,8 @@ where
             on_draw: Self::on_draw,
             //--------------------------------------
             // TODO remove draw as it is for testing
-            on_mouse_enter: |w| w.request_draw(),
-            on_mouse_leave: |w| w.request_draw(),
+            on_mouse_enter: |w| w.base().request_draw(),
+            on_mouse_leave: |w| w.base().request_draw(),
             //--------------------------------------
             on_mouse_move: |_, _| true,
             on_mouse_button: |_, _| true,
