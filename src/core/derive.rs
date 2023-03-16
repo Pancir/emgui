@@ -13,16 +13,13 @@ pub trait Derive: Any + 'static {
 
 pub fn derive<T: 'static>(derive: &dyn Derive) -> Option<&T> {
    let mut value = derive.derive_void();
-   loop {
-      if let Some(d) = value {
-         let any = d.as_any();
-         if let Some(res) = any.downcast_ref::<T>() {
-            return Some(res);
-         }
-         value = d.derive_void();
-      } else {
-         break;
+
+   while let Some(d) = value {
+      let any = d.as_any();
+      if let Some(res) = any.downcast_ref::<T>() {
+         return Some(res);
       }
+      value = d.derive_void();
    }
    None
 }

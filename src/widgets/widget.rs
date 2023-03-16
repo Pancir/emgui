@@ -244,14 +244,12 @@ where
       (self.vtable.on_update)(self, event);
    }
 
-   #[must_use]
    #[cfg_attr(feature = "trace-widget",
    tracing::instrument(skip(self), fields(WidgetID = self.base().id().raw()), ret))]
    fn emit_mouse_enter(&mut self) {
       (self.vtable.on_mouse_enter)(self)
    }
 
-   #[must_use]
    #[cfg_attr(feature = "trace-widget",
    tracing::instrument(skip(self), fields(WidgetID = self.base().id().raw()), ret))]
    fn emit_mouse_leave(&mut self) {

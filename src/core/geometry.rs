@@ -46,7 +46,7 @@ impl Geometry {
       self.rect = rect;
       self.ensure_max_size();
       self.ensure_min_size();
-      return true;
+      true
    }
 
    /// Get rectangle.

@@ -416,12 +416,10 @@ where
       let h_rect = d.state.handle_rect.offset(d.state.handle_position);
       if d.state.is_handle_down {
          canvas.set_paint(Paint::new_color(Rgba::CYAN));
+      } else if d.state.is_over_handle {
+         canvas.set_paint(Paint::new_color(Rgba::GREEN.with_alpha_mul(0.9)));
       } else {
-         if d.state.is_over_handle {
-            canvas.set_paint(Paint::new_color(Rgba::GREEN.with_alpha_mul(0.9)));
-         } else {
-            canvas.set_paint(Paint::new_color(Rgba::GREEN));
-         }
+         canvas.set_paint(Paint::new_color(Rgba::GREEN));
       }
       canvas.fill(&h_rect);
    }
@@ -462,8 +460,7 @@ where
       let is_inside_handle = {
          let d = w.derive_ref();
          let h_rect = d.state.handle_rect.offset(d.state.handle_position);
-         let is_inside_handle = h_rect.is_inside(event.input.x, event.input.y);
-         is_inside_handle
+         h_rect.is_inside(event.input.x, event.input.y)
       };
 
       match event.input.state {

@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/// Unique within application instance widget id.
-#[derive(Copy, Clone, Debug, Hash)]
+/// Unique widget id.
+#[derive(Copy, Clone, Debug)]
 pub struct WidgetId {
    id: usize,
 

@@ -7,6 +7,5 @@
         "examples/**/rustfmt.toml": true,
         "examples/**/Cargo.lock": true,
         "examples/**/target": true,
-    },
-    "cSpell.userWords": []
+    }
 }

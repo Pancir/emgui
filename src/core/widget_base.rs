@@ -299,12 +299,10 @@ impl WidgetBase {
    pub fn tool_type_time(&self) -> Duration {
       if let Some(v) = self.tool_type_time {
          v
+      } else if let Some(r) = &self.runtime {
+         r.tool_type_time()
       } else {
-         if let Some(r) = &self.runtime {
-            r.tool_type_time()
-         } else {
-            DEFAULT_TOOL_TIP_TIME
-         }
+         DEFAULT_TOOL_TIP_TIME
       }
    }
 
@@ -319,12 +317,10 @@ impl WidgetBase {
    pub fn double_click_time(&self) -> Duration {
       if let Some(v) = self.double_click_time {
          v
+      } else if let Some(r) = &self.runtime {
+         r.double_click_time()
       } else {
-         if let Some(r) = &self.runtime {
-            r.double_click_time()
-         } else {
-            DEFAULT_DOUBLE_CLICK_TIME
-         }
+         DEFAULT_DOUBLE_CLICK_TIME
       }
    }
 }
@@ -365,7 +361,7 @@ pub fn add_children<const NUM: usize>(
    // TODO swap implementation with add_child, it will be faster as we can only once borrow.
 
    for c in children {
-      add_child(&parent, c);
+      add_child(parent, c);
    }
 }
 
@@ -395,7 +391,7 @@ pub fn add_child(
          }
       }
 
-      c.parent = Some(Rc::downgrade(&parent));
+      c.parent = Some(Rc::downgrade(parent));
    }
 
    w

@@ -41,6 +41,7 @@ pub trait IPushButtonHandler {
 /// # Note
 /// Heap allocation happens only when you add a closure.
 #[derive(Default)]
+#[allow(clippy::type_complexity)]
 pub struct PushButtonHandler {
    on_click: Option<Box<dyn FnMut(&PushButtonState)>>,
    on_pressed: Option<Box<dyn FnMut(&PushButtonState, MouseButton)>>,

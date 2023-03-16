@@ -87,7 +87,7 @@ impl std::ops::Drop for Dispatcher {
       if !self.destroyed {
          log::warn!(
             "You forgot to call destroy on dispatcher. It is auto-called while dropping, \
-but it may lead to unexpected behaviour because it can be too late, please call it yourself."
+but it may lead to unexpected behavior because it can be too late, please call it yourself."
          );
 
          self.destroy()
@@ -108,7 +108,7 @@ impl Dispatcher {
    fn emit_inner_destroy(dispatcher: &mut InnerDispatcher, child: &Rc<RefCell<dyn IWidget>>) {
       Self::emit_inner_lifecycle(
          dispatcher,
-         &child,
+         child,
          &LifecycleEventCtx { state: LifecycleState::Destroy { unexpected: false } },
       );
    }
@@ -127,7 +127,7 @@ impl Dispatcher {
 
             let children = internal.take_children(internal.id);
             for child in &children {
-               Self::set_runtime_to_widget_inner(runtime.clone(), &child);
+               Self::set_runtime_to_widget_inner(runtime.clone(), child);
             }
             internal.set_children(children, internal.id)
          }
@@ -147,7 +147,7 @@ impl Dispatcher {
    ) {
       //--------------------------------------------------
       // # Safety
-      // It seems it is quite safe, we just read simple copiable variables.
+      // It seems it is quite safe, we just read simple copyable variables.
       // Just in case in debug mode we check availability.
       debug_assert!(child.try_borrow_mut().is_ok());
       let id = unsafe {
@@ -165,7 +165,7 @@ impl Dispatcher {
       //--------------------------------------------------
       if !children.is_empty() {
          for child in &children {
-            Self::emit_inner_lifecycle(dispatcher, &child, event);
+            Self::emit_inner_lifecycle(dispatcher, child, event);
          }
       }
       //--------------------------------------------------
@@ -213,7 +213,7 @@ impl Dispatcher {
       //--------------------------------------------------
       if !children.is_empty() {
          for child in &children {
-            Self::emit_inner_layout(dispatcher, &child, event);
+            Self::emit_inner_layout(dispatcher, child, event);
          }
       }
       //--------------------------------------------------
@@ -235,7 +235,7 @@ impl Dispatcher {
    ) {
       //--------------------------------------------------
       // # Safety
-      // It seems it is quite safe, we just read simple copiable variables.
+      // It seems it is quite safe, we just read simple copyable variables.
       // Just in case in debug mode we check availability.
       debug_assert!(input_child.try_borrow_mut().is_ok());
       let (state_flags, id) = unsafe {
@@ -270,19 +270,19 @@ impl Dispatcher {
          //-------------------------------------------
          children.retain(|child| {
             // # Safety
-            // It seems it is quite safe, we just read simple copiable variables.
+            // It seems it is quite safe, we just read simple copyable variables.
             // Just in case in debug mode we check availability.
             debug_assert!(child.try_borrow_mut().is_ok());
             let flags = unsafe { (*child.as_ptr()).base().state_flags.get() };
 
             if !flags.contains(StateFlags::SELF_DELETE) {
-               Self::emit_inner_check_delete(dispatcher, &child);
+               Self::emit_inner_check_delete(dispatcher, child);
                return true;
             }
 
             Self::emit_inner_lifecycle(
                dispatcher,
-               &child,
+               child,
                &LifecycleEventCtx { state: LifecycleState::Destroy { unexpected: false } },
             );
             false
@@ -306,7 +306,6 @@ impl Dispatcher {
                   children.len(),
                   e
                );
-               return;
             }
          };
       }
@@ -331,7 +330,7 @@ impl Dispatcher {
    ) {
       //--------------------------------------------------
       // # Safety
-      // It seems it is quite safe, we just read simple copiable variables.
+      // It seems it is quite safe, we just read simple copyable variables.
       // Just in case in debug mode we check availability.
       debug_assert!(child.try_borrow_mut().is_ok());
       let (state_flags, id) = unsafe {
@@ -365,7 +364,7 @@ impl Dispatcher {
       //--------------------------------------------------
       if is_children_update {
          for child in &children {
-            Self::emit_inner_update(dispatcher, &child, event);
+            Self::emit_inner_update(dispatcher, child, event);
          }
       }
       //--------------------------------------------------
@@ -387,7 +386,6 @@ impl Dispatcher {
                children.len(),
                e
             );
-            return;
          }
       };
    }
@@ -422,7 +420,7 @@ impl Dispatcher {
    ) {
       //--------------------------------------------------
       // # Safety
-      // It seems it is quite safe, we just read simple copiable variables.
+      // It seems it is quite safe, we just read simple copyable variables.
       // Just in case in debug mode we check availability.
       debug_assert!(child.try_borrow_mut().is_ok());
       let (state_flags, id) = unsafe {
@@ -441,7 +439,7 @@ impl Dispatcher {
       if is_self_draw {
          // TODO it seems it is no a good idea to redraw children as well.
          // Use case: heavy children but this widget change its background on mouse enter/leave.
-         Self::emit_inner_draw_full(dispatcher, &child, canvas, event);
+         Self::emit_inner_draw_full(dispatcher, child, canvas, event);
          return;
       }
       //--------------------------------------------------
@@ -460,7 +458,7 @@ impl Dispatcher {
          //---------------------------------
          // TODO transparency processing.
          // # Safety
-         // It seems it is quite safe, we just read simple copiable variables.
+         // It seems it is quite safe, we just read simple copyable variables.
          // Just in case in debug mode we check availability.
          // debug_assert!(child.try_borrow_mut().is_ok());
          // let (state_flags, id) = unsafe {
@@ -473,7 +471,7 @@ impl Dispatcher {
          // }
          //---------------------------------
          for child in &children {
-            Self::emit_inner_draw(dispatcher, &child, canvas, event);
+            Self::emit_inner_draw(dispatcher, child, canvas, event);
          }
       }
       //--------------------------------------------------
@@ -495,7 +493,6 @@ impl Dispatcher {
                children.len(),
                e
             );
-            return;
          }
       };
    }
@@ -508,7 +505,7 @@ impl Dispatcher {
    ) {
       //--------------------------------------------------
       // # Safety
-      // It seems it is quite safe, we just read simple copiable variables.
+      // It seems it is quite safe, we just read simple copyable variables.
       // Just in case in debug mode we check availability.
       debug_assert!(inout_child.try_borrow_mut().is_ok());
       let (state_flags, id) = unsafe {
@@ -539,7 +536,7 @@ impl Dispatcher {
       };
       //--------------------------------------------------
       for child in &children {
-         Self::emit_inner_draw_full(dispatcher, &child, canvas, event);
+         Self::emit_inner_draw_full(dispatcher, child, canvas, event);
       }
       //--------------------------------------------------
       match inout_child.try_borrow_mut() {
@@ -560,7 +557,6 @@ impl Dispatcher {
                children.len(),
                e
             );
-            return;
          }
       };
    }
@@ -576,7 +572,7 @@ impl Dispatcher {
          if let Some(w) = wmo.upgrade() {
             //----------------------------------
             // # Safety
-            // It seems it is quite safe, we just read simple copiable variables.
+            // It seems it is quite safe, we just read simple copyable variables.
             // Just in case in debug mode we check availability.
             debug_assert!(w.try_borrow_mut().is_ok());
             let (rect, mouse_btn_num, mouse_tracking) = unsafe {
@@ -620,7 +616,7 @@ impl Dispatcher {
    ) -> bool {
       //--------------------------------------------------
       // # Safety
-      // It seems it is quite safe, we just read simple copiable variables.
+      // It seems it is quite safe, we just read simple copyable variables.
       // Just in case in debug mode we check availability.
       debug_assert!(input_child.try_borrow_mut().is_ok());
       let (id, state_flags, rect) = unsafe {
@@ -645,7 +641,7 @@ impl Dispatcher {
       //--------------------------------------------------
       let mut accepted = false;
       for child in &children {
-         if Self::emit_inner_mouse_move(dispatcher, &child, event) {
+         if Self::emit_inner_mouse_move(dispatcher, child, event) {
             accepted = true;
             break;
          }
@@ -655,42 +651,36 @@ impl Dispatcher {
          Ok(mut child) => {
             let internal = child.base_mut();
             internal.set_children(children, id);
-            if !accepted {
-               if !internal.is_over() {
-                  internal.set_over(true);
-                  // child.emit_mouse_enter();
-                  // this is not needed anymore so, it is free from borrowing now
-                  // and the following code can be safely invoked.
-                  drop(child);
+            if !accepted && !internal.is_over() {
+               internal.set_over(true);
+               // child.emit_mouse_enter();
+               // this is not needed anymore so, it is free from borrowing now
+               // and the following code can be safely invoked.
+               drop(child);
 
-                  if let Some(wmo) = &dispatcher.widget_mouse_over {
-                     if let Some(w) = wmo.upgrade() {
-                        let mut widget = w.borrow_mut();
-                        let internal = widget.base_mut();
+               if let Some(wmo) = &dispatcher.widget_mouse_over {
+                  if let Some(w) = wmo.upgrade() {
+                     let mut widget = w.borrow_mut();
+                     let internal = widget.base_mut();
 
-                        internal.set_over(false);
-                        widget.emit_mouse_leave();
+                     internal.set_over(false);
+                     widget.emit_mouse_leave();
+                  }
+               }
+
+               dispatcher.widget_mouse_over = Some(Rc::downgrade(input_child));
+
+               // now enter mouse event is needed so, we again trying to borrow.
+               match input_child.try_borrow_mut() {
+                  Ok(mut child) => {
+                     child.emit_mouse_enter();
+                     // checking buttons pressing does not make sense in this location.
+                     if child.base().has_mouse_tracking() {
+                        child.emit_mouse_move(event);
                      }
                   }
-
-                  dispatcher.widget_mouse_over = Some(Rc::downgrade(input_child));
-
-                  // now enter mouse event is needed so, we again trying to borrow.
-                  match input_child.try_borrow_mut() {
-                     Ok(mut child) => {
-                        child.emit_mouse_enter();
-                        // checking buttons pressing does not make sense in this location.
-                        if child.base().has_mouse_tracking() {
-                           child.emit_mouse_move(event);
-                        }
-                     }
-                     Err(e) => {
-                        log::error!(
-                           "Can't borrow widget [{:?}] to process mouse enter! {:?}",
-                           id,
-                           e
-                        );
-                     }
+                  Err(e) => {
+                     log::error!("Can't borrow widget [{:?}] to process mouse enter! {:?}", id, e);
                   }
                }
             }
@@ -724,7 +714,7 @@ impl Dispatcher {
          if let Some(w) = wmo.upgrade() {
             //----------------------------------
             // # Safety
-            // It seems it is quite safe, we just read simple copiable variables.
+            // It seems it is quite safe, we just read simple copyable variables.
             // Just in case in debug mode we check availability.
             debug_assert!(w.try_borrow_mut().is_ok());
             let rect = unsafe {
@@ -769,7 +759,7 @@ impl Dispatcher {
    ) -> bool {
       //--------------------------------------------------
       // # Safety
-      // It seems it is quite safe, we just read simple copiable variables.
+      // It seems it is quite safe, we just read simple copyable variables.
       // Just in case in debug mode we check availability.
       debug_assert!(input_child.try_borrow_mut().is_ok());
       let (id, flow, rect) = unsafe {
@@ -794,7 +784,7 @@ impl Dispatcher {
       //--------------------------------------------------
       let mut accepted = false;
       for child in &children {
-         if Self::emit_inner_mouse_button(dispatcher, &child, event) {
+         if Self::emit_inner_mouse_button(dispatcher, child, event) {
             accepted = true;
             break;
          }
@@ -810,7 +800,7 @@ impl Dispatcher {
                );
                child.base_mut().add_mouse_btn_num(1);
                accepted = child.emit_mouse_button(event);
-               dispatcher.widget_mouse_button = Some(Rc::downgrade(&input_child));
+               dispatcher.widget_mouse_button = Some(Rc::downgrade(input_child));
             }
          }
          Err(e) => {
@@ -846,7 +836,7 @@ impl Dispatcher {
    ) -> bool {
       //--------------------------------------------------
       // # Safety
-      // It seems it is quite safe, we just read simple copiable variables.
+      // It seems it is quite safe, we just read simple copyable variables.
       // Just in case in debug mode we check availability.
       debug_assert!(child.try_borrow_mut().is_ok());
       let (id, flow, rect) = unsafe {
@@ -871,7 +861,7 @@ impl Dispatcher {
       //--------------------------------------------------
       let mut accepted = false;
       for child in &children {
-         if Self::emit_inner_mouse_wheel(dispatcher, &child, event) {
+         if Self::emit_inner_mouse_wheel(dispatcher, child, event) {
             accepted = true;
             break;
          }
@@ -917,7 +907,7 @@ impl Dispatcher {
    ) -> bool {
       //--------------------------------------------------
       // # Safety
-      // It seems it is quite safe, we just read simple copiable variables.
+      // It seems it is quite safe, we just read simple copyable variables.
       // Just in case in debug mode we check availability.
       debug_assert!(child.try_borrow_mut().is_ok());
       let (id, flow) = unsafe {
@@ -940,7 +930,7 @@ impl Dispatcher {
       //--------------------------------------------------
       let mut accepted = false;
       for child in &children {
-         if Self::emit_inner_keyboard(dispatcher, &child, event) {
+         if Self::emit_inner_keyboard(dispatcher, child, event) {
             accepted = true;
             break;
          }
@@ -982,7 +972,7 @@ impl Dispatcher {
       for child in children {
          Self::emit_inner_lifecycle(
             dispatcher,
-            &child,
+            child,
             &LifecycleEventCtx { state: LifecycleState::Destroy { unexpected: true } },
          );
       }
