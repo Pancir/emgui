@@ -1,9 +1,11 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+mod icon;
 mod label;
 mod push_button;
 mod toggle_button;
 
+pub use icon::*;
 pub use label::*;
 pub use push_button::*;
 pub use toggle_button::*;
