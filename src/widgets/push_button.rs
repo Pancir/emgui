@@ -1,7 +1,7 @@
 use crate::core::derive::Derive;
 use crate::core::events::{DrawEventCtx, MouseButtonsEventCtx};
 use crate::core::IWidget;
-use crate::elements::Label;
+use crate::elements::LineLabel;
 use crate::widgets::Widget;
 use sim_draw::color::Rgba;
 use sim_draw::m::Rect;
@@ -103,7 +103,7 @@ impl IPushButtonHandler for PushButtonHandler {
 
 #[derive(Default)]
 pub struct PushButtonState {
-   pub label: Label,
+   pub label: LineLabel,
    pub toggle_num: u8,
    pub toggle: u8,
    pub is_hover: bool,
@@ -143,12 +143,11 @@ where
             Self {
                handler,
                state: PushButtonState {
-                  label: Label::new(
-                     label,
-                     rect.center(),
-                     text_patin,
-                     TextAlign::new().center().middle().tight(),
-                  ),
+                  label: LineLabel::new()
+                     .with_text(label)
+                     .with_paint(text_patin)
+                     .with_align(TextAlign::new().center().middle().tight())
+                     .with_pos(rect.center()),
                   toggle_num: 2,
                   toggle: 0,
                   is_hover: false,
@@ -230,7 +229,7 @@ where
       canvas.set_stroke_width(2.0);
       canvas.stroke(&rect);
 
-      if !d.state.label.text.is_empty() {
+      if !d.state.label.text().as_ref().is_empty() {
          d.state.label.on_draw(canvas);
       }
    }
