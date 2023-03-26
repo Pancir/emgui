@@ -1,3 +1,4 @@
+mod children;
 mod dispatcher;
 mod focus;
 mod runtime;
