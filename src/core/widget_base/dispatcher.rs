@@ -123,13 +123,15 @@ impl Dispatcher {
       match child.try_borrow_mut() {
          Ok(mut bor) => {
             let mut internal = bor.base_mut();
+            let id = internal.id;
+
             internal.runtime = Some(runtime.clone());
 
-            let children = internal.take_children(internal.id);
+            let children = internal.children_mut().take_children(id);
             for child in &children {
                Self::set_runtime_to_widget_inner(runtime.clone(), child);
             }
-            internal.return_children(children, internal.id)
+            internal.children_mut().return_children(children, id)
          }
          Err(e) => panic!("{:?}", e),
       }
@@ -156,7 +158,7 @@ impl Dispatcher {
       };
       //---------------------------------
       let children = match child.try_borrow_mut() {
-         Ok(mut child) => child.base_mut().take_children(id),
+         Ok(mut child) => child.base_mut().children_mut().take_children(id),
          Err(e) => {
             log::error!("Can't borrow widget [{:?}] to process lifecycle event!\n\t{:?}", id, e);
             return;
@@ -171,7 +173,7 @@ impl Dispatcher {
       //--------------------------------------------------
       match child.try_borrow_mut() {
          Ok(mut child) => {
-            child.base_mut().return_children(children, id);
+            child.base_mut().children_mut().return_children(children, id);
             child.emit_lifecycle(event);
          }
          Err(e) => {
@@ -204,7 +206,7 @@ impl Dispatcher {
             child.emit_layout(event);
             let base = child.base_mut();
             let id = base.id();
-            base.take_children(id)
+            base.children_mut().take_children(id)
          }
          Err(e) => {
             panic!("{:?}", e)
@@ -220,7 +222,7 @@ impl Dispatcher {
       let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{:?}", e));
       let base = bor.base_mut();
       let id = base.id();
-      base.return_children(children, id);
+      base.children_mut().return_children(children, id);
    }
 }
 
@@ -261,7 +263,7 @@ impl Dispatcher {
       //--------------------------------------------------
       if state_flags.contains(StateFlags::CHILDREN_DELETE) {
          let mut children = match input_child.try_borrow_mut() {
-            Ok(mut child) => child.base_mut().take_children(id),
+            Ok(mut child) => child.base_mut().children_mut().take_children(id),
             Err(e) => {
                log::error!("Can't borrow widget [{:?}] to process delete event!\n\t{}", id, e);
                return;
@@ -293,7 +295,7 @@ impl Dispatcher {
                let internal = child.base_mut();
                let f = internal.state_flags.get_mut();
                f.remove(StateFlags::CHILDREN_DELETE);
-               internal.return_children(children, id);
+               internal.children_mut().return_children(children, id);
             }
             Err(e) => {
                //-----------------------
@@ -354,7 +356,7 @@ impl Dispatcher {
                internal.state_flags.get_mut().remove(StateFlags::SELF_UPDATE);
                child.emit_update(event);
             }
-            child.base_mut().take_children(id)
+            child.base_mut().children_mut().take_children(id)
          }
          Err(e) => {
             log::error!("Can't borrow widget [{:?}] to process update event!\n\t{:?}", id, e);
@@ -373,7 +375,7 @@ impl Dispatcher {
             let internal = child.base_mut();
             let f = internal.state_flags.get_mut();
             f.remove(StateFlags::CHILDREN_UPDATE);
-            internal.return_children(children, id);
+            internal.children_mut().return_children(children, id);
          }
          Err(e) => {
             //-----------------------
@@ -446,7 +448,7 @@ impl Dispatcher {
       let children = match child.try_borrow_mut() {
          Ok(mut child) => {
             let internal = child.base_mut();
-            internal.take_children(id)
+            internal.children_mut().take_children(id)
          }
          Err(e) => {
             log::error!("Can't borrow widget [{:?}] to process draw event!\n\t{:?}", id, e);
@@ -480,7 +482,7 @@ impl Dispatcher {
             let internal = child.base_mut();
             let f = internal.state_flags.get_mut();
             f.remove(StateFlags::CHILDREN_DRAW);
-            internal.return_children(children, id);
+            internal.children_mut().return_children(children, id);
          }
          Err(e) => {
             //-----------------------
@@ -527,7 +529,7 @@ impl Dispatcher {
             child.emit_draw(canvas, event);
 
             let internal = child.base_mut();
-            internal.take_children(id)
+            internal.children_mut().take_children(id)
          }
          Err(e) => {
             log::error!("Can't borrow widget [{:?}] to process draw event!\n\t{:?}", id, e);
@@ -544,7 +546,7 @@ impl Dispatcher {
             let internal = child.base_mut();
             let f = internal.state_flags.get_mut();
             f.remove(StateFlags::CHILDREN_DRAW);
-            internal.return_children(children, id);
+            internal.children_mut().return_children(children, id);
          }
          Err(e) => {
             //-----------------------
@@ -632,7 +634,7 @@ impl Dispatcher {
       }
       //--------------------------------------------------
       let children = match input_child.try_borrow_mut() {
-         Ok(mut child) => child.base_mut().take_children(id),
+         Ok(mut child) => child.base_mut().children_mut().take_children(id),
          Err(e) => {
             log::error!("Can't borrow widget [{:?}] to process mouse move event!\n\t{:?}", id, e);
             return false;
@@ -650,7 +652,7 @@ impl Dispatcher {
       match input_child.try_borrow_mut() {
          Ok(mut child) => {
             let internal = child.base_mut();
-            internal.return_children(children, id);
+            internal.children_mut().return_children(children, id);
             if !accepted && !internal.is_over() {
                internal.set_over(true);
                // child.emit_mouse_enter();
@@ -775,7 +777,7 @@ impl Dispatcher {
       }
       //--------------------------------------------------
       let children = match input_child.try_borrow_mut() {
-         Ok(mut child) => child.base_mut().take_children(id),
+         Ok(mut child) => child.base_mut().children_mut().take_children(id),
          Err(e) => {
             log::error!("Can't borrow widget [{:?}] to process mouse button event!\n\t{:?}", id, e);
             return false;
@@ -792,7 +794,7 @@ impl Dispatcher {
       //--------------------------------------------------
       match input_child.try_borrow_mut() {
          Ok(mut child) => {
-            child.base_mut().return_children(children, id);
+            child.base_mut().children_mut().return_children(children, id);
             if !accepted {
                debug_assert!(
                   event.input.state != MouseState::Released,
@@ -852,7 +854,7 @@ impl Dispatcher {
       }
       //--------------------------------------------------
       let children = match child.try_borrow_mut() {
-         Ok(mut child) => child.base_mut().take_children(id),
+         Ok(mut child) => child.base_mut().children_mut().take_children(id),
          Err(e) => {
             log::error!("Can't borrow widget [{:?}] to process mouse wheel event!\n\t{:?}", id, e);
             return false;
@@ -869,7 +871,7 @@ impl Dispatcher {
       //--------------------------------------------------
       match child.try_borrow_mut() {
          Ok(mut child) => {
-            child.base_mut().return_children(children, id);
+            child.base_mut().children_mut().return_children(children, id);
             if !accepted {
                accepted = child.emit_mouse_wheel(event);
             }
@@ -921,7 +923,7 @@ impl Dispatcher {
       }
       //--------------------------------------------------
       let children = match child.try_borrow_mut() {
-         Ok(mut child) => child.base_mut().take_children(id),
+         Ok(mut child) => child.base_mut().children_mut().take_children(id),
          Err(e) => {
             log::error!("Can't borrow widget [{:?}] to process mouse wheel event!\n\t{:?}", id, e);
             return false;
@@ -938,7 +940,7 @@ impl Dispatcher {
       //--------------------------------------------------
       match child.try_borrow_mut() {
          Ok(mut child) => {
-            child.base_mut().return_children(children, id);
+            child.base_mut().children_mut().return_children(children, id);
             if !accepted && child.emit_keyboard(event) {
                accepted = true;
             }

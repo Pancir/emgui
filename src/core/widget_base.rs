@@ -3,15 +3,15 @@ mod dispatcher;
 mod focus;
 mod runtime;
 
+use self::children::Children;
 pub use dispatcher::*;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 use crate::core::widget_base::runtime::Runtime;
 use crate::core::{Geometry, IWidget, WidgetId};
-use crate::defines::{DEFAULT_DOUBLE_CLICK_TIME, DEFAULT_TOOL_TIP_TIME, STATIC_CHILD_NUM};
+use crate::defines::{DEFAULT_DOUBLE_CLICK_TIME, DEFAULT_TOOL_TIP_TIME};
 use bitflags::bitflags;
-use smallvec::SmallVec;
 use std::cell::{Cell, RefCell};
 use std::rc::{Rc, Weak};
 use std::time::Duration;
@@ -72,8 +72,6 @@ bitflags! {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub(crate) type ChildrenVec = SmallVec<[Rc<RefCell<dyn IWidget>>; STATIC_CHILD_NUM]>;
-
 pub struct WidgetBase {
    parent: Option<Weak<RefCell<dyn IWidget>>>,
    //--------------------
@@ -88,8 +86,7 @@ pub struct WidgetBase {
    state_flags: Cell<StateFlags>,
    number_mouse_buttons_pressed: Cell<i8>,
    //--------------------
-   children_busy: Cell<WidgetId>,
-   children: RefCell<ChildrenVec>,
+   children: Children,
    //--------------------
 }
 
@@ -108,20 +105,22 @@ impl WidgetBase {
          state_flags: Cell::new(StateFlags::INIT),
          number_mouse_buttons_pressed: Cell::new(0),
          //--------------------
-         children_busy: Cell::new(WidgetId::INVALID),
-         children: Default::default(),
+         children: Children::default(),
       }
    }
 
    /// Unique id of the widget.
+   #[inline]
    pub fn id(&self) -> WidgetId {
       self.id
    }
 
+   #[inline]
    pub fn geometry(&self) -> &Geometry {
       &self.geometry
    }
 
+   #[inline]
    pub fn geometry_mut(&mut self) -> &mut Geometry {
       &mut self.geometry
    }
@@ -188,6 +187,7 @@ impl WidgetBase {
 
 impl WidgetBase {
    /// Check if widget is visible.
+   #[inline]
    pub fn is_visible(&self) -> bool {
       self.state_flags.get().contains(StateFlags::IS_VISIBLE)
    }
@@ -211,6 +211,7 @@ impl WidgetBase {
    /// Check if widget is enabled.
    ///
    /// Disabled widget does not receive mouse ans keyboard inputs.
+   #[inline]
    pub fn is_enabled(&self) -> bool {
       self.state_flags.get().contains(StateFlags::IS_ENABLED)
    }
@@ -232,6 +233,7 @@ impl WidgetBase {
    }
 
    /// Check if widget has transparent pixels.
+   #[inline]
    pub fn is_transparent(&self) -> bool {
       self.state_flags.get().contains(StateFlags::IS_TRANSPARENT)
    }
@@ -240,6 +242,7 @@ impl WidgetBase {
    ///
    /// The draw engine should know if there are transparent pixels for
    /// selecting necessary algorithm to draw.
+   #[inline]
    pub fn set_transparent(&self, state: bool) {
       let mut f = self.state_flags.get();
       f.set(StateFlags::IS_TRANSPARENT, state);
@@ -247,11 +250,13 @@ impl WidgetBase {
    }
 
    /// Check if mouse is over the widget's rectangle geometry.
+   #[inline]
    pub fn is_over(&self) -> bool {
       self.state_flags.get().contains(StateFlags::IS_OVER)
    }
 
    /// Set if mouse is over the widget's rectangle geometry.
+   #[inline]
    pub(crate) fn set_over(&self, state: bool) {
       let mut f = self.state_flags.get();
       f.set(StateFlags::IS_OVER, state);
@@ -261,6 +266,7 @@ impl WidgetBase {
    /// Check if the widget wants mouse tracking.
    ///
    /// See [Self::set_mouse_tracking]
+   #[inline]
    pub fn has_mouse_tracking(&self) -> bool {
       self.state_flags.get().contains(StateFlags::HAS_MOUSE_TRACKING)
    }
@@ -271,20 +277,33 @@ impl WidgetBase {
    /// mouse move events when at least one mouse button is pressed while the mouse is being moved.
    /// If mouse tracking is enabled, the widget receives mouse move events even
    /// if **NO** buttons are pressed.
+   #[inline]
    pub fn set_mouse_tracking(&self, state: bool) {
       let mut f = self.state_flags.get();
       f.set(StateFlags::HAS_MOUSE_TRACKING, state);
       self.state_flags.set(f);
    }
 
+   #[inline]
    pub(crate) fn add_mouse_btn_num(&self, num: i8) {
       let res = self.mouse_btn_num() + num;
       debug_assert!(res > -1, "inconsistent add/remove mouse buttons press in {:?}", self.id);
       self.number_mouse_buttons_pressed.set(res.max(0));
    }
 
+   #[inline]
    pub(crate) fn mouse_btn_num(&self) -> i8 {
       self.number_mouse_buttons_pressed.get()
+   }
+
+   #[inline]
+   pub fn children(&self) -> &Children {
+      &self.children
+   }
+
+   #[inline]
+   pub fn children_mut(&mut self) -> &mut Children {
+      &mut self.children
    }
 }
 
@@ -326,33 +345,6 @@ impl WidgetBase {
    }
 }
 
-impl WidgetBase {
-   #[track_caller]
-   pub(crate) fn take_children(&mut self, id: WidgetId) -> ChildrenVec {
-      debug_assert!(
-         !self.children_busy.get().is_valid(),
-         "[{:?}] children borrowed by [{:?}]",
-         id,
-         self.children_busy.get()
-      );
-      if !self.children_busy.get().is_valid() {
-         self.children_busy.set(id);
-      }
-      std::mem::take(self.children.get_mut())
-   }
-
-   #[track_caller]
-   pub(crate) fn return_children(&mut self, mut ch: ChildrenVec, id: WidgetId) {
-      debug_assert!(
-         self.children_busy.get().is_valid(),
-         "[{:?}] attempt to release borrowed children that already released.",
-         id
-      );
-      *self.children.get_mut() = std::mem::take(&mut ch);
-      self.children_busy.set(WidgetId::INVALID);
-   }
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub fn add_children<const NUM: usize>(
@@ -375,9 +367,9 @@ pub fn add_child(
       let bor = parent.borrow();
       let pch = bor.base();
 
-      debug_assert!(!pch.children_busy.get().is_valid());
+      debug_assert!(!pch.children().is_under_process());
 
-      let mut bor_ch = pch.children.borrow_mut();
+      let mut bor_ch = pch.children.access();
       bor_ch.push(child.clone());
    }
 

@@ -1,8 +1,9 @@
 use crate::core::{IWidget, WidgetId};
 use crate::defines::STATIC_CHILD_NUM;
 use smallvec::SmallVec;
+use std::cell::RefMut;
 use std::{
-   cell::{Cell, Ref, RefCell, UnsafeCell},
+   cell::{Cell, RefCell},
    rc::{Rc, Weak},
 };
 
@@ -30,24 +31,24 @@ pub struct Children {
 }
 
 impl Children {
-   pub fn raise(&self, w: Weak<RefCell<dyn IWidget>>) {
-      unimplemented!()
-   }
+   // pub fn raise(&mut self, _w: Weak<RefCell<dyn IWidget>>) {
+   //    unimplemented!()
+   // }
 
-   pub fn lower(&self, w: Weak<RefCell<dyn IWidget>>) {
-      unimplemented!()
-   }
+   // pub fn lower(&mut self, _w: Weak<RefCell<dyn IWidget>>) {
+   //    unimplemented!()
+   // }
 
-   pub fn add(&self, w: Weak<RefCell<dyn IWidget>>) {
-      unimplemented!()
-   }
+   // pub fn add(&mut self, _w: Weak<RefCell<dyn IWidget>>) {
+   //    unimplemented!()
+   // }
 
-   pub fn delete(&self, w: Weak<RefCell<dyn IWidget>>) {
-      unimplemented!()
-   }
+   // pub fn delete(&mut self, _w: Weak<RefCell<dyn IWidget>>) {
+   //    unimplemented!()
+   // }
 
    pub fn is_under_process(&self) -> bool {
-      unimplemented!()
+      self.children_busy.get().is_valid()
    }
 }
 
@@ -58,6 +59,11 @@ impl Default for Children {
 }
 
 impl Children {
+   // FIXME it is temporary for add_childrem function.
+   pub(crate) fn access(&self) -> RefMut<'_, ChildrenVec> {
+      self.children.borrow_mut()
+   }
+
    #[track_caller]
    pub(crate) fn take_children(&mut self, id: WidgetId) -> ChildrenVec {
       debug_assert!(
