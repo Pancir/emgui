@@ -1,11 +1,22 @@
-use anyhow::bail;
-
-use super::ChildrenVec;
 use crate::core::{IWidget, WidgetId};
+use crate::defines::STATIC_CHILD_NUM;
+use smallvec::SmallVec;
 use std::{
-   cell::{Cell, Ref, RefCell},
-   rc::Rc,
+   cell::{Cell, Ref, RefCell, UnsafeCell},
+   rc::{Rc, Weak},
 };
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+enum Commands {
+   Parent,
+   Add,
+   Delete,
+   Raise,
+   Lower,
+}
+
+pub(crate) type ChildrenVec = SmallVec<[Rc<RefCell<dyn IWidget>>; STATIC_CHILD_NUM]>;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -14,56 +25,64 @@ use std::{
 /// It solves the problem when children list should be changed while it is being iterated.
 /// The solution is to create a list of actions to process when iteration is completed.
 pub struct Children {
-   #[cfg(debug_assertions)]
-   borrowed_at: Cell<Option<&'static core::panic::Location<'static>>>,
-   children_borrowed: Cell<WidgetId>,
-
-   parent: Option<Weak<RefCell<dyn IWidget>>>,
+   children_busy: Cell<WidgetId>,
    children: RefCell<ChildrenVec>,
 }
 
 impl Children {
-   pub(crate) fn iter(&self) -> anyhow::Result<ChildrenIter> {
-      match self.children.try_borrow() {
-         Ok(borrow) => {
-            #[cfg(debug_assertions)]
-            {
-               self.borrowed_at.set(Some(core::panic::Location::caller()));
-            }
+   pub fn raise(&self, w: Weak<RefCell<dyn IWidget>>) {
+      unimplemented!()
+   }
 
-            Ok(ChildrenIter { ch: self, vec: borrow })
-         }
-         Err(_) => {
-            #[cfg(debug_assertions)]
-            bail!(
-               "Children already borrowed by: {:?} at location: {}",
-               self.children_borrowed.get(),
-               self.borrowed_at.get().unwrap()
-            );
+   pub fn lower(&self, w: Weak<RefCell<dyn IWidget>>) {
+      unimplemented!()
+   }
 
-            #[cfg(not(debug_assertions))]
-            bail!("Children already borrowed by: {:?}", self.children_borrowed.get());
-         }
-      }
+   pub fn add(&self, w: Weak<RefCell<dyn IWidget>>) {
+      unimplemented!()
+   }
+
+   pub fn delete(&self, w: Weak<RefCell<dyn IWidget>>) {
+      unimplemented!()
+   }
+
+   pub fn is_under_process(&self) -> bool {
+      unimplemented!()
    }
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-pub(crate) struct ChildrenIter<'a> {
-   ch: &'a Children,
-   vec: Ref<'a, ChildrenVec>,
+impl Default for Children {
+   fn default() -> Self {
+      Self { children_busy: Cell::new(WidgetId::INVALID), children: Default::default() }
+   }
 }
 
-impl<'a> std::ops::Drop for ChildrenIter<'a> {
-   fn drop(&mut self) {}
-}
+impl Children {
+   #[track_caller]
+   pub(crate) fn take_children(&mut self, id: WidgetId) -> ChildrenVec {
+      debug_assert!(
+         !self.children_busy.get().is_valid(),
+         "[{:?}] children borrowed by [{:?}]",
+         id,
+         self.children_busy.get()
+      );
 
-impl<'a> core::iter::Iterator for ChildrenIter<'a> {
-   type Item = &'a Rc<RefCell<dyn IWidget>>;
+      if !self.children_busy.get().is_valid() {
+         self.children_busy.set(id);
+      }
+      std::mem::take(self.children.get_mut())
+   }
 
-   fn next(&mut self) -> Option<Self::Item> {
-      todo!()
+   #[track_caller]
+   pub(crate) fn return_children(&mut self, mut ch: ChildrenVec, id: WidgetId) {
+      debug_assert!(
+         self.children_busy.get().is_valid(),
+         "[{:?}] attempt to release borrowed children that already released.",
+         id
+      );
+
+      *self.children.get_mut() = std::mem::take(&mut ch);
+      self.children_busy.set(WidgetId::INVALID);
    }
 }
 

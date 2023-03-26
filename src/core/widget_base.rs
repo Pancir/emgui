@@ -342,7 +342,7 @@ impl WidgetBase {
    }
 
    #[track_caller]
-   pub(crate) fn set_children(&mut self, mut ch: ChildrenVec, id: WidgetId) {
+   pub(crate) fn return_children(&mut self, mut ch: ChildrenVec, id: WidgetId) {
       debug_assert!(
          self.children_busy.get().is_valid(),
          "[{:?}] attempt to release borrowed children that already released.",

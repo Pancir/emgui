@@ -129,7 +129,7 @@ impl Dispatcher {
             for child in &children {
                Self::set_runtime_to_widget_inner(runtime.clone(), child);
             }
-            internal.set_children(children, internal.id)
+            internal.return_children(children, internal.id)
          }
          Err(e) => panic!("{:?}", e),
       }
@@ -171,7 +171,7 @@ impl Dispatcher {
       //--------------------------------------------------
       match child.try_borrow_mut() {
          Ok(mut child) => {
-            child.base_mut().set_children(children, id);
+            child.base_mut().return_children(children, id);
             child.emit_lifecycle(event);
          }
          Err(e) => {
@@ -220,7 +220,7 @@ impl Dispatcher {
       let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{:?}", e));
       let base = bor.base_mut();
       let id = base.id();
-      base.set_children(children, id);
+      base.return_children(children, id);
    }
 }
 
@@ -293,7 +293,7 @@ impl Dispatcher {
                let internal = child.base_mut();
                let f = internal.state_flags.get_mut();
                f.remove(StateFlags::CHILDREN_DELETE);
-               internal.set_children(children, id);
+               internal.return_children(children, id);
             }
             Err(e) => {
                //-----------------------
@@ -373,7 +373,7 @@ impl Dispatcher {
             let internal = child.base_mut();
             let f = internal.state_flags.get_mut();
             f.remove(StateFlags::CHILDREN_UPDATE);
-            internal.set_children(children, id);
+            internal.return_children(children, id);
          }
          Err(e) => {
             //-----------------------
@@ -480,7 +480,7 @@ impl Dispatcher {
             let internal = child.base_mut();
             let f = internal.state_flags.get_mut();
             f.remove(StateFlags::CHILDREN_DRAW);
-            internal.set_children(children, id);
+            internal.return_children(children, id);
          }
          Err(e) => {
             //-----------------------
@@ -544,7 +544,7 @@ impl Dispatcher {
             let internal = child.base_mut();
             let f = internal.state_flags.get_mut();
             f.remove(StateFlags::CHILDREN_DRAW);
-            internal.set_children(children, id);
+            internal.return_children(children, id);
          }
          Err(e) => {
             //-----------------------
@@ -650,7 +650,7 @@ impl Dispatcher {
       match input_child.try_borrow_mut() {
          Ok(mut child) => {
             let internal = child.base_mut();
-            internal.set_children(children, id);
+            internal.return_children(children, id);
             if !accepted && !internal.is_over() {
                internal.set_over(true);
                // child.emit_mouse_enter();
@@ -792,7 +792,7 @@ impl Dispatcher {
       //--------------------------------------------------
       match input_child.try_borrow_mut() {
          Ok(mut child) => {
-            child.base_mut().set_children(children, id);
+            child.base_mut().return_children(children, id);
             if !accepted {
                debug_assert!(
                   event.input.state != MouseState::Released,
@@ -869,7 +869,7 @@ impl Dispatcher {
       //--------------------------------------------------
       match child.try_borrow_mut() {
          Ok(mut child) => {
-            child.base_mut().set_children(children, id);
+            child.base_mut().return_children(children, id);
             if !accepted {
                accepted = child.emit_mouse_wheel(event);
             }
@@ -938,7 +938,7 @@ impl Dispatcher {
       //--------------------------------------------------
       match child.try_borrow_mut() {
          Ok(mut child) => {
-            child.base_mut().set_children(children, id);
+            child.base_mut().return_children(children, id);
             if !accepted && child.emit_keyboard(event) {
                accepted = true;
             }
