@@ -5,10 +5,11 @@ use crate::core::events::{
    MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
 };
 use crate::core::{IWidget, WidgetBase};
-use crate::elements::LineLabel;
+use crate::elements::{Icon, LineLabel};
 use sim_draw::{color::Rgba, m::Rect};
 use sim_draw::{Canvas, Paint};
-use sim_input::mouse::MouseButton;
+use sim_input::mouse::{MouseButton, MouseState};
+use std::borrow::Cow;
 use std::{any::Any, mem::MaybeUninit};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -102,7 +103,8 @@ impl IButtonHandler for ButtonHandler {
 
 #[derive(Default)]
 pub struct ButtonState {
-   pub label: LineLabel,
+   pub text: Option<Cow<'static, str>>,
+   pub icon: Option<Icon>,
    pub toggle_num: u8,
    pub toggle: u8,
    pub is_hover: bool,
@@ -147,7 +149,13 @@ where
       let mut out = Self {
          base: WidgetBase::new::<Self>(),
          derive: unsafe { std::mem::zeroed() },
-         vtable: WidgetVt { on_draw: Self::on_draw, ..WidgetVt::default() },
+         vtable: WidgetVt {
+            on_draw: Self::on_draw,
+            on_mouse_enter: Self::on_mouse_enter,
+            on_mouse_leave: Self::on_mouse_leave,
+            on_mouse_button: Self::on_mouse_button,
+            ..WidgetVt::default()
+         },
          state: ButtonState::default(),
          handler,
       };
@@ -157,6 +165,21 @@ where
 
       init_cb(&mut out);
       out
+   }
+
+   /// Set button text.
+   #[inline]
+   pub fn set_icon(&mut self, icon: Option<Icon>) {
+      self.state.icon = icon
+   }
+
+   /// Set button text.
+   #[inline]
+   pub fn set_text<T>(&mut self, text: Option<T>)
+   where
+      T: Into<Cow<'static, str>>,
+   {
+      self.state.text = text.map(|v| v.into())
    }
 
    /// Access to button's derive object.
@@ -349,9 +372,64 @@ where
       canvas.set_stroke_width(2.0);
       canvas.stroke(&rect);
 
-      if !w.state.label.text().as_ref().is_empty() {
-         w.state.label.on_draw(canvas);
+      // FIXME needs a style system to fix.
+      //   if !w.state.label.text().as_ref().is_empty() {
+      //      w.state.label.on_draw(canvas);
+      //   }
+   }
+
+   pub fn on_mouse_enter(w: &mut Self) {
+      w.state.is_hover = true;
+      w.base.request_draw();
+   }
+
+   pub fn on_mouse_leave(w: &mut Self) {
+      w.state.is_hover = false;
+      w.base.request_draw();
+   }
+
+   pub fn on_mouse_button(w: &mut Self, event: &MouseButtonsEventCtx) -> bool {
+      match event.input.state {
+         MouseState::Pressed => {
+            if w.state.is_hover {
+               w.state.is_down = true;
+               w.handler.pressed(&w.state, event.input.button);
+               w.base.request_draw();
+               return true;
+            }
+         }
+         MouseState::Released => {
+            if w.state.is_down {
+               w.state.is_down = false;
+               w.handler.released(&w.state, event.input.button);
+
+               if w.state.is_hover {
+                  w.state.toggle += 1;
+                  if w.state.toggle == w.state.toggle_num {
+                     w.state.toggle = 0;
+                  }
+
+                  w.handler.click(&w.state);
+               }
+               w.base.request_draw();
+               return true;
+            }
+         }
       }
+
+      false
+   }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#[cfg(test)]
+mod tests {
+   use super::*;
+
+   #[test]
+   fn sizes() {
+      dbg!(std::mem::size_of::<Button<ButtonHandler, ()>>());
    }
 }
 
