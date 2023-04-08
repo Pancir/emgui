@@ -362,6 +362,8 @@ pub fn add_child(
    parent: &Rc<RefCell<dyn IWidget>>,
    child: Rc<RefCell<dyn IWidget>>,
 ) -> Weak<RefCell<dyn IWidget>> {
+   // TODO what about runtime propagation?
+
    let w = Rc::downgrade(&child);
    {
       let bor = parent.borrow();
