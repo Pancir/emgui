@@ -5,7 +5,7 @@ use crate::core::events::{
    MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
 };
 use crate::core::{IWidget, WidgetBase};
-use crate::elements::{Icon, LineLabel};
+use crate::elements::Icon;
 use sim_draw::{color::Rgba, m::Rect};
 use sim_draw::{Canvas, Paint};
 use sim_input::mouse::{MouseButton, MouseState};
