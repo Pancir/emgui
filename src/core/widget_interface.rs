@@ -67,8 +67,8 @@ pub trait IWidget: Any + 'static {
    fn base(&self) -> &WidgetBase;
    fn base_mut(&mut self) -> &mut WidgetBase;
 
-   fn derive(&self) -> &dyn Derive;
-   fn derive_mut(&mut self) -> &mut dyn Derive;
+   fn inherited(&self) -> &dyn Derive;
+   fn inherited_mut(&mut self) -> &mut dyn Derive;
 
    //---------------------------------------
 

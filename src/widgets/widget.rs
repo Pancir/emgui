@@ -86,10 +86,23 @@ pub struct Widget<D>
 where
    D: Derive,
 {
-   derive: MaybeUninit<D>,
+   inherited: MaybeUninit<D>,
    vtable: WidgetVt<Self>,
    base: WidgetBase,
    background_color: Rgba,
+}
+
+impl Default for Widget<()> {
+   fn default() -> Self {
+      Self::new()
+   }
+}
+
+impl Widget<()> {
+   /// Construct new.
+   pub fn new() -> Self {
+      Self::inherit(|_| (), |_| {})
+   }
 }
 
 impl<D: 'static> Widget<D>
@@ -97,13 +110,13 @@ where
    D: Derive,
 {
    /// Construct new and init.
-   pub fn derive<CB1, CB2>(vt_cb: CB1, init_cb: CB2) -> Self
+   pub fn inherit<CB1, CB2>(vt_cb: CB1, init_cb: CB2) -> Self
    where
       CB1: FnOnce(&mut WidgetVt<Self>) -> D,
       CB2: FnOnce(&mut Self),
    {
       let mut out = Self {
-         derive: unsafe { std::mem::zeroed() },
+         inherited: unsafe { std::mem::zeroed() },
          background_color: Rgba::GRAY,
          vtable: WidgetVt {
             on_draw: Self::on_draw,
@@ -117,8 +130,8 @@ where
          base: WidgetBase::new::<Self>(),
       };
 
-      let derive = vt_cb(&mut out.vtable);
-      out.derive.write(derive);
+      let inherited = vt_cb(&mut out.vtable);
+      out.inherited.write(inherited);
 
       init_cb(&mut out);
       out
@@ -127,17 +140,17 @@ where
    //---------------------------------------
 
    #[inline]
-   pub fn derive_obj(&self) -> &D {
+   pub fn inherited_obj(&self) -> &D {
       // # Safety
       // All initialization happen in a constructor.
-      unsafe { self.derive.assume_init_ref() }
+      unsafe { self.inherited.assume_init_ref() }
    }
 
    #[inline]
-   pub fn derive_obj_mut(&mut self) -> &mut D {
+   pub fn inherited_obj_mut(&mut self) -> &mut D {
       // # Safety
       // All initialization happen in a constructor.
-      unsafe { self.derive.assume_init_mut() }
+      unsafe { self.inherited.assume_init_mut() }
    }
 
    pub fn set_background_color(&mut self, color: Rgba) {
@@ -173,12 +186,12 @@ where
       &mut self.base
    }
 
-   fn derive(&self) -> &dyn Derive {
-      self.derive_obj()
+   fn inherited(&self) -> &dyn Derive {
+      self.inherited_obj()
    }
 
-   fn derive_mut(&mut self) -> &mut dyn Derive {
-      self.derive_obj_mut()
+   fn inherited_mut(&mut self) -> &mut dyn Derive {
+      self.inherited_obj_mut()
    }
 
    //---------------------------------------

@@ -119,7 +119,7 @@ where
    D: Derive,
 {
    base: WidgetBase,
-   derive: MaybeUninit<D>,
+   inherited: MaybeUninit<D>,
    vtable: WidgetVt<Self>,
    state: ButtonState,
    handler: H,
@@ -130,8 +130,14 @@ where
    H: IButtonHandler + 'static,
 {
    /// Construct new button.
-   pub fn new(handler: H) -> Self {
-      Self::derive(|_| (), |_| {}, handler)
+   pub fn new<T>(handler: H, text: Option<T>, icon: Option<Icon>) -> Self
+   where
+      T: Into<Cow<'static, str>>,
+   {
+      let mut out = Self::inherit(|_| (), |_| {}, handler);
+      out.set_text(text);
+      out.set_icon(icon);
+      out
    }
 }
 
@@ -141,14 +147,14 @@ where
    D: Derive,
 {
    /// Construct a derived entity.
-   pub fn derive<VCB, ICB>(vt_cb: VCB, init_cb: ICB, handler: H) -> Self
+   pub fn inherit<VCB, ICB>(vt_cb: VCB, init_cb: ICB, handler: H) -> Self
    where
       VCB: FnOnce(&mut WidgetVt<Self>) -> D,
       ICB: FnOnce(&mut Self),
    {
       let mut out = Self {
          base: WidgetBase::new::<Self>(),
-         derive: unsafe { std::mem::zeroed() },
+         inherited: unsafe { std::mem::zeroed() },
          vtable: WidgetVt {
             on_draw: Self::on_draw,
             on_mouse_enter: Self::on_mouse_enter,
@@ -160,8 +166,8 @@ where
          handler,
       };
 
-      let derive = vt_cb(&mut out.vtable);
-      out.derive.write(derive);
+      let inherited = vt_cb(&mut out.vtable);
+      out.inherited.write(inherited);
 
       init_cb(&mut out);
       out
@@ -184,18 +190,18 @@ where
 
    /// Access to button's derive object.
    #[inline]
-   pub fn derive_obj(&self) -> &D {
+   pub fn inherited_obj(&self) -> &D {
       // # Safety
       // All initialization happen in a constructor.
-      unsafe { self.derive.assume_init_ref() }
+      unsafe { self.inherited.assume_init_ref() }
    }
 
    /// Mut access to button's derive object.
    #[inline]
-   pub fn derive_obj_mut(&mut self) -> &mut D {
+   pub fn inherited_obj_mut(&mut self) -> &mut D {
       // # Safety
       // All initialization happen in a constructor.
-      unsafe { self.derive.assume_init_mut() }
+      unsafe { self.inherited.assume_init_mut() }
    }
 
    /// Replace button's handler with a new one.
@@ -246,12 +252,12 @@ where
       &mut self.base
    }
 
-   fn derive(&self) -> &dyn Derive {
-      self.derive_obj()
+   fn inherited(&self) -> &dyn Derive {
+      self.inherited_obj()
    }
 
-   fn derive_mut(&mut self) -> &mut dyn Derive {
-      self.derive_obj_mut()
+   fn inherited_mut(&mut self) -> &mut dyn Derive {
+      self.inherited_obj_mut()
    }
 
    //---------------------------------------

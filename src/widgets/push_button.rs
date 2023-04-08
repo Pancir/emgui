@@ -134,7 +134,7 @@ where
    where
       TXT: Into<Cow<'static, str>>,
    {
-      Widget::derive(
+      Widget::inherit(
          |vt| {
             vt.on_draw = Self::on_draw;
             vt.on_mouse_enter = Self::on_mouse_enter;
@@ -210,7 +210,7 @@ where
    H: IPushButtonHandler + 'static,
 {
    fn on_draw(w: &mut Widget<Self>, canvas: &mut Canvas, _event: &DrawEventCtx) {
-      let d = w.derive_obj();
+      let d = w.inherited_obj();
 
       canvas.set_paint(Paint::new_color(Rgba::GREEN.with_alpha_mul(0.5)));
 
@@ -238,16 +238,16 @@ where
 
    pub fn on_mouse_enter(w: &mut Widget<Self>) {
       w.base().request_draw();
-      w.derive_obj_mut().state.is_hover = true;
+      w.inherited_obj_mut().state.is_hover = true;
    }
 
    pub fn on_mouse_leave(w: &mut Widget<Self>) {
       w.base().request_draw();
-      w.derive_obj_mut().state.is_hover = false;
+      w.inherited_obj_mut().state.is_hover = false;
    }
 
    pub fn on_mouse_button(w: &mut Widget<Self>, event: &MouseButtonsEventCtx) -> bool {
-      let mut d = w.derive_obj_mut();
+      let mut d = w.inherited_obj_mut();
 
       match event.input.state {
          MouseState::Pressed => {
