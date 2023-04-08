@@ -1,10 +1,10 @@
 use crate::core::derive::Derive;
 use crate::core::events::{DrawEventCtx, MouseButtonsEventCtx};
 use crate::core::IWidget;
-use crate::elements::LineLabel;
+use crate::elements::{Icon, LineLabel};
 use crate::widgets::Widget;
 use sim_draw::color::Rgba;
-use sim_draw::m::Rect;
+use sim_draw::m::{Rect, Size};
 use sim_draw::{Canvas, Paint, TextAlign, TextPaint};
 use sim_input::mouse::{MouseButton, MouseState};
 use std::any::Any;
@@ -133,7 +133,7 @@ where
    where
       TXT: Into<Cow<'static, str>>,
    {
-      Widget::new(
+      Widget::derive(
          |vt| {
             vt.on_draw = Self::on_draw;
             vt.on_mouse_enter = Self::on_mouse_enter;
@@ -164,6 +164,7 @@ where
             w.set_rect(rect);
          },
       )
+      .to_rc()
    }
 
    //---------------------------------------
@@ -208,7 +209,7 @@ where
    H: IPushButtonHandler + 'static,
 {
    fn on_draw(w: &mut Widget<Self>, canvas: &mut Canvas, _event: &DrawEventCtx) {
-      let d = w.derive_ref();
+      let d = w.derive_obj();
 
       canvas.set_paint(Paint::new_color(Rgba::GREEN.with_alpha_mul(0.5)));
 
@@ -236,16 +237,16 @@ where
 
    pub fn on_mouse_enter(w: &mut Widget<Self>) {
       w.base().request_draw();
-      w.derive_mut().state.is_hover = true;
+      w.derive_obj_mut().state.is_hover = true;
    }
 
    pub fn on_mouse_leave(w: &mut Widget<Self>) {
       w.base().request_draw();
-      w.derive_mut().state.is_hover = false;
+      w.derive_obj_mut().state.is_hover = false;
    }
 
    pub fn on_mouse_button(w: &mut Widget<Self>, event: &MouseButtonsEventCtx) -> bool {
-      let mut d = w.derive_mut();
+      let mut d = w.derive_obj_mut();
 
       match event.input.state {
          MouseState::Pressed => {

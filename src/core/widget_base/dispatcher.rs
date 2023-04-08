@@ -39,7 +39,7 @@ impl Dispatcher {
             widget_mouse_over: None,
             widget_mouse_button: None,
          },
-         root: root.unwrap_or_else(|| Widget::new(|_| (), |_| ())),
+         root: root.unwrap_or_else(|| Widget::derive(|_| (), |_| ()).to_rc()),
          destroyed: false,
       };
 
@@ -1001,16 +1001,17 @@ mod tests {
 
    impl TestWidget {
       pub fn new(rect: Rect<f32>) -> Rc<RefCell<Widget<Self>>> {
-         Widget::new(
+         Widget::derive(
             |vt| {
-               vt.on_mouse_enter = |w: &mut Widget<Self>| w.derive_mut().mouse_enter += 1;
-               vt.on_mouse_leave = |w: &mut Widget<Self>| w.derive_mut().mouse_leave += 1;
+               vt.on_mouse_enter = |w: &mut Widget<Self>| w.derive_obj_mut().mouse_enter += 1;
+               vt.on_mouse_leave = |w: &mut Widget<Self>| w.derive_obj_mut().mouse_leave += 1;
                Self { mouse_enter: 0, mouse_leave: 0 }
             },
             |w| {
                w.set_rect(rect);
             },
          )
+         .to_rc()
       }
    }
 
@@ -1072,34 +1073,34 @@ mod tests {
       add_child(dispatcher.widget(), child.clone());
       //----------------------
       dispatcher.emit_mouse_move(&mouse_move_ctx(-10.0, 100.0));
-      assert_eq!(root.borrow_mut().derive_mut().mouse_enter, 0);
-      assert_eq!(root.borrow_mut().derive_mut().mouse_leave, 0);
-      assert_eq!(child.borrow_mut().derive_mut().mouse_enter, 0);
-      assert_eq!(child.borrow_mut().derive_mut().mouse_leave, 0);
+      assert_eq!(root.borrow_mut().derive_obj_mut().mouse_enter, 0);
+      assert_eq!(root.borrow_mut().derive_obj_mut().mouse_leave, 0);
+      assert_eq!(child.borrow_mut().derive_obj_mut().mouse_enter, 0);
+      assert_eq!(child.borrow_mut().derive_obj_mut().mouse_leave, 0);
       //----------------------
       dispatcher.emit_mouse_move(&mouse_move_ctx(25.0, 100.0));
-      assert_eq!(root.borrow_mut().derive_mut().mouse_enter, 1);
-      assert_eq!(root.borrow_mut().derive_mut().mouse_leave, 0);
-      assert_eq!(child.borrow_mut().derive_mut().mouse_enter, 0);
-      assert_eq!(child.borrow_mut().derive_mut().mouse_leave, 0);
+      assert_eq!(root.borrow_mut().derive_obj_mut().mouse_enter, 1);
+      assert_eq!(root.borrow_mut().derive_obj_mut().mouse_leave, 0);
+      assert_eq!(child.borrow_mut().derive_obj_mut().mouse_enter, 0);
+      assert_eq!(child.borrow_mut().derive_obj_mut().mouse_leave, 0);
       //----------------------
       dispatcher.emit_mouse_move(&mouse_move_ctx(75.0, 100.0));
-      assert_eq!(root.borrow_mut().derive_mut().mouse_enter, 1);
-      assert_eq!(root.borrow_mut().derive_mut().mouse_leave, 1);
-      assert_eq!(child.borrow_mut().derive_mut().mouse_enter, 1);
-      assert_eq!(child.borrow_mut().derive_mut().mouse_leave, 0);
+      assert_eq!(root.borrow_mut().derive_obj_mut().mouse_enter, 1);
+      assert_eq!(root.borrow_mut().derive_obj_mut().mouse_leave, 1);
+      assert_eq!(child.borrow_mut().derive_obj_mut().mouse_enter, 1);
+      assert_eq!(child.borrow_mut().derive_obj_mut().mouse_leave, 0);
       //----------------------
       dispatcher.emit_mouse_move(&mouse_move_ctx(25.0, 100.0));
-      assert_eq!(root.borrow_mut().derive_mut().mouse_enter, 2);
-      assert_eq!(root.borrow_mut().derive_mut().mouse_leave, 1);
-      assert_eq!(child.borrow_mut().derive_mut().mouse_enter, 1);
-      assert_eq!(child.borrow_mut().derive_mut().mouse_leave, 1);
+      assert_eq!(root.borrow_mut().derive_obj_mut().mouse_enter, 2);
+      assert_eq!(root.borrow_mut().derive_obj_mut().mouse_leave, 1);
+      assert_eq!(child.borrow_mut().derive_obj_mut().mouse_enter, 1);
+      assert_eq!(child.borrow_mut().derive_obj_mut().mouse_leave, 1);
       //----------------------
       dispatcher.emit_mouse_move(&mouse_move_ctx(-10.0, 100.0));
-      assert_eq!(root.borrow_mut().derive_mut().mouse_enter, 2);
-      assert_eq!(root.borrow_mut().derive_mut().mouse_leave, 2);
-      assert_eq!(child.borrow_mut().derive_mut().mouse_enter, 1);
-      assert_eq!(child.borrow_mut().derive_mut().mouse_leave, 1);
+      assert_eq!(root.borrow_mut().derive_obj_mut().mouse_enter, 2);
+      assert_eq!(root.borrow_mut().derive_obj_mut().mouse_leave, 2);
+      assert_eq!(child.borrow_mut().derive_obj_mut().mouse_enter, 1);
+      assert_eq!(child.borrow_mut().derive_obj_mut().mouse_leave, 1);
       //----------------------
    }
 

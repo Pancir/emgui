@@ -1,5 +1,22 @@
 use sim_draw::Canvas;
-use std::cell::Cell;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+pub struct FnCell<F>(F);
+
+impl<F> FnCell<F> {
+   pub const fn new(f: F) -> Self {
+      Self(f)
+   }
+
+   pub fn get(&self) -> F {
+      unimplemented!()
+   }
+
+   pub fn set(&self, _f: F) {
+      unimplemented!()
+   }
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -18,6 +35,6 @@ pub struct Button {
 
 fn button(b: &Button, c: &mut Canvas) {}
 
-pub static mut BUTTON: fn(&Button, &mut Canvas) = button;
+pub static BUTTON: FnCell<fn(&Button, &mut Canvas)> = FnCell::new(button);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

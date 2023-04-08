@@ -188,7 +188,7 @@ where
    }
 
    pub fn new_flat(handler: H, rect: Rect<f32>) -> Widget<Self> {
-      Widget::new_flat(
+      Widget::derive(
          |vt| {
             vt.on_draw = Self::on_draw;
             vt.on_set_rect = Self::on_set_rect;
@@ -391,7 +391,7 @@ where
    H: ISlider2dHandler + 'static,
 {
    fn on_set_rect(w: &mut Widget<Self>, rect: Rect<f32>) -> Option<Rect<f32>> {
-      let d = w.derive_mut();
+      let d = w.derive_obj_mut();
       let l_off = d.state.handle_rect.x;
       let r_off = d.state.handle_rect.width + d.state.handle_rect.x;
       let t_off = d.state.handle_rect.y;
@@ -403,7 +403,7 @@ where
    }
 
    fn on_draw(w: &mut Widget<Self>, canvas: &mut Canvas, _event: &DrawEventCtx) {
-      let d = w.derive_ref();
+      let d = w.derive_obj();
       let rect = w.base().geometry().rect();
 
       canvas.set_paint(Paint::new_color(Rgba::AMBER));
@@ -425,7 +425,7 @@ where
    }
 
    pub fn on_mouse_move(w: &mut Widget<Self>, event: &MouseMoveEventCtx) -> bool {
-      let mut d = w.derive_mut();
+      let mut d = w.derive_obj_mut();
 
       if d.state.is_handle_down {
          // TODO Snap vert/hor.
@@ -458,7 +458,7 @@ where
       }
 
       let is_inside_handle = {
-         let d = w.derive_ref();
+         let d = w.derive_obj();
          let h_rect = d.state.handle_rect.offset(d.state.handle_position);
          h_rect.is_inside(event.input.x, event.input.y)
       };
@@ -466,7 +466,7 @@ where
       match event.input.state {
          MouseState::Pressed => {
             if is_inside_handle {
-               let mut d = w.derive_mut();
+               let mut d = w.derive_obj_mut();
                d.click_pos = Point2::new(event.input.x, event.input.y) - d.state.handle_position;
                d.state.is_handle_down = true;
                d.handler.slider_pressed(d.state.x.clone(), d.state.y.clone());
@@ -474,14 +474,14 @@ where
             }
          }
          MouseState::Released => {
-            let mut d = w.derive_mut();
+            let mut d = w.derive_obj_mut();
             if d.state.is_handle_down {
                d.state.is_handle_down = false;
                d.handler.slider_released(d.state.x.clone(), d.state.y.clone());
 
                if is_inside_handle {
                   let db_time = w.base().double_click_time();
-                  let d = w.derive_mut();
+                  let d = w.derive_obj_mut();
 
                   if d.released_at.elapsed() < db_time {
                      d.reset_handle_position();
@@ -491,7 +491,7 @@ where
                   }
                }
 
-               let mut d = w.derive_mut();
+               let mut d = w.derive_obj_mut();
                d.released_at = Instant::now();
                w.base().request_draw();
             }

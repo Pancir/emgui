@@ -7,6 +7,10 @@ use crate::core::widget_base::WidgetBase;
 use sim_draw::m::Rect;
 use sim_draw::Canvas;
 use std::any::Any;
+use std::cell::RefCell;
+use std::rc::Rc;
+
+use super::events::LifecycleState;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -17,6 +21,29 @@ pub trait IWidget: Any + 'static {
    fn as_any(&self) -> &dyn Any;
    fn as_any_mut(&mut self) -> &mut dyn Any;
 
+   /// Create `Rc`.
+   ///
+   /// TODO maybe Pin?
+   fn to_rc(self) -> Rc<RefCell<Self>>
+   where
+      Self: Sized,
+   {
+      let s = Rc::new(RefCell::new(self));
+      let w = Rc::downgrade(&s);
+
+      match s.try_borrow_mut() {
+         Ok(mut widget) => {
+            let event = LifecycleEventCtx { state: LifecycleState::SelfReference(w) };
+            widget.emit_lifecycle(&event);
+         }
+         Err(_) => {
+            // # Safety
+            // The widget is just created and owned by this function.
+            unsafe { std::hint::unreachable_unchecked() };
+         }
+      }
+      s
+   }
    //---------------------------------------
 
    /// Get the widget type name for debugging purposes.
