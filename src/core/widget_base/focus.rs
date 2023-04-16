@@ -1,11 +1,9 @@
-use crate::core::IWidget;
-use std::cell::RefCell;
-use std::rc::Rc;
+use crate::core::WidgetRef;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub struct FocusManager {
-   widget: Option<Rc<RefCell<dyn IWidget>>>,
+   widget: Option<WidgetRef>,
 }
 
 impl FocusManager {

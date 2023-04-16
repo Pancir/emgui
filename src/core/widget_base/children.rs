@@ -1,11 +1,8 @@
-use crate::core::{IWidget, WidgetId};
+use crate::core::{WidgetId, WidgetOwner};
 use crate::defines::STATIC_CHILD_NUM;
 use smallvec::SmallVec;
 use std::cell::RefMut;
-use std::{
-   cell::{Cell, RefCell},
-   rc::{Rc, Weak},
-};
+use std::cell::{Cell, RefCell};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -17,7 +14,7 @@ enum Commands {
    Lower,
 }
 
-pub(crate) type ChildrenVec = SmallVec<[Rc<RefCell<dyn IWidget>>; STATIC_CHILD_NUM]>;
+pub(crate) type ChildrenVec = SmallVec<[WidgetOwner; STATIC_CHILD_NUM]>;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 

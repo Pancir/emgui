@@ -1,6 +1,6 @@
-use crate::core::derive::Derive;
+use crate::core::inherit::Inherit;
 use crate::core::events::{DrawEventCtx, MouseButtonsEventCtx};
-use crate::core::IWidget;
+use crate::core::{IWidget, WidgetOwner};
 use crate::elements::LineLabel;
 use crate::widgets::Widget;
 use sim_draw::color::Rgba;
@@ -9,8 +9,6 @@ use sim_draw::{Canvas, Paint, TextAlign, TextPaint};
 use sim_input::mouse::{MouseButton, MouseState};
 use std::any::Any;
 use std::borrow::Cow;
-use std::cell::RefCell;
-use std::rc::Rc;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -125,12 +123,7 @@ impl<H> PushButton<H>
 where
    H: IPushButtonHandler + 'static,
 {
-   pub fn new<TXT>(
-      handler: H,
-      rect: Rect<f32>,
-      label: TXT,
-      text_patin: TextPaint,
-   ) -> Rc<RefCell<Widget<Self>>>
+   pub fn new<TXT>(handler: H, rect: Rect<f32>, label: TXT, text_patin: TextPaint) -> WidgetOwner
    where
       TXT: Into<Cow<'static, str>>,
    {
@@ -192,7 +185,7 @@ where
    }
 }
 
-impl<H> Derive for PushButton<H>
+impl<H> Inherit for PushButton<H>
 where
    H: IPushButtonHandler + 'static,
 {

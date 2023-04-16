@@ -1,6 +1,6 @@
-use crate::core::derive::Derive;
+use crate::core::inherit::Inherit;
 use crate::core::events::{DrawEventCtx, MouseButtonsEventCtx, MouseMoveEventCtx};
-use crate::core::IWidget;
+use crate::core::{IWidget, WidgetOwner};
 use crate::widgets::Widget;
 use sim_draw::color::Rgba;
 use sim_draw::m::{Box2, Point2, Rect};
@@ -166,7 +166,7 @@ where
    released_at: Instant,
 }
 
-impl<H> Derive for Slider2d<H>
+impl<H> Inherit for Slider2d<H>
 where
    H: ISlider2dHandler + 'static,
 {
@@ -183,7 +183,7 @@ impl<H> Slider2d<H>
 where
    H: ISlider2dHandler + 'static,
 {
-   pub fn new(handler: H, rect: Rect<f32>) -> Rc<RefCell<Widget<Self>>> {
+   pub fn new(handler: H, rect: Rect<f32>) -> WidgetOwner {
       Self::new_flat(handler, rect).to_owner()
    }
 

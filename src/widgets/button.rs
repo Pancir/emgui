@@ -1,5 +1,5 @@
 use super::WidgetVt;
-use crate::core::derive::Derive;
+use crate::core::inherit::Inherit;
 use crate::core::events::{
    DrawEventCtx, KeyboardEventCtx, LayoutEventCtx, LifecycleEventCtx, MouseButtonsEventCtx,
    MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
@@ -116,7 +116,7 @@ pub struct ButtonState {
 pub struct Button<H, D>
 where
    H: IButtonHandler,
-   D: Derive,
+   D: Inherit,
 {
    base: WidgetBase,
    inherited: MaybeUninit<D>,
@@ -144,7 +144,7 @@ where
 impl<H, D> Button<H, D>
 where
    H: IButtonHandler + 'static,
-   D: Derive,
+   D: Inherit,
 {
    /// Construct a derived entity.
    pub fn inherit<VCB, ICB>(vt_cb: VCB, init_cb: ICB, handler: H) -> Self
@@ -232,7 +232,7 @@ where
 impl<H, D: 'static> IWidget for Button<H, D>
 where
    H: IButtonHandler + 'static,
-   D: Derive,
+   D: Inherit,
 {
    fn as_any(&self) -> &dyn Any {
       self
@@ -252,11 +252,11 @@ where
       &mut self.base
    }
 
-   fn inherited(&self) -> &dyn Derive {
+   fn inherited(&self) -> &dyn Inherit {
       self.inherited_obj()
    }
 
-   fn inherited_mut(&mut self) -> &mut dyn Derive {
+   fn inherited_mut(&mut self) -> &mut dyn Inherit {
       self.inherited_obj_mut()
    }
 
@@ -356,7 +356,7 @@ where
 impl<H, D> Button<H, D>
 where
    H: IButtonHandler + 'static,
-   D: Derive,
+   D: Inherit,
 {
    fn on_draw(w: &mut Self, canvas: &mut Canvas, _event: &DrawEventCtx) {
       canvas.set_paint(Paint::new_color(Rgba::GREEN.with_alpha_mul(0.5)));

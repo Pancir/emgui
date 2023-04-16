@@ -1,4 +1,5 @@
-use crate::core::derive::Derive;
+use super::WidgetOwner;
+use crate::core::inherit::Inherit;
 use crate::core::events::{
    DrawEventCtx, KeyboardEventCtx, LayoutEventCtx, LifecycleEventCtx, MouseButtonsEventCtx,
    MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
@@ -7,10 +8,6 @@ use crate::core::widget_base::WidgetBase;
 use sim_draw::m::Rect;
 use sim_draw::Canvas;
 use std::any::Any;
-use std::cell::RefCell;
-use std::rc::Rc;
-
-use super::events::LifecycleState;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -21,28 +18,11 @@ pub trait IWidget: Any + 'static {
    fn as_any(&self) -> &dyn Any;
    fn as_any_mut(&mut self) -> &mut dyn Any;
 
-   /// Create `Rc`.
-   ///
-   /// TODO maybe Pin?
-   fn to_owner(self) -> Rc<RefCell<Self>>
+   fn to_owner(self) -> WidgetOwner
    where
       Self: Sized,
    {
-      let s = Rc::new(RefCell::new(self));
-      let w = Rc::downgrade(&s);
-
-      match s.try_borrow_mut() {
-         Ok(mut widget) => {
-            // let event = LifecycleEventCtx { state: LifecycleState::SelfReference(w) };
-            // widget.emit_lifecycle(&event);
-         }
-         Err(_) => {
-            // # Safety
-            // The widget is just created and owned by this function.
-            unsafe { std::hint::unreachable_unchecked() };
-         }
-      }
-      s
+      WidgetOwner::new(self)
    }
    //---------------------------------------
 
@@ -67,8 +47,8 @@ pub trait IWidget: Any + 'static {
    fn base(&self) -> &WidgetBase;
    fn base_mut(&mut self) -> &mut WidgetBase;
 
-   fn inherited(&self) -> &dyn Derive;
-   fn inherited_mut(&mut self) -> &mut dyn Derive;
+   fn inherited(&self) -> &dyn Inherit;
+   fn inherited_mut(&mut self) -> &mut dyn Inherit;
 
    //---------------------------------------
 

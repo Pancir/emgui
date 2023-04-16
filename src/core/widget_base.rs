@@ -5,22 +5,23 @@ mod runtime;
 
 use self::children::Children;
 pub use dispatcher::*;
+use sim_draw::m::Rect;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+use super::{WidgetOwner, WidgetRef};
 use crate::core::widget_base::runtime::Runtime;
-use crate::core::{Geometry, IWidget, WidgetId};
+use crate::core::{Geometry, WidgetId};
 use crate::defines::{DEFAULT_DOUBLE_CLICK_TIME, DEFAULT_TOOL_TIP_TIME};
 use bitflags::bitflags;
-use std::cell::{Cell, RefCell};
-use std::rc::{Rc, Weak};
+use std::cell::Cell;
 use std::time::Duration;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bitflags! {
    /// Control flow for events.
-   struct StateFlags: u16 {
+   pub(crate) struct StateFlags: u16 {
       //-----------------------------
 
       /// Call update for current widget.
@@ -73,7 +74,7 @@ bitflags! {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub struct WidgetBase {
-   parent: Option<Weak<RefCell<dyn IWidget>>>,
+   parent: Option<WidgetRef>,
    //--------------------
    id: WidgetId,
    geometry: Geometry,
@@ -345,12 +346,22 @@ impl WidgetBase {
    }
 }
 
+impl WidgetBase {
+   #[inline]
+   pub(crate) fn data_for_dispatcher(&self) -> (StateFlags, WidgetId, Rect<f32>, i8, bool) {
+      (
+         self.state_flags.get(),
+         self.id,
+         self.geometry.rect(),
+         self.mouse_btn_num(),
+         self.has_mouse_tracking(),
+      )
+   }
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub fn add_children<const NUM: usize>(
-   parent: &Rc<RefCell<dyn IWidget>>,
-   children: [Rc<RefCell<dyn IWidget>>; NUM],
-) {
+pub fn add_children<const NUM: usize>(parent: &WidgetOwner, children: [WidgetOwner; NUM]) {
    // TODO swap implementation with add_child, it will be faster as we can only once borrow.
 
    for c in children {
@@ -358,13 +369,10 @@ pub fn add_children<const NUM: usize>(
    }
 }
 
-pub fn add_child(
-   parent: &Rc<RefCell<dyn IWidget>>,
-   child: Rc<RefCell<dyn IWidget>>,
-) -> Weak<RefCell<dyn IWidget>> {
+pub fn add_child(parent: &WidgetOwner, child: WidgetOwner) -> WidgetRef {
    // TODO what about runtime propagation?
 
-   let w = Rc::downgrade(&child);
+   let w = child.as_ref();
    {
       let bor = parent.borrow();
       let pch = bor.base();
@@ -386,7 +394,7 @@ pub fn add_child(
          }
       }
 
-      c.parent = Some(Rc::downgrade(parent));
+      c.parent = Some(parent.as_ref());
    }
 
    w
