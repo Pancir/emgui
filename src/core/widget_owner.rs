@@ -7,6 +7,7 @@ use std::{
    cell::{BorrowError, BorrowMutError, Ref, RefCell, RefMut},
    rc::{Rc, Weak},
 };
+use thiserror::Error;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -83,12 +84,33 @@ impl WidgetRef {
    pub(crate) fn upgrade(&self) -> Option<WidgetOwner> {
       self.w.upgrade().map(|v| WidgetOwner { rc: v })
    }
+}
 
-   //    pub fn access(&self) -> Option<WidgetRefAccess<'_, dyn IWidget>> {
-   //       match self.w.upgrade() {
-   //          Some(w) => Some(WidgetRefAccess { rc: w, _m: Default::default() }),
-   //          None => None,
+#[derive(Error, Debug)]
+pub enum WidgetRefAccessErr {
+   #[error("Widget is deleted")]
+   Deleted,
+
+   #[error(transparent)]
+   Borrow(#[from] BorrowError),
+}
+
+impl WidgetRef {
+   //    #[inline]
+   //    pub(crate) fn widget(&self) -> Result<WidgetRefAccess<'_, dyn IWidget>, WidgetRefAccessErr> {
+   //       let Some(w) = self.w.upgrade() else {
+   //          return Err(WidgetRefAccessErr::Deleted);
+   //       };
+
+   //       match w.try_borrow() {
+   //          Ok(b) => Ok(WidgetRefAccess { rc: w, r: b, _m: Default::default() }),
+   //          Err(e) => return Err(WidgetRefAccessErr::from(e)),
    //       }
+   //    }
+
+   //    #[inline]
+   //    pub(crate) fn widget_mut(&self) -> Result<WidgetRefAccess<'_, dyn IWidget>, WidgetRefAccessErr> {
+   //       unimplemented!()
    //    }
 }
 
@@ -96,10 +118,22 @@ impl WidgetRef {
 
 // pub struct WidgetRefAccess<'widget, W>
 // where
-//    W: IWidget,
+//    W: IWidget + ?Sized,
 // {
 //    rc: Rc<RefCell<W>>,
+//    r: Ref<'widget, W>,
 //    _m: PhantomData<&'widget W>,
+// }
+
+// impl<'widget, W> std::ops::Deref for WidgetRefAccess<'widget, W>
+// where
+//    W: IWidget,
+// {
+//    type Target = dyn IWidget;
+
+//    fn deref(&self) -> &Self::Target {
+//       self.r.deref()
+//    }
 // }
 
 // impl<'widget, W> WidgetRefAccess<'widget, W>
