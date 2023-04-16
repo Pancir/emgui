@@ -117,7 +117,7 @@ impl Dispatcher {
    }
 
    fn set_runtime_to_widget_inner(runtime: Runtime, child: &WidgetOwner) {
-      match child.try_borrow_mut() {
+      match child.widget_mut() {
          Ok(mut bor) => {
             let mut internal = bor.base_mut();
             let id = internal.id;
@@ -148,7 +148,7 @@ impl Dispatcher {
       let (_state_flags, id, _rect, _mouse_btn_num, _has_mouse_tracking) =
          child.data_for_dispatcher();
       //---------------------------------
-      let children = match child.try_borrow_mut() {
+      let children = match child.widget_mut() {
          Ok(mut child) => child.base_mut().children_mut().take_children(id),
          Err(e) => {
             log::error!("Can't borrow widget [{:?}] to process lifecycle event!\n\t{:?}", id, e);
@@ -162,7 +162,7 @@ impl Dispatcher {
          }
       }
       //--------------------------------------------------
-      match child.try_borrow_mut() {
+      match child.widget_mut() {
          Ok(mut child) => {
             child.base_mut().children_mut().return_children(children, id);
             child.on_lifecycle(event);
@@ -192,7 +192,7 @@ impl Dispatcher {
       child: &WidgetOwner,
       event: &LayoutEventCtx,
    ) {
-      let children = match child.try_borrow_mut() {
+      let children = match child.widget_mut() {
          Ok(mut child) => {
             child.on_layout(event);
             let base = child.base_mut();
@@ -210,7 +210,7 @@ impl Dispatcher {
          }
       }
       //--------------------------------------------------
-      let mut bor = child.try_borrow_mut().unwrap_or_else(|e| panic!("{:?}", e));
+      let mut bor = child.widget_mut().unwrap_or_else(|e| panic!("{:?}", e));
       let base = bor.base_mut();
       let id = base.id();
       base.children_mut().return_children(children, id);
@@ -244,7 +244,7 @@ impl Dispatcher {
       }
       //--------------------------------------------------
       if state_flags.contains(StateFlags::CHILDREN_DELETE) {
-         let mut children = match input_child.try_borrow_mut() {
+         let mut children = match input_child.widget_mut() {
             Ok(mut child) => child.base_mut().children_mut().take_children(id),
             Err(e) => {
                log::error!("Can't borrow widget [{:?}] to process delete event!\n\t{}", id, e);
@@ -269,7 +269,7 @@ impl Dispatcher {
             false
          });
          //-------------------------------------------
-         match input_child.try_borrow_mut() {
+         match input_child.widget_mut() {
             Ok(mut child) => {
                let internal = child.base_mut();
                let f = internal.state_flags.get_mut();
@@ -322,7 +322,7 @@ impl Dispatcher {
          return;
       }
       //--------------------------------------------------
-      let children = match child.try_borrow_mut() {
+      let children = match child.widget_mut() {
          Ok(mut child) => {
             if is_self_update {
                let internal = child.base_mut();
@@ -343,7 +343,7 @@ impl Dispatcher {
          }
       }
       //--------------------------------------------------
-      match child.try_borrow_mut() {
+      match child.widget_mut() {
          Ok(mut child) => {
             let internal = child.base_mut();
             let f = internal.state_flags.get_mut();
@@ -412,7 +412,7 @@ impl Dispatcher {
          return;
       }
       //--------------------------------------------------
-      let children = match child.try_borrow_mut() {
+      let children = match child.widget_mut() {
          Ok(mut child) => {
             let internal = child.base_mut();
             internal.children_mut().take_children(id)
@@ -444,7 +444,7 @@ impl Dispatcher {
          }
       }
       //--------------------------------------------------
-      match child.try_borrow_mut() {
+      match child.widget_mut() {
          Ok(mut child) => {
             let internal = child.base_mut();
             let f = internal.state_flags.get_mut();
@@ -481,7 +481,7 @@ impl Dispatcher {
          return;
       }
       //--------------------------------------------------
-      let children = match input_child.try_borrow_mut() {
+      let children = match input_child.widget_mut() {
          Ok(mut child) => {
             let internal = child.base_mut();
             internal.state_flags.get_mut().remove(StateFlags::SELF_DRAW);
@@ -502,7 +502,7 @@ impl Dispatcher {
          Self::emit_inner_draw_full(dispatcher, child, canvas, event);
       }
       //--------------------------------------------------
-      match input_child.try_borrow_mut() {
+      match input_child.widget_mut() {
          Ok(mut child) => {
             let internal = child.base_mut();
             let f = internal.state_flags.get_mut();
@@ -539,12 +539,12 @@ impl Dispatcher {
 
             if is_inside {
                if mouse_btn_num > 0 || mouse_tracking {
-                  let mut widget = w.borrow_mut();
+                  let mut widget = w.widget_mut().unwrap();
                   widget.on_mouse_move(event);
                   return true;
                }
             } else {
-               let mut widget = w.borrow_mut();
+               let mut widget = w.widget_mut().unwrap();
 
                if mouse_btn_num > 0 {
                   widget.on_mouse_move(event);
@@ -580,7 +580,7 @@ impl Dispatcher {
          return false;
       }
       //--------------------------------------------------
-      let children = match input_child.try_borrow_mut() {
+      let children = match input_child.widget_mut() {
          Ok(mut child) => child.base_mut().children_mut().take_children(id),
          Err(e) => {
             log::error!("Can't borrow widget [{:?}] to process mouse move event!\n\t{:?}", id, e);
@@ -596,7 +596,7 @@ impl Dispatcher {
          }
       }
       //--------------------------------------------------
-      match input_child.try_borrow_mut() {
+      match input_child.widget_mut() {
          Ok(mut child) => {
             let internal = child.base_mut();
             internal.children_mut().return_children(children, id);
@@ -609,7 +609,7 @@ impl Dispatcher {
 
                if let Some(wmo) = &dispatcher.widget_mouse_over {
                   if let Some(w) = wmo.upgrade() {
-                     let mut widget = w.borrow_mut();
+                     let mut widget = w.widget_mut().unwrap();
                      let internal = widget.base_mut();
 
                      internal.set_over(false);
@@ -620,7 +620,7 @@ impl Dispatcher {
                dispatcher.widget_mouse_over = Some(input_child.as_ref());
 
                // now enter mouse event is needed so, we again trying to borrow.
-               match input_child.try_borrow_mut() {
+               match input_child.widget_mut() {
                   Ok(mut child) => {
                      child.on_mouse_enter();
                      // checking buttons pressing does not make sense in this location.
@@ -666,7 +666,7 @@ impl Dispatcher {
                w.data_for_dispatcher();
             //----------------------------------
             let is_inside = rect.is_inside(event.input.x, event.input.y);
-            let mut widget = w.borrow_mut();
+            let mut widget = w.widget_mut().unwrap();
 
             return match event.input.state {
                MouseState::Pressed => {
@@ -710,7 +710,7 @@ impl Dispatcher {
          return false;
       }
       //--------------------------------------------------
-      let children = match input_child.try_borrow_mut() {
+      let children = match input_child.widget_mut() {
          Ok(mut child) => child.base_mut().children_mut().take_children(id),
          Err(e) => {
             log::error!("Can't borrow widget [{:?}] to process mouse button event!\n\t{:?}", id, e);
@@ -726,7 +726,7 @@ impl Dispatcher {
          }
       }
       //--------------------------------------------------
-      match input_child.try_borrow_mut() {
+      match input_child.widget_mut() {
          Ok(mut child) => {
             child.base_mut().children_mut().return_children(children, id);
             if !accepted {
@@ -780,7 +780,7 @@ impl Dispatcher {
          return false;
       }
       //--------------------------------------------------
-      let children = match child.try_borrow_mut() {
+      let children = match child.widget_mut() {
          Ok(mut child) => child.base_mut().children_mut().take_children(id),
          Err(e) => {
             log::error!("Can't borrow widget [{:?}] to process mouse wheel event!\n\t{:?}", id, e);
@@ -796,7 +796,7 @@ impl Dispatcher {
          }
       }
       //--------------------------------------------------
-      match child.try_borrow_mut() {
+      match child.widget_mut() {
          Ok(mut child) => {
             child.base_mut().children_mut().return_children(children, id);
             if !accepted {
@@ -842,7 +842,7 @@ impl Dispatcher {
          return false;
       }
       //--------------------------------------------------
-      let children = match child.try_borrow_mut() {
+      let children = match child.widget_mut() {
          Ok(mut child) => child.base_mut().children_mut().take_children(id),
          Err(e) => {
             log::error!("Can't borrow widget [{:?}] to process mouse wheel event!\n\t{:?}", id, e);
@@ -858,7 +858,7 @@ impl Dispatcher {
          }
       }
       //--------------------------------------------------
-      match child.try_borrow_mut() {
+      match child.widget_mut() {
          Ok(mut child) => {
             child.base_mut().children_mut().return_children(children, id);
             if !accepted && child.on_keyboard(event) {
@@ -979,91 +979,91 @@ mod tests {
       //----------------------
       dispatcher.emit_mouse_move(&mouse_move_ctx(-10.0, 100.0));
       assert_eq!(
-         root.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_enter,
+         root.widget().unwrap().inherited().downcast_ref::<TestWidget>().unwrap().mouse_enter,
          0
       );
       assert_eq!(
-         root.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_leave,
+         root.widget().unwrap().inherited().downcast_ref::<TestWidget>().unwrap().mouse_leave,
          0
       );
       assert_eq!(
-         child.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_enter,
+         child.widget().unwrap().inherited().downcast_ref::<TestWidget>().unwrap().mouse_enter,
          0
       );
       assert_eq!(
-         child.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_leave,
+         child.widget().unwrap().inherited().downcast_ref::<TestWidget>().unwrap().mouse_leave,
          0
       );
       //----------------------
       dispatcher.emit_mouse_move(&mouse_move_ctx(25.0, 100.0));
       assert_eq!(
-         root.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_enter,
+         root.widget().unwrap().inherited().downcast_ref::<TestWidget>().unwrap().mouse_enter,
          1
       );
       assert_eq!(
-         root.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_leave,
+         root.widget().unwrap().inherited().downcast_ref::<TestWidget>().unwrap().mouse_leave,
          0
       );
       assert_eq!(
-         child.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_enter,
+         child.widget().unwrap().inherited().downcast_ref::<TestWidget>().unwrap().mouse_enter,
          0
       );
       assert_eq!(
-         child.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_leave,
+         child.widget().unwrap().inherited().downcast_ref::<TestWidget>().unwrap().mouse_leave,
          0
       );
       //----------------------
       dispatcher.emit_mouse_move(&mouse_move_ctx(75.0, 100.0));
       assert_eq!(
-         root.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_enter,
+         root.widget().unwrap().inherited().downcast_ref::<TestWidget>().unwrap().mouse_enter,
          1
       );
       assert_eq!(
-         root.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_leave,
+         root.widget().unwrap().inherited().downcast_ref::<TestWidget>().unwrap().mouse_leave,
          1
       );
       assert_eq!(
-         child.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_enter,
+         child.widget().unwrap().inherited().downcast_ref::<TestWidget>().unwrap().mouse_enter,
          1
       );
       assert_eq!(
-         child.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_leave,
+         child.widget().unwrap().inherited().downcast_ref::<TestWidget>().unwrap().mouse_leave,
          0
       );
       //----------------------
       dispatcher.emit_mouse_move(&mouse_move_ctx(25.0, 100.0));
       assert_eq!(
-         root.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_enter,
+         root.widget().unwrap().inherited().downcast_ref::<TestWidget>().unwrap().mouse_enter,
          2
       );
       assert_eq!(
-         root.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_leave,
+         root.widget().unwrap().inherited().downcast_ref::<TestWidget>().unwrap().mouse_leave,
          1
       );
       assert_eq!(
-         child.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_enter,
+         child.widget().unwrap().inherited().downcast_ref::<TestWidget>().unwrap().mouse_enter,
          1
       );
       assert_eq!(
-         child.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_leave,
+         child.widget().unwrap().inherited().downcast_ref::<TestWidget>().unwrap().mouse_leave,
          1
       );
       //----------------------
       dispatcher.emit_mouse_move(&mouse_move_ctx(-10.0, 100.0));
       assert_eq!(
-         root.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_enter,
+         root.widget().unwrap().inherited().downcast_ref::<TestWidget>().unwrap().mouse_enter,
          2
       );
       assert_eq!(
-         root.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_leave,
+         root.widget().unwrap().inherited().downcast_ref::<TestWidget>().unwrap().mouse_leave,
          2
       );
       assert_eq!(
-         child.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_enter,
+         child.widget().unwrap().inherited().downcast_ref::<TestWidget>().unwrap().mouse_enter,
          1
       );
       assert_eq!(
-         child.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_leave,
+         child.widget().unwrap().inherited().downcast_ref::<TestWidget>().unwrap().mouse_leave,
          1
       );
       //----------------------

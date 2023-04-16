@@ -45,22 +45,12 @@ impl WidgetOwner {
    }
 
    #[inline]
-   pub(crate) fn borrow(&self) -> Ref<'_, dyn IWidget> {
-      self.try_borrow().unwrap()
-   }
-
-   #[inline]
-   pub(crate) fn try_borrow(&self) -> Result<Ref<'_, dyn IWidget>, BorrowError> {
+   pub(crate) fn widget(&self) -> Result<Ref<'_, dyn IWidget>, BorrowError> {
       self.rc.try_borrow()
    }
 
    #[inline]
-   pub(crate) fn borrow_mut(&self) -> RefMut<'_, dyn IWidget> {
-      self.try_borrow_mut().unwrap()
-   }
-
-   #[inline]
-   pub(crate) fn try_borrow_mut(&self) -> Result<RefMut<'_, dyn IWidget>, BorrowMutError> {
+   pub(crate) fn widget_mut(&self) -> Result<RefMut<'_, dyn IWidget>, BorrowMutError> {
       self.rc.try_borrow_mut()
    }
 

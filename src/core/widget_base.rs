@@ -138,7 +138,7 @@ impl WidgetBase {
 
          if let Some(parent) = &self.parent {
             if let Some(p) = parent.upgrade() {
-               let mut bor = p.borrow_mut();
+               let mut bor = p.widget_mut().unwrap();
                let internal = bor.base_mut();
                internal.state_flags.get_mut().set(StateFlags::CHILDREN_DRAW, true);
             }
@@ -156,7 +156,7 @@ impl WidgetBase {
 
          if let Some(parent) = &self.parent {
             if let Some(p) = parent.upgrade() {
-               let mut bor = p.borrow_mut();
+               let mut bor = p.widget_mut().unwrap();
                let internal = bor.base_mut();
                internal.state_flags.get_mut().set(StateFlags::CHILDREN_UPDATE, true);
             }
@@ -177,7 +177,7 @@ impl WidgetBase {
 
          if let Some(parent) = &self.parent {
             if let Some(p) = parent.upgrade() {
-               let mut bor = p.borrow_mut();
+               let mut bor = p.widget_mut().unwrap();
                let internal = bor.base_mut();
                internal.state_flags.get_mut().set(StateFlags::CHILDREN_DELETE, true);
             }
@@ -374,7 +374,7 @@ pub fn add_child(parent: &WidgetOwner, child: WidgetOwner) -> WidgetRef {
 
    let w = child.as_ref();
    {
-      let bor = parent.borrow();
+      let bor = parent.widget().unwrap();
       let pch = bor.base();
 
       debug_assert!(!pch.children().is_under_process());
@@ -384,7 +384,7 @@ pub fn add_child(parent: &WidgetOwner, child: WidgetOwner) -> WidgetRef {
    }
 
    {
-      let mut bor = child.borrow_mut();
+      let mut bor = child.widget_mut().unwrap();
       let c = bor.base_mut();
 
       #[cfg(debug_assertions)]
