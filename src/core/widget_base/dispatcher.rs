@@ -39,7 +39,7 @@ impl Dispatcher {
             widget_mouse_over: None,
             widget_mouse_button: None,
          },
-         root: root.unwrap_or_else(|| Widget::inherit(|_| (), |_| ()).to_rc()),
+         root: root.unwrap_or_else(|| Widget::inherit(|_| (), |_| ()).to_owner()),
          destroyed: false,
       };
 
@@ -1011,7 +1011,7 @@ mod tests {
                w.set_rect(rect);
             },
          )
-         .to_rc()
+         .to_owner()
       }
    }
 

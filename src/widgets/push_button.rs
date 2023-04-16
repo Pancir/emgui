@@ -1,10 +1,10 @@
 use crate::core::derive::Derive;
 use crate::core::events::{DrawEventCtx, MouseButtonsEventCtx};
 use crate::core::IWidget;
-use crate::elements::{Icon, LineLabel};
+use crate::elements::LineLabel;
 use crate::widgets::Widget;
 use sim_draw::color::Rgba;
-use sim_draw::m::{Rect, Size};
+use sim_draw::m::Rect;
 use sim_draw::{Canvas, Paint, TextAlign, TextPaint};
 use sim_input::mouse::{MouseButton, MouseState};
 use std::any::Any;
@@ -165,7 +165,7 @@ where
             w.set_rect(rect);
          },
       )
-      .to_rc()
+      .to_owner()
    }
 
    //---------------------------------------

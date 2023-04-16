@@ -184,7 +184,7 @@ where
    H: ISlider2dHandler + 'static,
 {
    pub fn new(handler: H, rect: Rect<f32>) -> Rc<RefCell<Widget<Self>>> {
-      Self::new_flat(handler, rect).to_rc()
+      Self::new_flat(handler, rect).to_owner()
    }
 
    pub fn new_flat(handler: H, rect: Rect<f32>) -> Widget<Self> {

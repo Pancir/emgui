@@ -1,8 +1,7 @@
-use crate::core::{AppEnv, IWidget};
+use super::WidgetRef;
+use crate::core::AppEnv;
 use sim_draw::m::Rect;
-use std::cell::RefCell;
 use std::fmt::Formatter;
-use std::rc::Weak;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -20,7 +19,7 @@ pub enum LifecycleState {
    /// because the widget is already borrowed in this case.
    /// The Reference can be used in another contexts including
    /// sending it somewhere else while interacting with the widget.
-   SelfReference(Weak<RefCell<dyn IWidget>>),
+   SelfReference(WidgetRef),
 
    /// The widget is scheduled to be destroyed by dispatcher.
    ///

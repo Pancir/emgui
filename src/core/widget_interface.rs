@@ -24,7 +24,7 @@ pub trait IWidget: Any + 'static {
    /// Create `Rc`.
    ///
    /// TODO maybe Pin?
-   fn to_rc(self) -> Rc<RefCell<Self>>
+   fn to_owner(self) -> Rc<RefCell<Self>>
    where
       Self: Sized,
    {
@@ -33,8 +33,8 @@ pub trait IWidget: Any + 'static {
 
       match s.try_borrow_mut() {
          Ok(mut widget) => {
-            let event = LifecycleEventCtx { state: LifecycleState::SelfReference(w) };
-            widget.emit_lifecycle(&event);
+            // let event = LifecycleEventCtx { state: LifecycleState::SelfReference(w) };
+            // widget.emit_lifecycle(&event);
          }
          Err(_) => {
             // # Safety
