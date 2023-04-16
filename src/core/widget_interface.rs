@@ -44,6 +44,14 @@ pub trait IWidget: Any + 'static {
 
    //---------------------------------------
 
+   /// Notify widget.
+   ///
+   /// # Arguments
+   /// * `message`: any message type.
+   fn notify(&mut self, _message: &dyn Any) {}
+
+   //---------------------------------------
+
    fn base(&self) -> &WidgetBase;
    fn base_mut(&mut self) -> &mut WidgetBase;
 
@@ -62,16 +70,16 @@ pub trait IWidget: Any + 'static {
 
    //---------------------------------------
 
-   fn emit_lifecycle(&mut self, _event: &LifecycleEventCtx);
-   fn emit_layout(&mut self, _event: &LayoutEventCtx);
-   fn emit_draw(&mut self, _canvas: &mut Canvas, _event: &DrawEventCtx);
-   fn emit_update(&mut self, _event: &UpdateEventCtx);
-   fn emit_mouse_enter(&mut self);
-   fn emit_mouse_leave(&mut self);
-   fn emit_mouse_move(&mut self, _event: &MouseMoveEventCtx) -> bool;
-   fn emit_mouse_button(&mut self, _event: &MouseButtonsEventCtx) -> bool;
-   fn emit_mouse_wheel(&mut self, _event: &MouseWheelEventCtx) -> bool;
-   fn emit_keyboard(&mut self, _event: &KeyboardEventCtx) -> bool;
+   fn on_lifecycle(&mut self, _event: &LifecycleEventCtx);
+   fn on_layout(&mut self, _event: &LayoutEventCtx);
+   fn on_draw(&mut self, _canvas: &mut Canvas, _event: &DrawEventCtx);
+   fn on_update(&mut self, _event: &UpdateEventCtx);
+   fn on_mouse_enter(&mut self);
+   fn on_mouse_leave(&mut self);
+   fn on_mouse_move(&mut self, _event: &MouseMoveEventCtx) -> bool;
+   fn on_mouse_button(&mut self, _event: &MouseButtonsEventCtx) -> bool;
+   fn on_mouse_wheel(&mut self, _event: &MouseWheelEventCtx) -> bool;
+   fn on_keyboard(&mut self, _event: &KeyboardEventCtx) -> bool;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

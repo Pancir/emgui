@@ -28,7 +28,7 @@ impl WidgetOwner {
       match s.try_borrow_mut() {
          Ok(mut widget) => {
             let event = LifecycleEventCtx { state: LifecycleState::SelfReference(w_ref) };
-            widget.emit_lifecycle(&event);
+            widget.on_lifecycle(&event);
          }
          Err(_) => {
             // # Safety

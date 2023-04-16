@@ -165,7 +165,7 @@ impl Dispatcher {
       match child.try_borrow_mut() {
          Ok(mut child) => {
             child.base_mut().children_mut().return_children(children, id);
-            child.emit_lifecycle(event);
+            child.on_lifecycle(event);
          }
          Err(e) => {
             log::error!(
@@ -194,7 +194,7 @@ impl Dispatcher {
    ) {
       let children = match child.try_borrow_mut() {
          Ok(mut child) => {
-            child.emit_layout(event);
+            child.on_layout(event);
             let base = child.base_mut();
             let id = base.id();
             base.children_mut().take_children(id)
@@ -327,7 +327,7 @@ impl Dispatcher {
             if is_self_update {
                let internal = child.base_mut();
                internal.state_flags.get_mut().remove(StateFlags::SELF_UPDATE);
-               child.emit_update(event);
+               child.on_update(event);
             }
             child.base_mut().children_mut().take_children(id)
          }
@@ -487,7 +487,7 @@ impl Dispatcher {
             internal.state_flags.get_mut().remove(StateFlags::SELF_DRAW);
 
             // TODO draw debug bounds frame
-            child.emit_draw(canvas, event);
+            child.on_draw(canvas, event);
 
             let internal = child.base_mut();
             internal.children_mut().take_children(id)
@@ -540,21 +540,21 @@ impl Dispatcher {
             if is_inside {
                if mouse_btn_num > 0 || mouse_tracking {
                   let mut widget = w.borrow_mut();
-                  widget.emit_mouse_move(event);
+                  widget.on_mouse_move(event);
                   return true;
                }
             } else {
                let mut widget = w.borrow_mut();
 
                if mouse_btn_num > 0 {
-                  widget.emit_mouse_move(event);
+                  widget.on_mouse_move(event);
                   return true;
                }
 
                let internal = widget.base_mut();
 
                internal.set_over(false);
-               widget.emit_mouse_leave();
+               widget.on_mouse_leave();
                self.inner.widget_mouse_over = None;
             }
          }
@@ -613,7 +613,7 @@ impl Dispatcher {
                      let internal = widget.base_mut();
 
                      internal.set_over(false);
-                     widget.emit_mouse_leave();
+                     widget.on_mouse_leave();
                   }
                }
 
@@ -622,10 +622,10 @@ impl Dispatcher {
                // now enter mouse event is needed so, we again trying to borrow.
                match input_child.try_borrow_mut() {
                   Ok(mut child) => {
-                     child.emit_mouse_enter();
+                     child.on_mouse_enter();
                      // checking buttons pressing does not make sense in this location.
                      if child.base().has_mouse_tracking() {
-                        child.emit_mouse_move(event);
+                        child.on_mouse_move(event);
                      }
                   }
                   Err(e) => {
@@ -671,14 +671,14 @@ impl Dispatcher {
             return match event.input.state {
                MouseState::Pressed => {
                   if is_inside {
-                     widget.emit_mouse_button(event);
+                     widget.on_mouse_button(event);
                      let internal = widget.base_mut();
                      internal.add_mouse_btn_num(1);
                   }
                   true
                }
                MouseState::Released => {
-                  widget.emit_mouse_button(event);
+                  widget.on_mouse_button(event);
                   let internal = widget.base_mut();
 
                   internal.add_mouse_btn_num(-1);
@@ -735,7 +735,7 @@ impl Dispatcher {
                   "expected to be processed before"
                );
                child.base_mut().add_mouse_btn_num(1);
-               accepted = child.emit_mouse_button(event);
+               accepted = child.on_mouse_button(event);
                dispatcher.widget_mouse_button = Some(input_child.as_ref());
             }
          }
@@ -800,7 +800,7 @@ impl Dispatcher {
          Ok(mut child) => {
             child.base_mut().children_mut().return_children(children, id);
             if !accepted {
-               accepted = child.emit_mouse_wheel(event);
+               accepted = child.on_mouse_wheel(event);
             }
          }
          Err(e) => {
@@ -861,7 +861,7 @@ impl Dispatcher {
       match child.try_borrow_mut() {
          Ok(mut child) => {
             child.base_mut().children_mut().return_children(children, id);
-            if !accepted && child.emit_keyboard(event) {
+            if !accepted && child.on_keyboard(event) {
                accepted = true;
             }
          }

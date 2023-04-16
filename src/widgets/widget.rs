@@ -154,65 +154,65 @@ where
 
    #[cfg_attr(feature = "trace-widget",
    tracing::instrument(skip(self, event), fields(WidgetID = self.base().id().raw(), ret)))]
-   fn emit_lifecycle(&mut self, event: &LifecycleEventCtx) {
+   fn on_lifecycle(&mut self, event: &LifecycleEventCtx) {
       (self.vtable.on_lifecycle)(self, event);
    }
 
    #[cfg_attr(feature = "trace-widget",
    tracing::instrument(skip(self, event), fields(WidgetID = self.base().id().raw(), ret)))]
-   fn emit_layout(&mut self, event: &LayoutEventCtx) {
+   fn on_layout(&mut self, event: &LayoutEventCtx) {
       (self.vtable.on_layout)(self, event);
    }
 
    #[cfg_attr(feature = "trace-widget",
    tracing::instrument(skip(self, canvas, event), fields(WidgetID = self.base().id().raw(), ret)))]
-   fn emit_draw(&mut self, canvas: &mut Canvas, event: &DrawEventCtx) {
+   fn on_draw(&mut self, canvas: &mut Canvas, event: &DrawEventCtx) {
       (self.vtable.on_draw)(self, canvas, event);
    }
 
    #[cfg_attr(feature = "trace-widget",
    tracing::instrument(skip(self, event), fields(WidgetID = self.base().id().raw(), ret)))]
-   fn emit_update(&mut self, event: &UpdateEventCtx) {
+   fn on_update(&mut self, event: &UpdateEventCtx) {
       (self.vtable.on_update)(self, event);
    }
 
    #[cfg_attr(feature = "trace-widget",
    tracing::instrument(skip(self), fields(WidgetID = self.base().id().raw()), ret))]
-   fn emit_mouse_enter(&mut self) {
+   fn on_mouse_enter(&mut self) {
       (self.vtable.on_mouse_enter)(self)
    }
 
    #[cfg_attr(feature = "trace-widget",
    tracing::instrument(skip(self), fields(WidgetID = self.base().id().raw()), ret))]
-   fn emit_mouse_leave(&mut self) {
+   fn on_mouse_leave(&mut self) {
       (self.vtable.on_mouse_leave)(self)
    }
 
    #[must_use]
    #[cfg_attr(feature = "trace-widget",
    tracing::instrument(skip(self, event), fields(WidgetID = self.base().id().raw()), ret))]
-   fn emit_mouse_move(&mut self, event: &MouseMoveEventCtx) -> bool {
+   fn on_mouse_move(&mut self, event: &MouseMoveEventCtx) -> bool {
       (self.vtable.on_mouse_move)(self, event)
    }
 
    #[must_use]
    #[cfg_attr(feature = "trace-widget",
    tracing::instrument(skip(self, event), fields(WidgetID = self.base().id().raw()), ret))]
-   fn emit_mouse_button(&mut self, event: &MouseButtonsEventCtx) -> bool {
+   fn on_mouse_button(&mut self, event: &MouseButtonsEventCtx) -> bool {
       (self.vtable.on_mouse_button)(self, event)
    }
 
    #[must_use]
    #[cfg_attr(feature = "trace-widget",
    tracing::instrument(skip(self, event), fields(WidgetID = self.base().id().raw()), ret))]
-   fn emit_mouse_wheel(&mut self, event: &MouseWheelEventCtx) -> bool {
+   fn on_mouse_wheel(&mut self, event: &MouseWheelEventCtx) -> bool {
       (self.vtable.on_mouse_wheel)(self, event)
    }
 
    #[must_use]
    #[cfg_attr(feature = "trace-widget",
    tracing::instrument(skip(self, event), fields(WidgetID = self.base().id().raw()), ret))]
-   fn emit_keyboard(&mut self, event: &KeyboardEventCtx) -> bool {
+   fn on_keyboard(&mut self, event: &KeyboardEventCtx) -> bool {
       (self.vtable.on_keyboard)(self, event)
    }
 }
