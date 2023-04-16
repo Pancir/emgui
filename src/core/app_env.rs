@@ -1,4 +1,3 @@
-use crate::core::Theme;
 use anyhow::bail;
 use std::any::Any;
 
@@ -15,15 +14,15 @@ use std::any::Any;
 /// # Limitation
 /// the struct can hold only one instance of the same type.
 pub struct AppEnv {
-   theme: Theme,
+   // theme: Theme,
    app_data: Box<dyn Any>,
    user_data: Vec<Box<dyn Any>>,
 }
 
 impl AppEnv {
    /// Create a new with a general application data.
-   pub fn new<APP: 'static>(app: APP, theme: Theme) -> Self {
-      Self { app_data: Box::new(app), user_data: Vec::new(), theme }
+   pub fn new<APP: 'static>(app: APP /*, theme: Theme*/) -> Self {
+      Self { app_data: Box::new(app), user_data: Vec::new() /*theme*/ }
    }
 }
 
@@ -38,10 +37,10 @@ impl AppEnv {
       self.app_data.downcast_mut::<APP>()
    }
 
-   /// Get application theme data.
-   pub fn theme(&self) -> &Theme {
-      &self.theme
-   }
+   // /// Get application theme data.
+   // pub fn theme(&self) -> &Theme {
+   //    &self.theme
+   // }
 }
 
 impl AppEnv {
