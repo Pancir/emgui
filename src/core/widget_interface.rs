@@ -1,5 +1,4 @@
 use super::WidgetOwner;
-use crate::core::inherit::Inherit;
 use crate::core::events::{
    DrawEventCtx, KeyboardEventCtx, LayoutEventCtx, LifecycleEventCtx, MouseButtonsEventCtx,
    MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
@@ -24,6 +23,7 @@ pub trait IWidget: Any + 'static {
    {
       WidgetOwner::new(self)
    }
+
    //---------------------------------------
 
    /// Get the widget type name for debugging purposes.
@@ -47,8 +47,8 @@ pub trait IWidget: Any + 'static {
    fn base(&self) -> &WidgetBase;
    fn base_mut(&mut self) -> &mut WidgetBase;
 
-   fn inherited(&self) -> &dyn Inherit;
-   fn inherited_mut(&mut self) -> &mut dyn Inherit;
+   fn inherited(&self) -> &dyn Any;
+   fn inherited_mut(&mut self) -> &mut dyn Any;
 
    //---------------------------------------
 

@@ -1,5 +1,4 @@
 use super::WidgetVt;
-use crate::core::inherit::Inherit;
 use crate::core::events::{
    DrawEventCtx, KeyboardEventCtx, LayoutEventCtx, LifecycleEventCtx, MouseButtonsEventCtx,
    MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
@@ -15,7 +14,7 @@ use std::mem::MaybeUninit;
 
 pub struct Widget<D>
 where
-   D: Inherit,
+   D: Any,
 {
    inherited: MaybeUninit<D>,
    vtable: WidgetVt<Self>,
@@ -38,7 +37,7 @@ impl Widget<()> {
 
 impl<D: 'static> Widget<D>
 where
-   D: Inherit,
+   D: Any,
 {
    /// Construct new and init.
    pub fn inherit<CB1, CB2>(vt_cb: CB1, init_cb: CB2) -> Self
@@ -97,7 +96,7 @@ where
 
 impl<D: 'static> IWidget for Widget<D>
 where
-   D: Inherit,
+   D: Any,
 {
    fn as_any(&self) -> &dyn Any {
       self
@@ -117,11 +116,11 @@ where
       &mut self.base
    }
 
-   fn inherited(&self) -> &dyn Inherit {
+   fn inherited(&self) -> &dyn Any {
       self.inherited_obj()
    }
 
-   fn inherited_mut(&mut self) -> &mut dyn Inherit {
+   fn inherited_mut(&mut self) -> &mut dyn Any {
       self.inherited_obj_mut()
    }
 
@@ -220,7 +219,7 @@ where
 
 impl<D: 'static> Widget<D>
 where
-   D: Inherit,
+   D: Any,
 {
    fn on_draw(&mut self, canvas: &mut Canvas, _event: &DrawEventCtx) {
       // TODO remove over as it is for testing

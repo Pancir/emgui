@@ -1,4 +1,3 @@
-use crate::core::inherit::Inherit;
 use crate::core::events::{DrawEventCtx, MouseButtonsEventCtx, MouseMoveEventCtx};
 use crate::core::{IWidget, WidgetOwner};
 use crate::widgets::Widget;
@@ -6,7 +5,6 @@ use sim_draw::color::Rgba;
 use sim_draw::m::{Box2, Point2, Rect};
 use sim_draw::{Canvas, Paint};
 use sim_input::mouse::{MouseButton, MouseState};
-use std::any::Any;
 use std::cell::RefCell;
 use std::ops::Range;
 use std::rc::Rc;
@@ -164,19 +162,6 @@ where
 
    click_pos: Point2<f32>,
    released_at: Instant,
-}
-
-impl<H> Inherit for Slider2d<H>
-where
-   H: ISlider2dHandler + 'static,
-{
-   fn as_any(&self) -> &dyn Any {
-      self
-   }
-
-   fn as_any_mut(&mut self) -> &mut dyn Any {
-      self
-   }
 }
 
 impl<H> Slider2d<H>

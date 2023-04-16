@@ -1,4 +1,3 @@
-use crate::core::inherit::Inherit;
 use crate::core::events::{DrawEventCtx, MouseButtonsEventCtx};
 use crate::core::{IWidget, WidgetOwner};
 use crate::elements::LineLabel;
@@ -7,7 +6,6 @@ use sim_draw::color::Rgba;
 use sim_draw::m::Rect;
 use sim_draw::{Canvas, Paint, TextAlign, TextPaint};
 use sim_input::mouse::{MouseButton, MouseState};
-use std::any::Any;
 use std::borrow::Cow;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -182,19 +180,6 @@ where
    #[inline]
    pub fn state(&self) -> &PushButtonState {
       &self.state
-   }
-}
-
-impl<H> Inherit for PushButton<H>
-where
-   H: IPushButtonHandler + 'static,
-{
-   fn as_any(&self) -> &dyn Any {
-      self
-   }
-
-   fn as_any_mut(&mut self) -> &mut dyn Any {
-      self
    }
 }
 

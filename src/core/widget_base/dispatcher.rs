@@ -903,11 +903,9 @@ impl Dispatcher {
 #[cfg(test)]
 mod tests {
    use super::*;
-   use crate::core::inherit::Inherit;
    use sim_draw::m::Rect;
    use sim_input::mouse::MouseMoveInput;
    use sim_input::{DeviceId, Modifiers};
-   use std::any::Any;
 
    //---------------------------------------------------
 
@@ -929,16 +927,6 @@ mod tests {
             },
          )
          .to_owner()
-      }
-   }
-
-   impl Inherit for TestWidget {
-      fn as_any(&self) -> &dyn Any {
-         self
-      }
-
-      fn as_any_mut(&mut self) -> &mut dyn Any {
-         self
       }
    }
 
@@ -991,91 +979,91 @@ mod tests {
       //----------------------
       dispatcher.emit_mouse_move(&mouse_move_ctx(-10.0, 100.0));
       assert_eq!(
-         root.borrow_mut().inherited().as_any().downcast_ref::<TestWidget>().unwrap().mouse_enter,
+         root.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_enter,
          0
       );
       assert_eq!(
-         root.borrow_mut().inherited().as_any().downcast_ref::<TestWidget>().unwrap().mouse_leave,
+         root.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_leave,
          0
       );
       assert_eq!(
-         child.borrow_mut().inherited().as_any().downcast_ref::<TestWidget>().unwrap().mouse_enter,
+         child.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_enter,
          0
       );
       assert_eq!(
-         child.borrow_mut().inherited().as_any().downcast_ref::<TestWidget>().unwrap().mouse_leave,
+         child.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_leave,
          0
       );
       //----------------------
       dispatcher.emit_mouse_move(&mouse_move_ctx(25.0, 100.0));
       assert_eq!(
-         root.borrow_mut().inherited().as_any().downcast_ref::<TestWidget>().unwrap().mouse_enter,
+         root.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_enter,
          1
       );
       assert_eq!(
-         root.borrow_mut().inherited().as_any().downcast_ref::<TestWidget>().unwrap().mouse_leave,
+         root.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_leave,
          0
       );
       assert_eq!(
-         child.borrow_mut().inherited().as_any().downcast_ref::<TestWidget>().unwrap().mouse_enter,
+         child.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_enter,
          0
       );
       assert_eq!(
-         child.borrow_mut().inherited().as_any().downcast_ref::<TestWidget>().unwrap().mouse_leave,
+         child.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_leave,
          0
       );
       //----------------------
       dispatcher.emit_mouse_move(&mouse_move_ctx(75.0, 100.0));
       assert_eq!(
-         root.borrow_mut().inherited().as_any().downcast_ref::<TestWidget>().unwrap().mouse_enter,
+         root.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_enter,
          1
       );
       assert_eq!(
-         root.borrow_mut().inherited().as_any().downcast_ref::<TestWidget>().unwrap().mouse_leave,
+         root.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_leave,
          1
       );
       assert_eq!(
-         child.borrow_mut().inherited().as_any().downcast_ref::<TestWidget>().unwrap().mouse_enter,
+         child.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_enter,
          1
       );
       assert_eq!(
-         child.borrow_mut().inherited().as_any().downcast_ref::<TestWidget>().unwrap().mouse_leave,
+         child.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_leave,
          0
       );
       //----------------------
       dispatcher.emit_mouse_move(&mouse_move_ctx(25.0, 100.0));
       assert_eq!(
-         root.borrow_mut().inherited().as_any().downcast_ref::<TestWidget>().unwrap().mouse_enter,
+         root.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_enter,
          2
       );
       assert_eq!(
-         root.borrow_mut().inherited().as_any().downcast_ref::<TestWidget>().unwrap().mouse_leave,
+         root.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_leave,
          1
       );
       assert_eq!(
-         child.borrow_mut().inherited().as_any().downcast_ref::<TestWidget>().unwrap().mouse_enter,
+         child.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_enter,
          1
       );
       assert_eq!(
-         child.borrow_mut().inherited().as_any().downcast_ref::<TestWidget>().unwrap().mouse_leave,
+         child.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_leave,
          1
       );
       //----------------------
       dispatcher.emit_mouse_move(&mouse_move_ctx(-10.0, 100.0));
       assert_eq!(
-         root.borrow_mut().inherited().as_any().downcast_ref::<TestWidget>().unwrap().mouse_enter,
+         root.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_enter,
          2
       );
       assert_eq!(
-         root.borrow_mut().inherited().as_any().downcast_ref::<TestWidget>().unwrap().mouse_leave,
+         root.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_leave,
          2
       );
       assert_eq!(
-         child.borrow_mut().inherited().as_any().downcast_ref::<TestWidget>().unwrap().mouse_enter,
+         child.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_enter,
          1
       );
       assert_eq!(
-         child.borrow_mut().inherited().as_any().downcast_ref::<TestWidget>().unwrap().mouse_leave,
+         child.borrow_mut().inherited().downcast_ref::<TestWidget>().unwrap().mouse_leave,
          1
       );
       //----------------------
