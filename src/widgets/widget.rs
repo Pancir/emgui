@@ -1,9 +1,8 @@
-use super::WidgetVt;
 use crate::core::events::{
    DrawEventCtx, KeyboardEventCtx, LayoutEventCtx, LifecycleEventCtx, MouseButtonsEventCtx,
    MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
 };
-use crate::core::{IWidget, WidgetBase};
+use crate::core::{IWidget, WidgetBase, WidgetVt};
 use sim_draw::color::Rgba;
 use sim_draw::m::Rect;
 use sim_draw::{Canvas, Paint};

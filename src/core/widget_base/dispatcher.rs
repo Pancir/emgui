@@ -903,6 +903,7 @@ impl Dispatcher {
 #[cfg(test)]
 mod tests {
    use super::*;
+   use crate::widgets::Widget;
    use sim_draw::m::Rect;
    use sim_input::mouse::MouseMoveInput;
    use sim_input::{DeviceId, Modifiers};

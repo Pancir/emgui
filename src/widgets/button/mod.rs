@@ -1,30 +1,27 @@
 pub mod handler;
 pub mod style;
 
+use self::style::ButtonStyleSheet;
 use super::handler::IButtonHandler;
-use super::style::ButtonStyleOption;
 use crate::core::events::{
    DrawEventCtx, KeyboardEventCtx, LayoutEventCtx, LifecycleEventCtx, MouseButtonsEventCtx,
    MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
 };
-use crate::core::{IWidget, WidgetBase};
+use crate::core::{IWidget, WidgetBase, WidgetVt};
 use crate::elements::Icon;
-use crate::widgets::WidgetVt;
 use sim_draw::{color::Rgba, m::Rect};
 use sim_draw::{Canvas, Paint};
 use sim_input::mouse::MouseState;
 use std::borrow::Cow;
+use std::rc::Rc;
 use std::{any::Any, mem::MaybeUninit};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #[derive(Default)]
 pub struct ButtonState {
-   pub text: Option<Cow<'static, str>>,
-   pub icon: Option<Icon>,
    pub toggle_num: u8,
    pub toggle: u8,
-   pub flags: ButtonStyleOption,
    pub is_hover: bool,
    pub is_down: bool,
 }
@@ -39,8 +36,12 @@ where
    base: WidgetBase,
    inherited: MaybeUninit<D>,
    vtable: WidgetVt<Self>,
-   state: ButtonState,
    handler: H,
+
+   style: Option<Rc<dyn ButtonStyleSheet>>,
+   state: ButtonState,
+   text: Option<Cow<'static, str>>,
+   icon: Option<Icon>,
 }
 
 impl<H> Button<H, ()>
@@ -80,8 +81,11 @@ where
             on_mouse_button: Self::on_mouse_button,
             ..WidgetVt::default()
          },
-         state: ButtonState::default(),
          handler,
+         style: None,
+         state: ButtonState::default(),
+         text: None,
+         icon: None,
       };
 
       let inherited = vt_cb(&mut out.vtable);
@@ -94,7 +98,7 @@ where
    /// Set button text.
    #[inline]
    pub fn set_icon(&mut self, icon: Option<Icon>) {
-      self.state.icon = icon
+      self.icon = icon
    }
 
    /// Set button text.
@@ -103,7 +107,7 @@ where
    where
       T: Into<Cow<'static, str>>,
    {
-      self.state.text = text.map(|v| v.into())
+      self.text = text.map(|v| v.into())
    }
 
    /// Access to button's derive object.

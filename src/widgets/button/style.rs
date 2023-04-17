@@ -1,7 +1,7 @@
-use super::ButtonState;
-use crate::core::events::DrawEventCtx;
+use crate::{core::events::DrawEventCtx, elements::Icon};
 use bitflags::bitflags;
 use sim_draw::{m::Rect, Canvas};
+use std::borrow::Cow;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -17,9 +17,17 @@ bitflags! {
    }
 }
 
+pub struct ButtonStyleState<'internal> {
+   pub text: &'internal Option<Cow<'static, str>>,
+   pub icon: &'internal Option<Icon>,
+   pub toggle_num: u8,
+   pub toggle: u8,
+   pub options: ButtonStyleOption,
+}
+
 pub trait ButtonStyleSheet {
-   fn rect(&self, state: &ButtonState) -> Rect<f32>;
-   fn draw(&self, state: &ButtonState, canvas: &mut Canvas, _event: &DrawEventCtx);
+   fn rect(&self, state: &ButtonStyleState) -> Rect<f32>;
+   fn draw(&self, state: &ButtonStyleState, canvas: &mut Canvas, _event: &DrawEventCtx);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -27,11 +35,11 @@ pub trait ButtonStyleSheet {
 pub struct ButtonStyle {}
 
 impl ButtonStyleSheet for ButtonStyle {
-   fn rect(&self, state: &ButtonState) -> Rect<f32> {
+   fn rect(&self, state: &ButtonStyleState) -> Rect<f32> {
       todo!()
    }
 
-   fn draw(&self, state: &ButtonState, canvas: &mut Canvas, _event: &DrawEventCtx) {
+   fn draw(&self, state: &ButtonStyleState, canvas: &mut Canvas, _event: &DrawEventCtx) {
       todo!()
    }
 }

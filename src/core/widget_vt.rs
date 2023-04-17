@@ -7,6 +7,12 @@ use sim_draw::Canvas;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+/// Widget function table.
+///
+/// # Warning
+/// Be careful when you replace functions with your ones, it actually may have
+/// some default implementation that should be invoked every time, see documentation
+/// of a widget this table belongs to for more information.
 #[derive(Clone)]
 pub struct WidgetVt<W> {
    /// It is called when a new rectangle has to be set.
