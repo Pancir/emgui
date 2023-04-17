@@ -23,3 +23,17 @@ pub trait ButtonStyleSheet {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+pub struct ButtonStyle {}
+
+impl ButtonStyleSheet for ButtonStyle {
+   fn rect(&self, state: &ButtonState) -> Rect<f32> {
+      todo!()
+   }
+
+   fn draw(&self, state: &ButtonState, canvas: &mut Canvas, _event: &DrawEventCtx) {
+      todo!()
+   }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
