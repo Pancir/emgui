@@ -5,6 +5,7 @@ use crate::core::events::{
 };
 use crate::core::{IWidget, WidgetBase};
 use crate::elements::Icon;
+use bitflags::bitflags;
 use sim_draw::{color::Rgba, m::Rect};
 use sim_draw::{Canvas, Paint};
 use sim_input::mouse::{MouseButton, MouseState};
@@ -97,6 +98,19 @@ impl IButtonHandler for ButtonHandler {
       }
    }
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bitflags! {
+   #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+   pub struct ButtonStyleOption: u8 {
+      const HAS_MENU = 1<<0;
+      const DEFAULT = 1<<1;
+      const AUTO_DEFAULT = 1<<2;
+   }
+}
+
+pub trait ButtonStyleSheet {}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 

@@ -21,6 +21,7 @@ use std::time::Duration;
 
 bitflags! {
    /// Control flow for events.
+   #[derive(Debug, Clone, Copy, PartialEq, Eq)]
    pub(crate) struct StateFlags: u16 {
       //-----------------------------
 
@@ -67,7 +68,7 @@ bitflags! {
 
       //-----------------------------
 
-      const INIT = Self::SELF_DRAW.bits|Self::CHILDREN_DRAW.bits|Self::SELF_UPDATE.bits|Self::CHILDREN_UPDATE.bits|Self::IS_VISIBLE.bits|Self::IS_ENABLED.bits;
+      const INIT = Self::SELF_DRAW.bits()|Self::CHILDREN_DRAW.bits()|Self::SELF_UPDATE.bits()|Self::CHILDREN_UPDATE.bits()|Self::IS_VISIBLE.bits()|Self::IS_ENABLED.bits();
    }
 }
 
