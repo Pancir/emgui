@@ -102,15 +102,20 @@ impl IButtonHandler for ButtonHandler {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bitflags! {
-   #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+   #[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
    pub struct ButtonStyleOption: u8 {
       const HAS_MENU = 1<<0;
       const DEFAULT = 1<<1;
       const AUTO_DEFAULT = 1<<2;
+      const FOCUSED = 1<<3;
+      const MOUSE_HOVER = 1<<4;
+      const IS_DOWN = 1<<5;
    }
 }
 
-pub trait ButtonStyleSheet {}
+pub trait ButtonStyleSheet {
+   fn draw(&self, state: &ButtonState, canvas: &mut Canvas, _event: &DrawEventCtx);
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -120,6 +125,7 @@ pub struct ButtonState {
    pub icon: Option<Icon>,
    pub toggle_num: u8,
    pub toggle: u8,
+   pub flags: ButtonStyleOption,
    pub is_hover: bool,
    pub is_down: bool,
 }
