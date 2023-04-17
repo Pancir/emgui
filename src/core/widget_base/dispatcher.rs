@@ -975,7 +975,7 @@ mod tests {
       let child = TestWidget::new(Rect::new(50.0, 50.0, 100.0, 100.0));
 
       let mut dispatcher = Dispatcher::new(Some(root.clone()));
-      add_child(dispatcher.widget(), child.clone());
+      dispatcher.widget().add_child(child.clone());
       //----------------------
       dispatcher.emit_mouse_move(&mouse_move_ctx(-10.0, 100.0));
       assert_eq!(

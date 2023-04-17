@@ -111,6 +111,12 @@ impl WidgetBase {
       }
    }
 
+   /// Get parent.
+   #[inline]
+   pub fn parent(&self) -> &Option<WidgetRef> {
+      &self.parent
+   }
+
    /// Unique id of the widget.
    #[inline]
    pub fn id(&self) -> WidgetId {
@@ -362,15 +368,7 @@ impl WidgetBase {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub fn add_children<const NUM: usize>(parent: &WidgetRefOwner, children: [WidgetRefOwner; NUM]) {
-   // TODO swap implementation with add_child, it will be faster as we can only once borrow.
-
-   for c in children {
-      add_child(parent, c);
-   }
-}
-
-pub fn add_child(parent: &WidgetRefOwner, child: WidgetRefOwner) -> WidgetRef {
+pub(crate) fn add_child(parent: &WidgetRefOwner, child: WidgetRefOwner) -> WidgetRef {
    // TODO what about runtime propagation?
 
    let w = child.as_ref();

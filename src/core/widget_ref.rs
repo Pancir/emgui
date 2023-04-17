@@ -70,6 +70,20 @@ impl WidgetRefOwner {
    pub fn as_ref(&self) -> WidgetRef {
       WidgetRef { w: Rc::downgrade(&self.rc) }
    }
+
+   #[inline]
+   pub fn add_children<const NUM: usize>(&self, children: [WidgetRefOwner; NUM]) {
+      // TODO swap implementation with add_child, it will be faster as we can only once borrow.
+
+      for c in children {
+         self.add_child(c);
+      }
+   }
+
+   #[inline]
+   pub fn add_child(&self, child: WidgetRefOwner) -> WidgetRef {
+      super::add_child(self, child)
+   }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
