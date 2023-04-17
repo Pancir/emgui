@@ -10,12 +10,12 @@ use std::{
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub struct WidgetOwner {
+pub struct WidgetRefOwner {
    // TODO maybe Pin?
    rc: Rc<RefCell<dyn IWidget>>,
 }
 
-impl WidgetOwner {
+impl WidgetRefOwner {
    #[inline]
    pub(crate) fn new<W>(w: W) -> Self
    where
@@ -65,7 +65,7 @@ impl WidgetOwner {
    }
 }
 
-impl WidgetOwner {
+impl WidgetRefOwner {
    #[inline]
    pub fn as_ref(&self) -> WidgetRef {
       WidgetRef { w: Rc::downgrade(&self.rc) }
@@ -80,8 +80,8 @@ pub struct WidgetRef {
 }
 
 impl WidgetRef {
-   pub(crate) fn upgrade(&self) -> Option<WidgetOwner> {
-      self.w.upgrade().map(|v| WidgetOwner { rc: v })
+   pub(crate) fn upgrade(&self) -> Option<WidgetRefOwner> {
+      self.w.upgrade().map(|v| WidgetRefOwner { rc: v })
    }
 }
 

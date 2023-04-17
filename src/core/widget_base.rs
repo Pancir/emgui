@@ -9,7 +9,7 @@ use sim_draw::m::Rect;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-use super::{WidgetOwner, WidgetRef};
+use super::{WidgetRef, WidgetRefOwner};
 use crate::core::widget_base::runtime::Runtime;
 use crate::core::{Geometry, WidgetId};
 use crate::defines::{DEFAULT_DOUBLE_CLICK_TIME, DEFAULT_TOOL_TIP_TIME};
@@ -361,7 +361,7 @@ impl WidgetBase {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub fn add_children<const NUM: usize>(parent: &WidgetOwner, children: [WidgetOwner; NUM]) {
+pub fn add_children<const NUM: usize>(parent: &WidgetRefOwner, children: [WidgetRefOwner; NUM]) {
    // TODO swap implementation with add_child, it will be faster as we can only once borrow.
 
    for c in children {
@@ -369,7 +369,7 @@ pub fn add_children<const NUM: usize>(parent: &WidgetOwner, children: [WidgetOwn
    }
 }
 
-pub fn add_child(parent: &WidgetOwner, child: WidgetOwner) -> WidgetRef {
+pub fn add_child(parent: &WidgetRefOwner, child: WidgetRefOwner) -> WidgetRef {
    // TODO what about runtime propagation?
 
    let w = child.as_ref();

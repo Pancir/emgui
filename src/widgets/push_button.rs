@@ -1,5 +1,5 @@
 use crate::core::events::{DrawEventCtx, MouseButtonsEventCtx};
-use crate::core::{IWidget, WidgetOwner};
+use crate::core::{IWidget, WidgetRefOwner};
 use crate::elements::LineLabel;
 use crate::widgets::Widget;
 use sim_draw::color::Rgba;
@@ -121,7 +121,7 @@ impl<H> PushButton<H>
 where
    H: IPushButtonHandler + 'static,
 {
-   pub fn new<TXT>(handler: H, rect: Rect<f32>, label: TXT, text_patin: TextPaint) -> WidgetOwner
+   pub fn new<TXT>(handler: H, rect: Rect<f32>, label: TXT, text_patin: TextPaint) -> WidgetRefOwner
    where
       TXT: Into<Cow<'static, str>>,
    {

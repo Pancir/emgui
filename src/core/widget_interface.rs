@@ -1,4 +1,4 @@
-use super::WidgetOwner;
+use super::WidgetRefOwner;
 use crate::core::events::{
    DrawEventCtx, KeyboardEventCtx, LayoutEventCtx, LifecycleEventCtx, MouseButtonsEventCtx,
    MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
@@ -17,11 +17,11 @@ pub trait IWidget: Any + 'static {
    fn as_any(&self) -> &dyn Any;
    fn as_any_mut(&mut self) -> &mut dyn Any;
 
-   fn to_owner(self) -> WidgetOwner
+   fn to_owner(self) -> WidgetRefOwner
    where
       Self: Sized,
    {
-      WidgetOwner::new(self)
+      WidgetRefOwner::new(self)
    }
 
    //---------------------------------------

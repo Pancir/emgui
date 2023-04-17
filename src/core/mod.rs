@@ -11,7 +11,7 @@ mod geometry;
 mod widget_base;
 mod widget_id;
 mod widget_interface;
-mod widget_owner;
+mod widget_ref;
 
 pub use app_env::*;
 pub use brush::*;
@@ -19,6 +19,6 @@ pub use geometry::*;
 pub use widget_base::*;
 pub use widget_id::*;
 pub use widget_interface::*;
-pub use widget_owner::*;
+pub use widget_ref::*;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

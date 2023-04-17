@@ -4,7 +4,7 @@ use crate::core::events::{
    MouseButtonsEventCtx, MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
 };
 use crate::core::widget_base::runtime::Runtime;
-use crate::core::{AppEnv, IWidget, WidgetOwner};
+use crate::core::{AppEnv, IWidget, WidgetRefOwner};
 use crate::widgets::Widget;
 use sim_draw::Canvas;
 use sim_input::mouse::MouseState;
@@ -23,13 +23,13 @@ pub struct InnerDispatcher {
 
 pub struct Dispatcher {
    inner: InnerDispatcher,
-   root: WidgetOwner,
+   root: WidgetRefOwner,
    destroyed: bool,
 }
 
 impl Dispatcher {
    #[inline]
-   pub fn new(root: Option<WidgetOwner>) -> Self {
+   pub fn new(root: Option<WidgetRefOwner>) -> Self {
       let mut out = Self {
          inner: InnerDispatcher {
             runtime: Runtime::new(),
@@ -45,7 +45,7 @@ impl Dispatcher {
    }
 
    #[inline]
-   pub fn reinit(&mut self, root: WidgetOwner) {
+   pub fn reinit(&mut self, root: WidgetRefOwner) {
       if !self.destroyed {
          self.destroy();
       }
@@ -54,7 +54,7 @@ impl Dispatcher {
    }
 
    #[inline]
-   pub fn widget(&self) -> &WidgetOwner {
+   pub fn widget(&self) -> &WidgetRefOwner {
       &self.root
    }
 
@@ -102,7 +102,7 @@ impl Dispatcher {
       Self::emit_inner_destroy(&mut self.inner, &self.root);
    }
 
-   fn emit_inner_destroy(dispatcher: &mut InnerDispatcher, child: &WidgetOwner) {
+   fn emit_inner_destroy(dispatcher: &mut InnerDispatcher, child: &WidgetRefOwner) {
       Self::emit_inner_lifecycle(
          dispatcher,
          child,
@@ -116,7 +116,7 @@ impl Dispatcher {
       Self::set_runtime_to_widget_inner(self.inner.runtime.clone(), &self.root);
    }
 
-   fn set_runtime_to_widget_inner(runtime: Runtime, child: &WidgetOwner) {
+   fn set_runtime_to_widget_inner(runtime: Runtime, child: &WidgetRefOwner) {
       match child.widget_mut() {
          Ok(mut bor) => {
             let mut internal = bor.base_mut();
@@ -141,7 +141,7 @@ impl Dispatcher {
    #[cfg_attr(feature = "trace-dispatcher", tracing::instrument(level = "trace", skip_all))]
    fn emit_inner_lifecycle(
       dispatcher: &mut InnerDispatcher,
-      child: &WidgetOwner,
+      child: &WidgetRefOwner,
       event: &LifecycleEventCtx,
    ) {
       //--------------------------------------------------
@@ -189,7 +189,7 @@ impl Dispatcher {
 
    fn emit_inner_layout(
       dispatcher: &mut InnerDispatcher,
-      child: &WidgetOwner,
+      child: &WidgetRefOwner,
       event: &LayoutEventCtx,
    ) {
       let children = match child.widget_mut() {
@@ -222,7 +222,7 @@ impl Dispatcher {
 impl Dispatcher {
    /// This event check if there are widgets to delete and perform deleting.
    #[cfg_attr(feature = "trace-dispatcher", tracing::instrument(level = "trace", skip_all))]
-   fn emit_inner_check_delete(dispatcher: &mut InnerDispatcher, input_child: &WidgetOwner) {
+   fn emit_inner_check_delete(dispatcher: &mut InnerDispatcher, input_child: &WidgetRefOwner) {
       //--------------------------------------------------
       let (state_flags, id, _rect, _mouse_btn_num, _has_mouse_tracking) =
          input_child.data_for_dispatcher();
@@ -306,7 +306,7 @@ impl Dispatcher {
 
    fn emit_inner_update(
       dispatcher: &mut InnerDispatcher,
-      child: &WidgetOwner,
+      child: &WidgetRefOwner,
       event: &UpdateEventCtx,
    ) {
       //--------------------------------------------------
@@ -389,7 +389,7 @@ impl Dispatcher {
    /// * Redraw animated.
    fn emit_inner_draw(
       dispatcher: &mut InnerDispatcher,
-      child: &WidgetOwner,
+      child: &WidgetRefOwner,
       canvas: &mut Canvas,
       event: &DrawEventCtx,
    ) {
@@ -468,7 +468,7 @@ impl Dispatcher {
 
    fn emit_inner_draw_full(
       dispatcher: &mut InnerDispatcher,
-      input_child: &WidgetOwner,
+      input_child: &WidgetRefOwner,
       canvas: &mut Canvas,
       event: &DrawEventCtx,
    ) {
@@ -566,7 +566,7 @@ impl Dispatcher {
 
    fn emit_inner_mouse_move(
       dispatcher: &mut InnerDispatcher,
-      input_child: &WidgetOwner,
+      input_child: &WidgetRefOwner,
       event: &MouseMoveEventCtx,
    ) -> bool {
       //--------------------------------------------------
@@ -697,7 +697,7 @@ impl Dispatcher {
 
    fn emit_inner_mouse_button(
       dispatcher: &mut InnerDispatcher,
-      input_child: &WidgetOwner,
+      input_child: &WidgetRefOwner,
       event: &MouseButtonsEventCtx,
    ) -> bool {
       //--------------------------------------------------
@@ -767,7 +767,7 @@ impl Dispatcher {
 
    fn emit_inner_mouse_wheel(
       dispatcher: &mut InnerDispatcher,
-      child: &WidgetOwner,
+      child: &WidgetRefOwner,
       event: &MouseWheelEventCtx,
    ) -> bool {
       //--------------------------------------------------
@@ -831,7 +831,7 @@ impl Dispatcher {
 
    pub fn emit_inner_keyboard(
       dispatcher: &mut InnerDispatcher,
-      child: &WidgetOwner,
+      child: &WidgetRefOwner,
       event: &KeyboardEventCtx,
    ) -> bool {
       //--------------------------------------------------
@@ -887,7 +887,7 @@ impl Dispatcher {
 
 impl Dispatcher {
    #[cfg_attr(feature = "trace-dispatcher", tracing::instrument(level = "trace", skip_all))]
-   fn inform_lost_children(dispatcher: &mut InnerDispatcher, children: &[WidgetOwner]) {
+   fn inform_lost_children(dispatcher: &mut InnerDispatcher, children: &[WidgetRefOwner]) {
       for child in children {
          Self::emit_inner_lifecycle(
             dispatcher,
@@ -915,7 +915,7 @@ mod tests {
    }
 
    impl TestWidget {
-      pub fn new(rect: Rect<f32>) -> WidgetOwner {
+      pub fn new(rect: Rect<f32>) -> WidgetRefOwner {
          Widget::inherit(
             |vt| {
                vt.on_mouse_enter = |w: &mut Widget<Self>| w.inherited_obj_mut().mouse_enter += 1;
