@@ -51,8 +51,7 @@ where
             on_draw: Self::on_draw,
             //--------------------------------------
             // TODO remove draw as it is for testing
-            on_mouse_enter: |w| w.base().request_draw(),
-            on_mouse_leave: |w| w.base().request_draw(),
+            on_mouse_cross: |w, _| w.base().request_draw(),
             //--------------------------------------
             ..WidgetVt::default()
          },
@@ -177,14 +176,8 @@ where
 
    #[cfg_attr(feature = "trace-widget",
    tracing::instrument(skip(self), fields(WidgetID = self.base().id().raw()), ret))]
-   fn on_mouse_enter(&mut self) {
-      (self.vtable.on_mouse_enter)(self)
-   }
-
-   #[cfg_attr(feature = "trace-widget",
-   tracing::instrument(skip(self), fields(WidgetID = self.base().id().raw()), ret))]
-   fn on_mouse_leave(&mut self) {
-      (self.vtable.on_mouse_leave)(self)
+   fn on_mouse_cross(&mut self, enter: bool) {
+      (self.vtable.on_mouse_cross)(self, enter)
    }
 
    #[must_use]

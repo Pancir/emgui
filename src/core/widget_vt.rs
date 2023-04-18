@@ -36,10 +36,12 @@ pub struct WidgetVt<W> {
    /// It is called whenever the widget must be re-drawn,
    pub on_draw: fn(w: &mut W, &mut Canvas, &DrawEventCtx),
    //-------------------------------------------------
-   /// It is called when the mouse cursor enters the widget.
-   pub on_mouse_enter: fn(w: &mut W),
-   /// It is called when the mouse cursor leaves the widget.
-   pub on_mouse_leave: fn(w: &mut W),
+   /// It is called when the mouse cursor enters or leave the widget.
+   ///
+   /// # Arguments
+   ///
+   /// * `enter`: `true` if mouse enter otherwise `false`.
+   pub on_mouse_cross: fn(w: &mut W, enter: bool),
    //-------------------------------------------------
    /// It is called when the mouse cursor is moved inside the widget rectangle.
    ///
@@ -69,8 +71,7 @@ impl<W> Default for WidgetVt<W> {
          on_update: |_, _| {},
          on_draw: |_, _, _| {},
          //--------------------------------------
-         on_mouse_enter: |_| {},
-         on_mouse_leave: |_| {},
+         on_mouse_cross: |_, _| {},
          //--------------------------------------
          on_mouse_move: |_, _| true,
          on_mouse_button: |_, _| true,

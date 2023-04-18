@@ -25,8 +25,6 @@ bitflags! {
       const HAS_MENU = 1<<0;
       const DEFAULT = 1<<1;
       const AUTO_DEFAULT = 1<<2;
-      const HAS_FOCUS = 1<<3;
-      const MOUSE_HOVER = 1<<4;
       const IS_DOWN = 1<<5;
    }
 }
@@ -88,8 +86,7 @@ where
          inherited: unsafe { std::mem::zeroed() },
          vtable: WidgetVt {
             on_draw: Self::on_draw,
-            on_mouse_enter: Self::on_mouse_enter,
-            on_mouse_leave: Self::on_mouse_leave,
+            on_mouse_cross: Self::on_mouse_cross,
             on_mouse_button: Self::on_mouse_button,
             ..WidgetVt::default()
          },
@@ -246,14 +243,8 @@ where
 
    #[cfg_attr(feature = "trace-widget",
    tracing::instrument(skip(self), fields(WidgetID = self.base().id().raw()), ret))]
-   fn on_mouse_enter(&mut self) {
-      (self.vtable.on_mouse_enter)(self)
-   }
-
-   #[cfg_attr(feature = "trace-widget",
-   tracing::instrument(skip(self), fields(WidgetID = self.base().id().raw()), ret))]
-   fn on_mouse_leave(&mut self) {
-      (self.vtable.on_mouse_leave)(self)
+   fn on_mouse_cross(&mut self, enter: bool) {
+      (self.vtable.on_mouse_cross)(self, enter)
    }
 
    #[must_use]
@@ -298,20 +289,14 @@ where
       )
    }
 
-   pub fn on_mouse_enter(w: &mut Self) {
-      w.state.flags.set(ButtonStateFlags::MOUSE_HOVER, true);
-      w.base.request_draw();
-   }
-
-   pub fn on_mouse_leave(w: &mut Self) {
-      w.state.flags.set(ButtonStateFlags::MOUSE_HOVER, false);
+   pub fn on_mouse_cross(w: &mut Self, enter: bool) {
       w.base.request_draw();
    }
 
    pub fn on_mouse_button(w: &mut Self, event: &MouseButtonsEventCtx) -> bool {
       match event.input.state {
          MouseState::Pressed => {
-            if w.state.flags.contains(ButtonStateFlags::MOUSE_HOVER) {
+            if w.base.is_over() {
                w.state.flags.set(ButtonStateFlags::IS_DOWN, true);
                w.handler.pressed(&w.state, event.input.button);
                w.base.request_draw();
@@ -323,7 +308,7 @@ where
                w.state.flags.set(ButtonStateFlags::IS_DOWN, false);
                w.handler.released(&w.state, event.input.button);
 
-               if w.state.flags.contains(ButtonStateFlags::MOUSE_HOVER) {
+               if w.base.is_over() {
                   w.state.toggle += 1;
                   if w.state.toggle == w.state.toggle_num {
                      w.state.toggle = 0;

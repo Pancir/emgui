@@ -70,16 +70,15 @@ pub trait IWidget: Any + 'static {
 
    //---------------------------------------
 
-   fn on_lifecycle(&mut self, _event: &LifecycleEventCtx);
-   fn on_layout(&mut self, _event: &LayoutEventCtx);
-   fn on_draw(&mut self, _canvas: &mut Canvas, _event: &DrawEventCtx);
+   fn on_lifecycle(&mut self, event: &LifecycleEventCtx);
+   fn on_layout(&mut self, event: &LayoutEventCtx);
+   fn on_draw(&mut self, canvas: &mut Canvas, _event: &DrawEventCtx);
    fn on_update(&mut self, _event: &UpdateEventCtx);
-   fn on_mouse_enter(&mut self);
-   fn on_mouse_leave(&mut self);
-   fn on_mouse_move(&mut self, _event: &MouseMoveEventCtx) -> bool;
-   fn on_mouse_button(&mut self, _event: &MouseButtonsEventCtx) -> bool;
-   fn on_mouse_wheel(&mut self, _event: &MouseWheelEventCtx) -> bool;
-   fn on_keyboard(&mut self, _event: &KeyboardEventCtx) -> bool;
+   fn on_mouse_cross(&mut self, enter: bool);
+   fn on_mouse_move(&mut self, event: &MouseMoveEventCtx) -> bool;
+   fn on_mouse_button(&mut self, event: &MouseButtonsEventCtx) -> bool;
+   fn on_mouse_wheel(&mut self, event: &MouseWheelEventCtx) -> bool;
+   fn on_keyboard(&mut self, event: &KeyboardEventCtx) -> bool;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

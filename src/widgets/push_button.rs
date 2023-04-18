@@ -128,8 +128,7 @@ where
       Widget::inherit(
          |vt| {
             vt.on_draw = Self::on_draw;
-            vt.on_mouse_enter = Self::on_mouse_enter;
-            vt.on_mouse_leave = Self::on_mouse_leave;
+            vt.on_mouse_cross = Self::on_mouse_cross;
             vt.on_mouse_button = Self::on_mouse_button;
 
             Self {
@@ -214,14 +213,9 @@ where
       }
    }
 
-   pub fn on_mouse_enter(w: &mut Widget<Self>) {
+   pub fn on_mouse_cross(w: &mut Widget<Self>, enter: bool) {
       w.base().request_draw();
-      w.inherited_obj_mut().state.is_hover = true;
-   }
-
-   pub fn on_mouse_leave(w: &mut Widget<Self>) {
-      w.base().request_draw();
-      w.inherited_obj_mut().state.is_hover = false;
+      w.inherited_obj_mut().state.is_hover = enter;
    }
 
    pub fn on_mouse_button(w: &mut Widget<Self>, event: &MouseButtonsEventCtx) -> bool {

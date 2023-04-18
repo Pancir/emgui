@@ -554,7 +554,7 @@ impl Dispatcher {
                let internal = widget.base_mut();
 
                internal.set_over(false);
-               widget.on_mouse_leave();
+               widget.on_mouse_cross(false);
                self.inner.widget_mouse_over = None;
             }
          }
@@ -613,7 +613,7 @@ impl Dispatcher {
                      let internal = widget.base_mut();
 
                      internal.set_over(false);
-                     widget.on_mouse_leave();
+                     widget.on_mouse_cross(false);
                   }
                }
 
@@ -622,7 +622,7 @@ impl Dispatcher {
                // now enter mouse event is needed so, we again trying to borrow.
                match input_child.widget_mut() {
                   Ok(mut child) => {
-                     child.on_mouse_enter();
+                     child.on_mouse_cross(true);
                      // checking buttons pressing does not make sense in this location.
                      if child.base().has_mouse_tracking() {
                         child.on_mouse_move(event);
@@ -919,8 +919,10 @@ mod tests {
       pub fn new(rect: Rect<f32>) -> WidgetRefOwner {
          Widget::inherit(
             |vt| {
-               vt.on_mouse_enter = |w: &mut Widget<Self>| w.inherited_obj_mut().mouse_enter += 1;
-               vt.on_mouse_leave = |w: &mut Widget<Self>| w.inherited_obj_mut().mouse_leave += 1;
+               vt.on_mouse_cross = |w: &mut Widget<Self>, enter| match enter {
+                  true => w.inherited_obj_mut().mouse_enter += 1,
+                  false => w.inherited_obj_mut().mouse_leave += 1,
+               };
                Self { mouse_enter: 0, mouse_leave: 0 }
             },
             |w| {
