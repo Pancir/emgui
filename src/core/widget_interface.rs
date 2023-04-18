@@ -63,6 +63,30 @@ pub trait IWidget: Any + 'static {
 
    //---------------------------------------
 
+   /// Alias for [Self::set_visible(true)]
+   #[inline]
+   fn show(&mut self) {
+      self.set_visible(true);
+   }
+
+   /// Alias for [Self::set_visible(false)]
+   #[inline]
+   fn hide(&mut self) {
+      self.set_visible(false);
+   }
+
+   /// Alias for [Self::set_enabled(true)]
+   #[inline]
+   fn enable(&mut self) {
+      self.set_enabled(true);
+   }
+
+   /// Alias for [Self::set_enabled(false)]
+   #[inline]
+   fn disable(&mut self) {
+      self.set_enabled(false);
+   }
+
    fn set_visible(&mut self, state: bool);
    fn set_enabled(&mut self, state: bool);
    fn set_transparent(&mut self, state: bool);
