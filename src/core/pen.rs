@@ -33,7 +33,7 @@ impl Pen {
    }
 
    #[inline]
-   pub fn width(&self) -> f32 {
+   pub const fn width(&self) -> f32 {
       self.width
    }
 
@@ -60,7 +60,7 @@ impl Pen {
    }
 
    #[inline]
-   pub fn brush(&self) -> &Brush {
+   pub const fn brush(&self) -> &Brush {
       &self.brush
    }
 }

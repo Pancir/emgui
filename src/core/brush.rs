@@ -31,7 +31,7 @@ impl Brush {
 
    #[inline]
    // TODO remove when code is ready for it
-   pub fn raw(&self) -> &Paint {
+   pub const fn raw(&self) -> &Paint {
       &self.p
    }
 }

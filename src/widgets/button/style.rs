@@ -22,6 +22,16 @@ impl<'internal> ButtonStyleState<'internal> {
    }
 
    #[inline]
+   pub fn is_enabled(&self) -> bool {
+      unimplemented!()
+   }
+
+   #[inline]
+   pub fn has_focus(&self) -> bool {
+      unimplemented!()
+   }
+
+   #[inline]
    pub fn rect(&self) -> Rect<f32> {
       self.base.geometry().rect()
    }
