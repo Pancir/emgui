@@ -1,7 +1,7 @@
 pub mod handler;
 pub mod style;
 
-use self::style::ButtonStyleSheet;
+use self::style::{ButtonStyleSheet, ButtonStyleState};
 use super::handler::IButtonHandler;
 use crate::core::events::{
    DrawEventCtx, KeyboardEventCtx, LayoutEventCtx, LifecycleEventCtx, MouseButtonsEventCtx,
@@ -9,8 +9,9 @@ use crate::core::events::{
 };
 use crate::core::{IWidget, WidgetBase, WidgetVt};
 use crate::elements::Icon;
-use sim_draw::{color::Rgba, m::Rect};
-use sim_draw::{Canvas, Paint};
+use bitflags::bitflags;
+use sim_draw::m::Rect;
+use sim_draw::Canvas;
 use sim_input::mouse::MouseState;
 use std::borrow::Cow;
 use std::rc::Rc;
@@ -18,12 +19,25 @@ use std::{any::Any, mem::MaybeUninit};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+bitflags! {
+   #[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
+   pub struct ButtonStateFlags: u8 {
+      const HAS_MENU = 1<<0;
+      const DEFAULT = 1<<1;
+      const AUTO_DEFAULT = 1<<2;
+      const HAS_FOCUS = 1<<3;
+      const MOUSE_HOVER = 1<<4;
+      const IS_DOWN = 1<<5;
+   }
+}
+
 #[derive(Default)]
 pub struct ButtonState {
+   pub text: Option<Cow<'static, str>>,
+   pub icon: Option<Icon>,
+   pub flags: ButtonStateFlags,
    pub toggle_num: u8,
    pub toggle: u8,
-   pub is_hover: bool,
-   pub is_down: bool,
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -40,8 +54,6 @@ where
 
    style: Option<Rc<dyn ButtonStyleSheet>>,
    state: ButtonState,
-   text: Option<Cow<'static, str>>,
-   icon: Option<Icon>,
 }
 
 impl<H> Button<H, ()>
@@ -84,8 +96,6 @@ where
          handler,
          style: None,
          state: ButtonState::default(),
-         text: None,
-         icon: None,
       };
 
       let inherited = vt_cb(&mut out.vtable);
@@ -98,7 +108,7 @@ where
    /// Set button text.
    #[inline]
    pub fn set_icon(&mut self, icon: Option<Icon>) {
-      self.icon = icon
+      self.state.icon = icon
    }
 
    /// Set button text.
@@ -107,7 +117,7 @@ where
    where
       T: Into<Cow<'static, str>>,
    {
-      self.text = text.map(|v| v.into())
+      self.state.text = text.map(|v| v.into())
    }
 
    /// Access to button's derive object.
@@ -280,58 +290,40 @@ where
    H: IButtonHandler + 'static,
    D: Any,
 {
-   fn on_draw(w: &mut Self, canvas: &mut Canvas, _event: &DrawEventCtx) {
-      canvas.set_paint(Paint::new_color(Rgba::GREEN.with_alpha_mul(0.5)));
-
-      if w.state.is_hover {
-         canvas.set_color(Rgba::AMBER);
-      }
-
-      if w.state.is_down {
-         canvas.set_color(Rgba::RED);
-      }
-
-      let rect = w.base.geometry().rect();
-
-      canvas.fill(&rect);
-
-      canvas.set_color(Rgba::BLACK);
-      canvas.set_aa_fringe(Some(1.0));
-      canvas.set_stroke_width(2.0);
-      canvas.stroke(&rect);
-
-      // FIXME needs a style system to fix.
-      //   if !w.state.label.text().as_ref().is_empty() {
-      //      w.state.label.on_draw(canvas);
-      //   }
+   fn on_draw(w: &mut Self, canvas: &mut Canvas, event: &DrawEventCtx) {
+      w.style.as_ref().unwrap().draw(
+         &ButtonStyleState { rect: w.base.geometry().rect(), state: &w.state },
+         canvas,
+         event,
+      )
    }
 
    pub fn on_mouse_enter(w: &mut Self) {
-      w.state.is_hover = true;
+      w.state.flags.set(ButtonStateFlags::MOUSE_HOVER, true);
       w.base.request_draw();
    }
 
    pub fn on_mouse_leave(w: &mut Self) {
-      w.state.is_hover = false;
+      w.state.flags.set(ButtonStateFlags::MOUSE_HOVER, false);
       w.base.request_draw();
    }
 
    pub fn on_mouse_button(w: &mut Self, event: &MouseButtonsEventCtx) -> bool {
       match event.input.state {
          MouseState::Pressed => {
-            if w.state.is_hover {
-               w.state.is_down = true;
+            if w.state.flags.contains(ButtonStateFlags::MOUSE_HOVER) {
+               w.state.flags.set(ButtonStateFlags::IS_DOWN, true);
                w.handler.pressed(&w.state, event.input.button);
                w.base.request_draw();
                return true;
             }
          }
          MouseState::Released => {
-            if w.state.is_down {
-               w.state.is_down = false;
+            if w.state.flags.contains(ButtonStateFlags::IS_DOWN) {
+               w.state.flags.set(ButtonStateFlags::IS_DOWN, false);
                w.handler.released(&w.state, event.input.button);
 
-               if w.state.is_hover {
+               if w.state.flags.contains(ButtonStateFlags::MOUSE_HOVER) {
                   w.state.toggle += 1;
                   if w.state.toggle == w.state.toggle_num {
                      w.state.toggle = 0;

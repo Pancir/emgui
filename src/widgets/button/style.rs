@@ -1,28 +1,12 @@
-use crate::{core::events::DrawEventCtx, elements::Icon};
-use bitflags::bitflags;
+use super::ButtonState;
+use crate::core::events::DrawEventCtx;
 use sim_draw::{m::Rect, Canvas};
-use std::borrow::Cow;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bitflags! {
-   #[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
-   pub struct ButtonStyleOption: u8 {
-      const HAS_MENU = 1<<0;
-      const DEFAULT = 1<<1;
-      const AUTO_DEFAULT = 1<<2;
-      const FOCUSED = 1<<3;
-      const MOUSE_HOVER = 1<<4;
-      const IS_DOWN = 1<<5;
-   }
-}
-
 pub struct ButtonStyleState<'internal> {
-   pub text: &'internal Option<Cow<'static, str>>,
-   pub icon: &'internal Option<Icon>,
-   pub toggle_num: u8,
-   pub toggle: u8,
-   pub options: ButtonStyleOption,
+   pub rect: Rect<f32>,
+   pub state: &'internal ButtonState,
 }
 
 pub trait ButtonStyleSheet {
@@ -36,11 +20,33 @@ pub struct ButtonStyle {}
 
 impl ButtonStyleSheet for ButtonStyle {
    fn rect(&self, state: &ButtonStyleState) -> Rect<f32> {
-      todo!()
+      state.rect
    }
 
    fn draw(&self, state: &ButtonStyleState, canvas: &mut Canvas, _event: &DrawEventCtx) {
-      todo!()
+      // canvas.set_paint(Paint::new_color(Rgba::GREEN.with_alpha_mul(0.5)));
+
+      // if w.state.is_hover {
+      //    canvas.set_color(Rgba::AMBER);
+      // }
+
+      // if w.state.is_down {
+      //    canvas.set_color(Rgba::RED);
+      // }
+
+      // let rect = w.base.geometry().rect();
+
+      // canvas.fill(&rect);
+
+      // canvas.set_color(Rgba::BLACK);
+      // canvas.set_aa_fringe(Some(1.0));
+      // canvas.set_stroke_width(2.0);
+      // canvas.stroke(&rect);
+
+      // FIXME needs a style system to fix.
+      //   if !w.state.label.text().as_ref().is_empty() {
+      //      w.state.label.on_draw(canvas);
+      //   }
    }
 }
 
