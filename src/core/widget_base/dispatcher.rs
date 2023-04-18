@@ -4,8 +4,8 @@ use crate::core::events::{
    MouseButtonsEventCtx, MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
 };
 use crate::core::widget_base::runtime::Runtime;
+use crate::core::Widget;
 use crate::core::{AppEnv, IWidget, Painter, WidgetStrongRef};
-use crate::widgets::Widget;
 use sim_input::mouse::MouseState;
 use sim_run::UpdateEvent;
 use std::time::Duration;
@@ -898,7 +898,7 @@ impl Dispatcher {
 #[cfg(test)]
 mod tests {
    use super::*;
-   use crate::widgets::Widget;
+   use crate::core::Widget;
    use sim_draw::m::Rect;
    use sim_input::mouse::MouseMoveInput;
    use sim_input::{DeviceId, Modifiers};
