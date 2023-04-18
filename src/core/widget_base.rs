@@ -9,7 +9,7 @@ use sim_draw::m::Rect;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-use super::{WidgetRef, WidgetRefOwner};
+use super::{WidgetRef, WidgetStrongRef};
 use crate::core::widget_base::runtime::Runtime;
 use crate::core::{Geometry, WidgetId};
 use crate::defines::{DEFAULT_DOUBLE_CLICK_TIME, DEFAULT_TOOL_TIP_TIME};
@@ -374,7 +374,7 @@ impl WidgetBase {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub(crate) fn add_child(parent: &WidgetRefOwner, child: WidgetRefOwner) -> WidgetRef {
+pub(crate) fn add_child(parent: &WidgetStrongRef, child: WidgetStrongRef) -> WidgetRef {
    // TODO what about runtime propagation?
 
    let w = child.as_ref();

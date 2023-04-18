@@ -1,4 +1,4 @@
-use crate::core::{WidgetId, WidgetRefOwner};
+use crate::core::{WidgetId, WidgetStrongRef};
 use crate::defines::STATIC_CHILD_NUM;
 use smallvec::SmallVec;
 use std::cell::RefMut;
@@ -14,7 +14,7 @@ enum Commands {
    Lower,
 }
 
-pub(crate) type ChildrenVec = SmallVec<[WidgetRefOwner; STATIC_CHILD_NUM]>;
+pub(crate) type ChildrenVec = SmallVec<[WidgetStrongRef; STATIC_CHILD_NUM]>;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 

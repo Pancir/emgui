@@ -10,12 +10,12 @@ use std::{
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub struct WidgetRefOwner {
+pub struct WidgetStrongRef {
    // TODO maybe Pin?
    rc: Rc<RefCell<dyn IWidget>>,
 }
 
-impl WidgetRefOwner {
+impl WidgetStrongRef {
    #[inline]
    pub(crate) fn new<W>(w: W) -> Self
    where
@@ -65,14 +65,14 @@ impl WidgetRefOwner {
    }
 }
 
-impl WidgetRefOwner {
+impl WidgetStrongRef {
    #[inline]
    pub fn as_ref(&self) -> WidgetRef {
       WidgetRef { w: Rc::downgrade(&self.rc) }
    }
 
    #[inline]
-   pub fn add_children<const NUM: usize>(&self, children: [WidgetRefOwner; NUM]) {
+   pub fn add_children<const NUM: usize>(&self, children: [WidgetStrongRef; NUM]) {
       // TODO swap implementation with add_child, it will be faster as we can only once borrow.
 
       for c in children {
@@ -81,7 +81,7 @@ impl WidgetRefOwner {
    }
 
    #[inline]
-   pub fn add_child(&self, child: WidgetRefOwner) -> WidgetRef {
+   pub fn add_child(&self, child: WidgetStrongRef) -> WidgetRef {
       super::add_child(self, child)
    }
 }
@@ -94,8 +94,8 @@ pub struct WidgetRef {
 }
 
 impl WidgetRef {
-   pub(crate) fn upgrade(&self) -> Option<WidgetRefOwner> {
-      self.w.upgrade().map(|v| WidgetRefOwner { rc: v })
+   pub(crate) fn upgrade(&self) -> Option<WidgetStrongRef> {
+      self.w.upgrade().map(|v| WidgetStrongRef { rc: v })
    }
 }
 

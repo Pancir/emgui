@@ -1,5 +1,5 @@
 use crate::core::events::{DrawEventCtx, MouseButtonsEventCtx, MouseMoveEventCtx};
-use crate::core::{IWidget, Painter, WidgetRefOwner};
+use crate::core::{IWidget, Painter, WidgetStrongRef};
 use crate::widgets::Widget;
 use sim_draw::color::Rgba;
 use sim_draw::m::{Box2, Point2, Rect};
@@ -168,8 +168,8 @@ impl<H> Slider2d<H>
 where
    H: ISlider2dHandler + 'static,
 {
-   pub fn new(handler: H, rect: Rect<f32>) -> WidgetRefOwner {
-      Self::new_flat(handler, rect).to_owner()
+   pub fn new(handler: H, rect: Rect<f32>) -> WidgetStrongRef {
+      Self::new_flat(handler, rect).to_ref()
    }
 
    pub fn new_flat(handler: H, rect: Rect<f32>) -> Widget<Self> {

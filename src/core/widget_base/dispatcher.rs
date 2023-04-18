@@ -4,7 +4,7 @@ use crate::core::events::{
    MouseButtonsEventCtx, MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
 };
 use crate::core::widget_base::runtime::Runtime;
-use crate::core::{AppEnv, IWidget, Painter, WidgetRefOwner};
+use crate::core::{AppEnv, IWidget, Painter, WidgetStrongRef};
 use crate::widgets::Widget;
 use sim_input::mouse::MouseState;
 use sim_run::UpdateEvent;
@@ -22,16 +22,16 @@ pub struct InnerDispatcher {
 
 pub struct Dispatcher {
    inner: InnerDispatcher,
-   root: WidgetRefOwner,
+   root: WidgetStrongRef,
    destroyed: bool,
 }
 
 impl Dispatcher {
    #[inline]
-   pub fn new(root: Option<WidgetRefOwner>, runtime: Runtime) -> Self {
+   pub fn new(root: Option<WidgetStrongRef>, runtime: Runtime) -> Self {
       let mut out = Self {
          inner: InnerDispatcher { runtime, widget_mouse_over: None, widget_mouse_button: None },
-         root: root.unwrap_or_else(|| Widget::inherit(|_| (), |_| ()).to_owner()),
+         root: root.unwrap_or_else(|| Widget::inherit(|_| (), |_| ()).to_ref()),
          destroyed: false,
       };
 
@@ -40,7 +40,7 @@ impl Dispatcher {
    }
 
    #[inline]
-   pub fn reinit(&mut self, root: WidgetRefOwner) {
+   pub fn reinit(&mut self, root: WidgetStrongRef) {
       if !self.destroyed {
          self.destroy();
       }
@@ -49,7 +49,7 @@ impl Dispatcher {
    }
 
    #[inline]
-   pub fn widget(&self) -> &WidgetRefOwner {
+   pub fn widget(&self) -> &WidgetStrongRef {
       &self.root
    }
 
@@ -97,7 +97,7 @@ impl Dispatcher {
       Self::emit_inner_destroy(&mut self.inner, &self.root);
    }
 
-   fn emit_inner_destroy(dispatcher: &mut InnerDispatcher, child: &WidgetRefOwner) {
+   fn emit_inner_destroy(dispatcher: &mut InnerDispatcher, child: &WidgetStrongRef) {
       Self::emit_inner_lifecycle(
          dispatcher,
          child,
@@ -111,7 +111,7 @@ impl Dispatcher {
       Self::set_runtime_to_widget_inner(self.inner.runtime.clone(), &self.root);
    }
 
-   fn set_runtime_to_widget_inner(runtime: Runtime, child: &WidgetRefOwner) {
+   fn set_runtime_to_widget_inner(runtime: Runtime, child: &WidgetStrongRef) {
       match child.widget_mut() {
          Ok(mut bor) => {
             let mut internal = bor.base_mut();
@@ -136,7 +136,7 @@ impl Dispatcher {
    #[cfg_attr(feature = "trace-dispatcher", tracing::instrument(level = "trace", skip_all))]
    fn emit_inner_lifecycle(
       dispatcher: &mut InnerDispatcher,
-      child: &WidgetRefOwner,
+      child: &WidgetStrongRef,
       event: &LifecycleEventCtx,
    ) {
       //--------------------------------------------------
@@ -184,7 +184,7 @@ impl Dispatcher {
 
    fn emit_inner_layout(
       dispatcher: &mut InnerDispatcher,
-      child: &WidgetRefOwner,
+      child: &WidgetStrongRef,
       event: &LayoutEventCtx,
    ) {
       let children = match child.widget_mut() {
@@ -217,7 +217,7 @@ impl Dispatcher {
 impl Dispatcher {
    /// This event check if there are widgets to delete and perform deleting.
    #[cfg_attr(feature = "trace-dispatcher", tracing::instrument(level = "trace", skip_all))]
-   fn emit_inner_check_delete(dispatcher: &mut InnerDispatcher, input_child: &WidgetRefOwner) {
+   fn emit_inner_check_delete(dispatcher: &mut InnerDispatcher, input_child: &WidgetStrongRef) {
       //--------------------------------------------------
       let (state_flags, id, _rect, _mouse_btn_num, _has_mouse_tracking) =
          input_child.data_for_dispatcher();
@@ -301,7 +301,7 @@ impl Dispatcher {
 
    fn emit_inner_update(
       dispatcher: &mut InnerDispatcher,
-      child: &WidgetRefOwner,
+      child: &WidgetStrongRef,
       event: &UpdateEventCtx,
    ) {
       //--------------------------------------------------
@@ -384,7 +384,7 @@ impl Dispatcher {
    /// * Redraw animated.
    fn emit_inner_draw(
       dispatcher: &mut InnerDispatcher,
-      child: &WidgetRefOwner,
+      child: &WidgetStrongRef,
       canvas: &mut Painter,
       event: &DrawEventCtx,
    ) {
@@ -463,7 +463,7 @@ impl Dispatcher {
 
    fn emit_inner_draw_full(
       dispatcher: &mut InnerDispatcher,
-      input_child: &WidgetRefOwner,
+      input_child: &WidgetStrongRef,
       canvas: &mut Painter,
       event: &DrawEventCtx,
    ) {
@@ -561,7 +561,7 @@ impl Dispatcher {
 
    fn emit_inner_mouse_move(
       dispatcher: &mut InnerDispatcher,
-      input_child: &WidgetRefOwner,
+      input_child: &WidgetStrongRef,
       event: &MouseMoveEventCtx,
    ) -> bool {
       //--------------------------------------------------
@@ -692,7 +692,7 @@ impl Dispatcher {
 
    fn emit_inner_mouse_button(
       dispatcher: &mut InnerDispatcher,
-      input_child: &WidgetRefOwner,
+      input_child: &WidgetStrongRef,
       event: &MouseButtonsEventCtx,
    ) -> bool {
       //--------------------------------------------------
@@ -762,7 +762,7 @@ impl Dispatcher {
 
    fn emit_inner_mouse_wheel(
       dispatcher: &mut InnerDispatcher,
-      child: &WidgetRefOwner,
+      child: &WidgetStrongRef,
       event: &MouseWheelEventCtx,
    ) -> bool {
       //--------------------------------------------------
@@ -826,7 +826,7 @@ impl Dispatcher {
 
    pub fn emit_inner_keyboard(
       dispatcher: &mut InnerDispatcher,
-      child: &WidgetRefOwner,
+      child: &WidgetStrongRef,
       event: &KeyboardEventCtx,
    ) -> bool {
       //--------------------------------------------------
@@ -882,7 +882,7 @@ impl Dispatcher {
 
 impl Dispatcher {
    #[cfg_attr(feature = "trace-dispatcher", tracing::instrument(level = "trace", skip_all))]
-   fn inform_lost_children(dispatcher: &mut InnerDispatcher, children: &[WidgetRefOwner]) {
+   fn inform_lost_children(dispatcher: &mut InnerDispatcher, children: &[WidgetStrongRef]) {
       for child in children {
          Self::emit_inner_lifecycle(
             dispatcher,
@@ -911,7 +911,7 @@ mod tests {
    }
 
    impl TestWidget {
-      pub fn new(rect: Rect<f32>) -> WidgetRefOwner {
+      pub fn new(rect: Rect<f32>) -> WidgetStrongRef {
          Widget::inherit(
             |vt| {
                vt.on_mouse_cross = |w: &mut Widget<Self>, enter| match enter {
@@ -924,7 +924,7 @@ mod tests {
                w.set_rect(rect);
             },
          )
-         .to_owner()
+         .to_ref()
       }
    }
 
