@@ -1,10 +1,14 @@
 //! [css_examples](https://www.w3schools.com/css/css_examples.asp)
 
 mod theme;
+mod theme_colors;
 mod theme_extensions;
+mod theme_fonts;
 
 pub use theme::*;
+pub use theme_colors::*;
 pub use theme_extensions::*;
+pub use theme_fonts::*;
 
 // use sim_draw::color::Rgba8;
 // use sim_draw::{Canvas, FontStyle, TextPaint};

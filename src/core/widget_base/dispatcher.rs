@@ -29,13 +29,9 @@ pub struct Dispatcher {
 
 impl Dispatcher {
    #[inline]
-   pub fn new(root: Option<WidgetRefOwner>) -> Self {
+   pub fn new(root: Option<WidgetRefOwner>, runtime: Runtime) -> Self {
       let mut out = Self {
-         inner: InnerDispatcher {
-            runtime: Runtime::new(),
-            widget_mouse_over: None,
-            widget_mouse_button: None,
-         },
+         inner: InnerDispatcher { runtime, widget_mouse_over: None, widget_mouse_button: None },
          root: root.unwrap_or_else(|| Widget::inherit(|_| (), |_| ()).to_owner()),
          destroyed: false,
       };
@@ -977,7 +973,7 @@ mod tests {
       let root = TestWidget::new(Rect::new(0.0, 0.0, 200.0, 200.0));
       let child = TestWidget::new(Rect::new(50.0, 50.0, 100.0, 100.0));
 
-      let mut dispatcher = Dispatcher::new(Some(root.clone()));
+      let mut dispatcher = Dispatcher::new(Some(root.clone()), Runtime::default());
       dispatcher.widget().add_child(child.clone());
       //----------------------
       dispatcher.emit_mouse_move(&mouse_move_ctx(-10.0, 100.0));

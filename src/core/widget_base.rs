@@ -117,6 +117,12 @@ impl WidgetBase {
       &self.parent
    }
 
+   /// Get runtime.
+   #[inline]
+   pub fn runtime(&self) -> &Option<Runtime> {
+      &self.runtime
+   }
+
    /// Unique id of the widget.
    #[inline]
    pub fn id(&self) -> WidgetId {
