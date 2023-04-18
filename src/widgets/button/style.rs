@@ -1,17 +1,21 @@
 use super::ButtonState;
-use crate::core::events::DrawEventCtx;
+use crate::core::WidgetBase;
 use sim_draw::{m::Rect, Canvas};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub struct ButtonStyleState<'internal> {
-   pub rect: Rect<f32>,
+   pub base: &'internal WidgetBase,
    pub state: &'internal ButtonState,
+   pub canvas: &'internal mut Canvas,
 }
 
 pub trait ButtonStyleSheet {
-   fn rect(&self, state: &ButtonStyleState) -> Rect<f32>;
-   fn draw(&self, state: &ButtonStyleState, canvas: &mut Canvas, _event: &DrawEventCtx);
+   fn rect(&self, state: &ButtonStyleState) -> Rect<f32> {
+      state.base.geometry().rect()
+   }
+
+   fn draw(&self, state: &ButtonStyleState);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -19,11 +23,7 @@ pub trait ButtonStyleSheet {
 pub struct ButtonStyle {}
 
 impl ButtonStyleSheet for ButtonStyle {
-   fn rect(&self, state: &ButtonStyleState) -> Rect<f32> {
-      state.rect
-   }
-
-   fn draw(&self, state: &ButtonStyleState, canvas: &mut Canvas, _event: &DrawEventCtx) {
+   fn draw(&self, state: &ButtonStyleState) {
       // canvas.set_paint(Paint::new_color(Rgba::GREEN.with_alpha_mul(0.5)));
 
       // if w.state.is_hover {

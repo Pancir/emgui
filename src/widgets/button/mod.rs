@@ -281,15 +281,13 @@ where
    H: IButtonHandler + 'static,
    D: Any,
 {
-   fn on_draw(w: &mut Self, canvas: &mut Canvas, event: &DrawEventCtx) {
-      w.style.as_ref().unwrap().draw(
-         &ButtonStyleState { rect: w.base.geometry().rect(), state: &w.state },
-         canvas,
-         event,
-      )
+   fn on_draw(w: &mut Self, canvas: &mut Canvas, _event: &DrawEventCtx) {
+      if let Some(style) = &w.style {
+         style.draw(&ButtonStyleState { state: &w.state, base: &w.base, canvas })
+      }
    }
 
-   pub fn on_mouse_cross(w: &mut Self, enter: bool) {
+   pub fn on_mouse_cross(w: &mut Self, _enter: bool) {
       w.base.request_draw();
    }
 
