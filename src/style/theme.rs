@@ -1,54 +1,19 @@
-use crate::core::ThemeExtensions;
-use sim_draw::Canvas;
+use super::ThemeExtensions;
+use crate::widgets::style::{ButtonStyle, ButtonStyleSheet};
+use std::rc::Rc;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#[derive(Default)]
 pub struct Theme {
    pub extensions: ThemeExtensions,
+
+   pub button: Rc<dyn ButtonStyleSheet>,
 }
 
-impl Theme {
-   pub fn default_dark() -> Self {
-      Self { extensions: Default::default() }
+impl Default for Theme {
+   fn default() -> Self {
+      Self { extensions: Default::default(), button: Rc::new(ButtonStyle {}) }
    }
 }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-pub struct FnCell<F>(F);
-
-impl<F> FnCell<F> {
-   pub const fn new(f: F) -> Self {
-      Self(f)
-   }
-
-   pub fn get(&self) -> F {
-      unimplemented!()
-   }
-
-   pub fn set(&self, _f: F) {
-      unimplemented!()
-   }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-pub struct Common {
-   pub is_focused: bool,
-   pub is_hover: bool,
-   pub is_down: bool,
-}
-
-pub struct Button {
-   pub base: Common,
-   pub toggle: u8,
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-fn button(b: &Button, c: &mut Canvas) {}
-
-pub static BUTTON: FnCell<fn(&Button, &mut Canvas)> = FnCell::new(button);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

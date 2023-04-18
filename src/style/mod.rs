@@ -1,8 +1,10 @@
 //! [css_examples](https://www.w3schools.com/css/css_examples.asp)
 
-mod button;
+mod theme;
+mod theme_extensions;
 
-pub use button::*;
+pub use theme::*;
+pub use theme_extensions::*;
 
 // use sim_draw::color::Rgba8;
 // use sim_draw::{Canvas, FontStyle, TextPaint};
