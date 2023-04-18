@@ -164,7 +164,7 @@ where
 {
    fn on_draw(w: &mut Self, canvas: &mut Painter, _event: &DrawEventCtx) {
       if let Some(style) = &w.style {
-         style.draw(&mut ButtonStyleState { state: &w.state, base: &w.base, canvas })
+         style.draw(&mut ButtonStyleState { state: &w.state, base: &w.base, painter: canvas })
       }
    }
 
