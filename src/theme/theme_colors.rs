@@ -8,7 +8,7 @@ pub struct ThemeColors {
    ///
    /// ```
    /// use sim_draw::color::Rgba;
-   /// use sim_ui::style::ThemeColors;
+   /// use sim_ui::theme::ThemeColors;
    ///
    /// #[repr(usize)]
    /// enum MyColors {

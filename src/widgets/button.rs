@@ -157,6 +157,54 @@ where
    }
 }
 
+impl<H, D> Button<H, D>
+where
+   H: IButtonHandler + 'static,
+   D: Any,
+{
+   fn on_draw(w: &mut Self, canvas: &mut Painter, _event: &DrawEventCtx) {
+      if let Some(style) = &w.style {
+         style.draw(&mut ButtonStyleState { state: &w.state, base: &w.base, canvas })
+      }
+   }
+
+   pub fn on_mouse_cross(w: &mut Self, _enter: bool) {
+      w.base.request_draw();
+   }
+
+   pub fn on_mouse_button(w: &mut Self, event: &MouseButtonsEventCtx) -> bool {
+      match event.input.state {
+         MouseState::Pressed => {
+            if w.base.is_over() {
+               w.state.flags.set(ButtonStateFlags::IS_DOWN, true);
+               w.handler.pressed(&w.state, event.input.button);
+               w.base.request_draw();
+               return true;
+            }
+         }
+         MouseState::Released => {
+            if w.state.flags.contains(ButtonStateFlags::IS_DOWN) {
+               w.state.flags.set(ButtonStateFlags::IS_DOWN, false);
+               w.handler.released(&w.state, event.input.button);
+
+               if w.base.is_over() {
+                  w.state.toggle += 1;
+                  if w.state.toggle == w.state.toggle_num {
+                     w.state.toggle = 0;
+                  }
+
+                  w.handler.click(&w.state);
+               }
+               w.base.request_draw();
+               return true;
+            }
+         }
+      }
+
+      false
+   }
+}
+
 impl<H, D: 'static> IWidget for Button<H, D>
 where
    H: IButtonHandler + 'static,
@@ -272,54 +320,6 @@ where
    tracing::instrument(skip(self, event), fields(WidgetID = self.base().id().raw()), ret))]
    fn on_keyboard(&mut self, event: &KeyboardEventCtx) -> bool {
       (self.vtable.on_keyboard)(self, event)
-   }
-}
-
-impl<H, D> Button<H, D>
-where
-   H: IButtonHandler + 'static,
-   D: Any,
-{
-   fn on_draw<'a>(w: &mut Self, canvas: &mut Painter, _event: &DrawEventCtx) {
-      if let Some(style) = &w.style {
-         style.draw(&mut ButtonStyleState { state: &w.state, base: &w.base, canvas })
-      }
-   }
-
-   pub fn on_mouse_cross(w: &mut Self, _enter: bool) {
-      w.base.request_draw();
-   }
-
-   pub fn on_mouse_button(w: &mut Self, event: &MouseButtonsEventCtx) -> bool {
-      match event.input.state {
-         MouseState::Pressed => {
-            if w.base.is_over() {
-               w.state.flags.set(ButtonStateFlags::IS_DOWN, true);
-               w.handler.pressed(&w.state, event.input.button);
-               w.base.request_draw();
-               return true;
-            }
-         }
-         MouseState::Released => {
-            if w.state.flags.contains(ButtonStateFlags::IS_DOWN) {
-               w.state.flags.set(ButtonStateFlags::IS_DOWN, false);
-               w.handler.released(&w.state, event.input.button);
-
-               if w.base.is_over() {
-                  w.state.toggle += 1;
-                  if w.state.toggle == w.state.toggle_num {
-                     w.state.toggle = 0;
-                  }
-
-                  w.handler.click(&w.state);
-               }
-               w.base.request_draw();
-               return true;
-            }
-         }
-      }
-
-      false
    }
 }
 

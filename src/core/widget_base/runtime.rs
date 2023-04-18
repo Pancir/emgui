@@ -1,6 +1,6 @@
 use crate::core::widget_base::focus::FocusManager;
 use crate::defines::{DEFAULT_DOUBLE_CLICK_TIME, DEFAULT_TOOL_TIP_TIME};
-use crate::style::Theme;
+use crate::theme::Theme;
 use std::cell::Cell;
 use std::rc::Rc;
 use std::time::Duration;
