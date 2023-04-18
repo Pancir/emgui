@@ -1,9 +1,9 @@
+use super::Painter;
 use crate::core::events::{
    DrawEventCtx, KeyboardEventCtx, LayoutEventCtx, LifecycleEventCtx, MouseButtonsEventCtx,
    MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
 };
 use sim_draw::m::Rect;
-use sim_draw::Canvas;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -34,7 +34,7 @@ pub struct WidgetVt<W> {
    /// It is called when there is a request to update.
    pub on_update: fn(w: &mut W, &UpdateEventCtx),
    /// It is called whenever the widget must be re-drawn,
-   pub on_draw: fn(w: &mut W, &mut Canvas, &DrawEventCtx),
+   pub on_draw: fn(w: &mut W, &mut Painter, &DrawEventCtx),
    //-------------------------------------------------
    /// It is called when the mouse cursor enters or leave the widget.
    ///

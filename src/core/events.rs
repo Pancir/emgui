@@ -1,7 +1,7 @@
 use super::WidgetRef;
 use crate::core::AppEnv;
 use sim_draw::m::Rect;
-use std::fmt::Formatter;
+use std::{fmt::Formatter, time::Duration};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -59,6 +59,7 @@ pub struct UpdateEventCtx<'a> {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub struct DrawEventCtx<'env> {
+   pub abs_time: Duration,
    pub region: Option<Rect<f32>>,
    pub env: &'env mut AppEnv,
 }

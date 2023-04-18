@@ -1,11 +1,10 @@
-use super::WidgetRefOwner;
+use super::{Painter, WidgetRefOwner};
 use crate::core::events::{
    DrawEventCtx, KeyboardEventCtx, LayoutEventCtx, LifecycleEventCtx, MouseButtonsEventCtx,
    MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
 };
 use crate::core::widget_base::WidgetBase;
 use sim_draw::m::Rect;
-use sim_draw::Canvas;
 use std::any::Any;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -72,7 +71,7 @@ pub trait IWidget: Any + 'static {
 
    fn on_lifecycle(&mut self, event: &LifecycleEventCtx);
    fn on_layout(&mut self, event: &LayoutEventCtx);
-   fn on_draw(&mut self, canvas: &mut Canvas, _event: &DrawEventCtx);
+   fn on_draw(&mut self, canvas: &mut Painter, _event: &DrawEventCtx);
    fn on_update(&mut self, _event: &UpdateEventCtx);
    fn on_mouse_cross(&mut self, enter: bool);
    fn on_mouse_move(&mut self, event: &MouseMoveEventCtx) -> bool;

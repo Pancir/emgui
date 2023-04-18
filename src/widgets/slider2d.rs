@@ -1,9 +1,9 @@
 use crate::core::events::{DrawEventCtx, MouseButtonsEventCtx, MouseMoveEventCtx};
-use crate::core::{IWidget, WidgetRefOwner};
+use crate::core::{IWidget, Painter, WidgetRefOwner};
 use crate::widgets::Widget;
 use sim_draw::color::Rgba;
 use sim_draw::m::{Box2, Point2, Rect};
-use sim_draw::{Canvas, Paint};
+use sim_draw::Paint;
 use sim_input::mouse::{MouseButton, MouseState};
 use std::cell::RefCell;
 use std::ops::Range;
@@ -387,7 +387,7 @@ where
       Some(rect)
    }
 
-   fn on_draw(w: &mut Widget<Self>, canvas: &mut Canvas, _event: &DrawEventCtx) {
+   fn on_draw(w: &mut Widget<Self>, canvas: &mut Painter, _event: &DrawEventCtx) {
       let d = w.inherited_obj();
       let rect = w.base().geometry().rect();
 

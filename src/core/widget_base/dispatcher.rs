@@ -4,9 +4,8 @@ use crate::core::events::{
    MouseButtonsEventCtx, MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
 };
 use crate::core::widget_base::runtime::Runtime;
-use crate::core::{AppEnv, IWidget, WidgetRefOwner};
+use crate::core::{AppEnv, IWidget, Painter, WidgetRefOwner};
 use crate::widgets::Widget;
-use sim_draw::Canvas;
 use sim_input::mouse::MouseState;
 use sim_run::UpdateEvent;
 use std::time::Duration;
@@ -366,8 +365,8 @@ impl Dispatcher {
 
 impl Dispatcher {
    #[cfg_attr(feature = "trace-dispatcher", tracing::instrument(level = "trace", skip_all))]
-   pub fn emit_draw(&mut self, env: &mut AppEnv, canvas: &mut Canvas, force: bool) {
-      let ev = DrawEventCtx { env, region: None };
+   pub fn emit_draw(&mut self, env: &mut AppEnv, canvas: &mut Painter, force: bool) {
+      let ev = DrawEventCtx { env, region: None, abs_time: Duration::new(0, 0) };
       if !force {
          Self::emit_inner_draw(&mut self.inner, &self.root, canvas, &ev);
       } else {
@@ -386,7 +385,7 @@ impl Dispatcher {
    fn emit_inner_draw(
       dispatcher: &mut InnerDispatcher,
       child: &WidgetRefOwner,
-      canvas: &mut Canvas,
+      canvas: &mut Painter,
       event: &DrawEventCtx,
    ) {
       //--------------------------------------------------
@@ -465,7 +464,7 @@ impl Dispatcher {
    fn emit_inner_draw_full(
       dispatcher: &mut InnerDispatcher,
       input_child: &WidgetRefOwner,
-      canvas: &mut Canvas,
+      canvas: &mut Painter,
       event: &DrawEventCtx,
    ) {
       //--------------------------------------------------

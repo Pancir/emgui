@@ -2,10 +2,10 @@ use crate::core::events::{
    DrawEventCtx, KeyboardEventCtx, LayoutEventCtx, LifecycleEventCtx, MouseButtonsEventCtx,
    MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
 };
-use crate::core::{IWidget, WidgetBase, WidgetVt};
+use crate::core::{IWidget, Painter, WidgetBase, WidgetVt};
 use sim_draw::color::Rgba;
 use sim_draw::m::Rect;
-use sim_draw::{Canvas, Paint};
+use sim_draw::Paint;
 use std::any::Any;
 use std::mem::MaybeUninit;
 
@@ -164,7 +164,7 @@ where
 
    #[cfg_attr(feature = "trace-widget",
    tracing::instrument(skip(self, canvas, event), fields(WidgetID = self.base().id().raw(), ret)))]
-   fn on_draw(&mut self, canvas: &mut Canvas, event: &DrawEventCtx) {
+   fn on_draw(&mut self, canvas: &mut Painter, event: &DrawEventCtx) {
       (self.vtable.on_draw)(self, canvas, event);
    }
 
@@ -213,7 +213,7 @@ impl<D: 'static> Widget<D>
 where
    D: Any,
 {
-   fn on_draw(&mut self, canvas: &mut Canvas, _event: &DrawEventCtx) {
+   fn on_draw(&mut self, canvas: &mut Painter, _event: &DrawEventCtx) {
       // TODO remove over as it is for testing
       if self.base.is_over() {
          canvas.set_paint(Paint::new_color(Rgba::RED.with_alpha_mul(0.2)));

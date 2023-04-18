@@ -7,11 +7,10 @@ use crate::core::events::{
    DrawEventCtx, KeyboardEventCtx, LayoutEventCtx, LifecycleEventCtx, MouseButtonsEventCtx,
    MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
 };
-use crate::core::{IWidget, WidgetBase, WidgetVt};
+use crate::core::{IWidget, Painter, WidgetBase, WidgetVt};
 use crate::elements::Icon;
 use bitflags::bitflags;
 use sim_draw::m::Rect;
-use sim_draw::Canvas;
 use sim_input::mouse::MouseState;
 use std::borrow::Cow;
 use std::rc::Rc;
@@ -231,7 +230,7 @@ where
 
    #[cfg_attr(feature = "trace-widget",
    tracing::instrument(skip(self, canvas, event), fields(WidgetID = self.base().id().raw(), ret)))]
-   fn on_draw(&mut self, canvas: &mut Canvas, event: &DrawEventCtx) {
+   fn on_draw(&mut self, canvas: &mut Painter, event: &DrawEventCtx) {
       (self.vtable.on_draw)(self, canvas, event);
    }
 
@@ -281,9 +280,9 @@ where
    H: IButtonHandler + 'static,
    D: Any,
 {
-   fn on_draw(w: &mut Self, canvas: &mut Canvas, _event: &DrawEventCtx) {
+   fn on_draw<'a>(w: &mut Self, canvas: &mut Painter, _event: &DrawEventCtx) {
       if let Some(style) = &w.style {
-         style.draw(&ButtonStyleState { state: &w.state, base: &w.base, canvas })
+         style.draw(&mut ButtonStyleState { state: &w.state, base: &w.base, canvas })
       }
    }
 

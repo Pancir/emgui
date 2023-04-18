@@ -1,10 +1,10 @@
 use crate::core::events::{DrawEventCtx, MouseButtonsEventCtx};
-use crate::core::{IWidget, WidgetRefOwner};
+use crate::core::{IWidget, Painter, WidgetRefOwner};
 use crate::elements::LineLabel;
 use crate::widgets::Widget;
 use sim_draw::color::Rgba;
 use sim_draw::m::Rect;
-use sim_draw::{Canvas, Paint, TextAlign, TextPaint};
+use sim_draw::{Paint, TextAlign, TextPaint};
 use sim_input::mouse::{MouseButton, MouseState};
 use std::borrow::Cow;
 
@@ -186,7 +186,7 @@ impl<H> PushButton<H>
 where
    H: IPushButtonHandler + 'static,
 {
-   fn on_draw(w: &mut Widget<Self>, canvas: &mut Canvas, _event: &DrawEventCtx) {
+   fn on_draw(w: &mut Widget<Self>, canvas: &mut Painter, _event: &DrawEventCtx) {
       let d = w.inherited_obj();
 
       canvas.set_paint(Paint::new_color(Rgba::GREEN.with_alpha_mul(0.5)));
