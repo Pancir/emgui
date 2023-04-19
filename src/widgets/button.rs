@@ -9,6 +9,8 @@ use crate::core::events::{
 };
 use crate::core::{IWidget, Painter, WidgetBase, WidgetVt};
 use crate::elements::Icon;
+use crate::theme::ButtonDefined;
+use anyhow::bail;
 use bitflags::bitflags;
 use sim_draw::m::Rect;
 use sim_input::mouse::MouseState;
@@ -30,6 +32,7 @@ bitflags! {
 
 #[derive(Default)]
 pub struct ButtonState {
+   pub style_name: &'static str,
    pub text: Option<Cow<'static, str>>,
    pub icon: Option<Icon>,
    pub flags: ButtonStateFlags,
@@ -96,7 +99,7 @@ where
          },
          handler,
          style: None,
-         state: ButtonState::default(),
+         state: ButtonState { style_name: ButtonDefined::Normal.into(), ..ButtonState::default() },
       };
 
       let inherited = vt_cb(&mut out.vtable);
@@ -161,6 +164,25 @@ where
       &self.state
    }
 
+   /// Set a style by its name.
+   ///
+   /// It search the specified style in the current theme.
+   pub fn set_style<N>(&mut self, name: N) -> anyhow::Result<()>
+   where
+      N: Into<&'static str>,
+   {
+      self.state.style_name = name.into();
+      if let Some(runtime) = self.base.runtime() {
+         if let Some(style) = runtime.theme().buttons.get(self.state.style_name) {
+            self.style = Some(style);
+         } else {
+            bail!("Style with name <{}> was not found.", self.state.style_name);
+         }
+      }
+
+      Ok(())
+   }
+
    /// Set a user defined style.
    #[inline]
    pub fn set_custom_style(&mut self, style: Rc<dyn ButtonStyleSheet>) {
@@ -185,9 +207,18 @@ where
       match event.state {
          LifecycleState::RuntimeSet => {
             if !w.state.flags.contains(ButtonStateFlags::STYLE_CUSTOM) {
-               let style = w.base.runtime().unwrap().theme().button.clone();
-               w.style = Some(style);
-               w.state.flags.remove(ButtonStateFlags::STYLE_ERROR_PRINTED);
+               if let Some(style) =
+                  w.base.runtime().unwrap().theme().buttons.get(w.state.style_name)
+               {
+                  w.style = Some(style);
+                  w.state.flags.remove(ButtonStateFlags::STYLE_ERROR_PRINTED);
+               } else {
+                  w.state.flags.set(ButtonStateFlags::STYLE_ERROR_PRINTED, true);
+                  log::error!(
+                     "a button style with the name <{}> was not found",
+                     w.state.style_name
+                  );
+               }
             }
          }
          _ => {}

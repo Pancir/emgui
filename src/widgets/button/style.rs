@@ -2,7 +2,7 @@ use super::{ButtonState, ButtonStateFlags};
 use crate::{
    core::{Brush, Painter, Pen, WidgetBase},
    theme::{
-      style::{self, Style},
+      style::{self, Style, StyleBase},
       Theme,
    },
 };
@@ -52,7 +52,17 @@ pub struct ButtonStyle {
    pub text: style::Text,
 }
 
-impl Style<ButtonStyleState<'_>> for ButtonStyle {
+impl ButtonStyle {
+   pub fn new_normal() -> Self {
+      ButtonStyle::default()
+   }
+
+   pub fn new_accent() -> Self {
+      ButtonStyle::default()
+   }
+}
+
+impl StyleBase for ButtonStyle {
    fn as_any(&self) -> &dyn Any {
       self
    }
@@ -62,9 +72,11 @@ impl Style<ButtonStyleState<'_>> for ButtonStyle {
    }
 
    fn name(&self) -> &str {
-      "button_default"
+      "button"
    }
+}
 
+impl Style<ButtonStyleState<'_>> for ButtonStyle {
    fn rect(&self, data: &ButtonStyleState) -> Rect<f32> {
       data.rect()
    }

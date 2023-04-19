@@ -8,7 +8,7 @@ use sim_draw::{
    m::{EdgeInsets, Rect},
    TextAlign,
 };
-use std::any::Any;
+use std::{any::Any, rc::Rc};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -41,11 +41,9 @@ bitflags! {
    }
 }
 
-pub trait Style<Data> {
+pub trait StyleBase: Any {
    fn as_any(&self) -> &dyn Any;
    fn as_any_mut(&mut self) -> &mut dyn Any;
-
-   //---------------------------------------
 
    /// Get the style type name for debugging purposes.
    ///
@@ -66,9 +64,19 @@ pub trait Style<Data> {
       name.split('<').next().unwrap_or(name).split("::").last().unwrap_or(name)
    }
 
-   //---------------------------------------
-
+   /// Style name.
    fn name(&self) -> &str;
+
+   /// To a strong reference counter.
+   fn to_rc(self) -> Rc<Self>
+   where
+      Self: Sized,
+   {
+      Rc::new(self)
+   }
+}
+
+pub trait Style<Data>: StyleBase {
    fn rect(&self, data: &Data) -> Rect<f32>;
    fn draw_enabled(&self, theme: &Theme, data: &Data, painter: &mut Painter);
    fn draw_disabled(&self, theme: &Theme, data: &Data, painter: &mut Painter);

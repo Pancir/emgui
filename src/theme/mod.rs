@@ -4,11 +4,13 @@ pub mod style;
 
 mod theme;
 mod theme_colors;
+mod theme_elements;
 mod theme_extensions;
 mod theme_fonts;
 
 pub use theme::*;
 pub use theme_colors::*;
+pub use theme_elements::*;
 pub use theme_extensions::*;
 pub use theme_fonts::*;
 
