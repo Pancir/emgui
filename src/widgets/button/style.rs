@@ -1,5 +1,8 @@
 use super::{ButtonState, ButtonStateFlags};
-use crate::core::{Brush, Painter, Pen, WidgetBase};
+use crate::{
+   core::{Brush, Painter, Pen, WidgetBase},
+   theme::style,
+};
 use sim_draw::{color::Rgba, m::Rect};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -46,9 +49,11 @@ pub trait ButtonStyleSheet {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-///
+
 #[derive(Default)]
-pub struct ButtonStyle {}
+pub struct ButtonStyle {
+   pub text: style::Text,
+}
 
 impl ButtonStyleSheet for ButtonStyle {
    fn draw(&self, state: &mut ButtonStyleState) {

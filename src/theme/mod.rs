@@ -1,12 +1,12 @@
 //! [css_examples](https://www.w3schools.com/css/css_examples.asp)
 
-mod elements;
+pub mod style;
+
 mod theme;
 mod theme_colors;
 mod theme_extensions;
 mod theme_fonts;
 
-pub use elements::*;
 pub use theme::*;
 pub use theme_colors::*;
 pub use theme_extensions::*;
