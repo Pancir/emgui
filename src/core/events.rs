@@ -13,6 +13,10 @@ pub type MouseWheelEventCtx = sim_run::MouseWheelEvent;
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub enum LifecycleState {
+   /// After a new runtime set into the [WidgetBase] associated with the widget.
+   ///
+   /// You can access to the runtime using your base [WidgetBase::runtime] method.
+   RuntimeSet,
    /// When widget is placed into the heap a reference becomes available.
    ///
    /// You should not use it in the widget while an event is processed,
@@ -37,6 +41,7 @@ impl core::fmt::Debug for LifecycleState {
          Self::Destroy { unexpected } => {
             f.debug_struct("LifecycleEventCtx::Destroy").field("unexpected", &unexpected).finish()
          }
+         Self::RuntimeSet => f.debug_struct("LifecycleEventCtx::RuntimeSet").finish(),
       }
    }
 }

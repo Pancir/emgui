@@ -4,8 +4,8 @@ pub mod style;
 use self::style::{ButtonStyleSheet, ButtonStyleState};
 use super::handler::IButtonHandler;
 use crate::core::events::{
-   DrawEventCtx, KeyboardEventCtx, LayoutEventCtx, LifecycleEventCtx, MouseButtonsEventCtx,
-   MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
+   DrawEventCtx, KeyboardEventCtx, LayoutEventCtx, LifecycleEventCtx, LifecycleState,
+   MouseButtonsEventCtx, MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
 };
 use crate::core::{IWidget, Painter, WidgetBase, WidgetVt};
 use crate::elements::Icon;
@@ -84,6 +84,7 @@ where
          base: WidgetBase::new::<Self>(),
          inherited: unsafe { std::mem::zeroed() },
          vtable: WidgetVt {
+            on_lifecycle: Self::on_lifecycle,
             on_draw: Self::on_draw,
             on_mouse_cross: Self::on_mouse_cross,
             on_mouse_button: Self::on_mouse_button,
@@ -162,6 +163,16 @@ where
    H: IButtonHandler + 'static,
    D: Any,
 {
+   fn on_lifecycle(w: &mut Self, event: &LifecycleEventCtx) {
+      match event.state {
+         LifecycleState::RuntimeSet => {
+            let style = w.base.runtime().unwrap().theme().button.clone();
+            w.style = Some(style)
+         }
+         _ => {}
+      }
+   }
+
    fn on_draw(w: &mut Self, canvas: &mut Painter, _event: &DrawEventCtx) {
       if let Some(style) = &w.style {
          if let Some(runtime) = w.base.runtime() {

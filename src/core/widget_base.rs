@@ -119,8 +119,8 @@ impl WidgetBase {
 
    /// Get runtime.
    #[inline]
-   pub fn runtime(&self) -> &Option<Runtime> {
-      &self.runtime
+   pub fn runtime(&self) -> Option<&Runtime> {
+      self.runtime.as_ref()
    }
 
    /// Unique id of the widget.
