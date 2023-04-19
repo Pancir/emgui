@@ -1,5 +1,6 @@
+use super::Widget;
 use crate::core::events::{DrawEventCtx, MouseButtonsEventCtx};
-use crate::core::{IWidget, Painter, Widget, WidgetStrongRef};
+use crate::core::{IWidget, Painter, WidgetStrongRef};
 use crate::elements::LineLabel;
 use sim_draw::color::Rgba;
 use sim_draw::m::Rect;
