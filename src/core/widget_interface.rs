@@ -26,6 +26,8 @@ pub trait IWidget: Any + 'static {
    //---------------------------------------
 
    /// Get the widget type name for debugging purposes.
+   ///
+   /// # Note
    /// Developers should not override this method.
    #[inline]
    fn type_name(&self) -> &'static str {
@@ -34,6 +36,7 @@ pub trait IWidget: Any + 'static {
 
    /// Get the widget type name for debugging purposes.
    ///
+   /// # Note
    /// Developers should not override this method.
    #[inline]
    fn type_name_short(&self) -> &'static str {

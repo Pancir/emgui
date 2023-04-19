@@ -164,7 +164,25 @@ where
 {
    fn on_draw(w: &mut Self, canvas: &mut Painter, _event: &DrawEventCtx) {
       if let Some(style) = &w.style {
-         style.draw(&mut ButtonStyleState { state: &w.state, base: &w.base, painter: canvas })
+         if let Some(runtime) = w.base.runtime() {
+            if w.base.is_enabled() {
+               style.draw_enabled(
+                  runtime.theme(),
+                  &ButtonStyleState { state: &w.state, base: &w.base },
+                  canvas,
+               );
+            } else {
+               style.draw_disabled(
+                  runtime.theme(),
+                  &ButtonStyleState { state: &w.state, base: &w.base },
+                  canvas,
+               );
+            }
+         } else {
+            log::error!("a runtime is not set");
+         }
+      } else {
+         log::error!("a style is not set");
       }
    }
 

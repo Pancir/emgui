@@ -1,7 +1,10 @@
 use super::{ButtonState, ButtonStateFlags};
 use crate::{
    core::{Brush, Painter, Pen, WidgetBase},
-   theme::style,
+   theme::{
+      style::{self, Style},
+      Theme,
+   },
 };
 use sim_draw::{color::Rgba, m::Rect};
 
@@ -10,7 +13,6 @@ use sim_draw::{color::Rgba, m::Rect};
 pub struct ButtonStyleState<'internal> {
    pub base: &'internal WidgetBase,
    pub state: &'internal ButtonState,
-   pub painter: &'internal mut Painter,
 }
 
 impl<'internal> ButtonStyleState<'internal> {
@@ -40,13 +42,7 @@ impl<'internal> ButtonStyleState<'internal> {
    }
 }
 
-pub trait ButtonStyleSheet {
-   fn rect(&self, state: &ButtonStyleState) -> Rect<f32> {
-      state.rect()
-   }
-
-   fn draw(&self, state: &mut ButtonStyleState);
-}
+pub trait ButtonStyleSheet: for<'data> Style<ButtonStyleState<'data>> {}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -55,23 +51,35 @@ pub struct ButtonStyle {
    pub text: style::Text,
 }
 
-impl ButtonStyleSheet for ButtonStyle {
-   fn draw(&self, state: &mut ButtonStyleState) {
-      let rect = state.rect();
-      state.painter.set_brush(Brush::new_color(Rgba::GREEN.with_alpha_mul(0.5)));
+impl Style<ButtonStyleState<'_>> for ButtonStyle {
+   fn name(&self) -> &str {
+      "button_default"
+   }
 
-      if state.is_over() {
-         state.painter.set_brush(Brush::new_color(Rgba::AMBER));
+   fn rect(&self, data: &ButtonStyleState) -> Rect<f32> {
+      data.rect()
+   }
+
+   fn draw_disabled(&self, theme: &Theme, data: &ButtonStyleState, painter: &mut Painter) {
+      self.draw_enabled(theme, data, painter);
+   }
+
+   fn draw_enabled(&self, _theme: &Theme, data: &ButtonStyleState, painter: &mut Painter) {
+      let rect = data.rect();
+      painter.set_brush(Brush::new_color(Rgba::GREEN.with_alpha_mul(0.5)));
+
+      if data.is_over() {
+         painter.set_brush(Brush::new_color(Rgba::AMBER));
       }
 
-      if state.is_down() {
-         state.painter.set_brush(Brush::new_color(Rgba::RED));
+      if data.is_down() {
+         painter.set_brush(Brush::new_color(Rgba::RED));
       }
 
-      state.painter.fill(&rect);
+      painter.fill(&rect);
 
-      state.painter.set_pen(Pen::new().with_width(2.0).with_color(Rgba::BLACK));
-      state.painter.stroke(&rect);
+      painter.set_pen(Pen::new().with_width(2.0).with_color(Rgba::BLACK));
+      painter.stroke(&rect);
 
       // FIXME needs a style system to fix.
       //   if !w.state.label.text().as_ref().is_empty() {
@@ -79,5 +87,7 @@ impl ButtonStyleSheet for ButtonStyle {
       //   }
    }
 }
+
+impl ButtonStyleSheet for ButtonStyle {}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
