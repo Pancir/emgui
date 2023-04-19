@@ -1,7 +1,7 @@
 pub mod handler;
 pub mod style;
 
-use self::style::{ButtonStyleSheet, ButtonStyleState};
+use self::style::{ButtonStyleData, ButtonStyleSheet};
 use super::handler::IButtonHandler;
 use crate::core::events::{
    DrawEventCtx, KeyboardEventCtx, LayoutEventCtx, LifecycleEventCtx, LifecycleState,
@@ -231,13 +231,13 @@ where
             if w.base.is_enabled() {
                style.draw_enabled(
                   runtime.theme(),
-                  &ButtonStyleState { state: &w.state, base: &w.base },
+                  &ButtonStyleData { state: &w.state, base: &w.base },
                   canvas,
                );
             } else {
                style.draw_disabled(
                   runtime.theme(),
-                  &ButtonStyleState { state: &w.state, base: &w.base },
+                  &ButtonStyleData { state: &w.state, base: &w.base },
                   canvas,
                );
             }

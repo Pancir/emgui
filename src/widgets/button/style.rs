@@ -11,12 +11,12 @@ use std::any::Any;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub struct ButtonStyleState<'internal> {
+pub struct ButtonStyleData<'internal> {
    pub base: &'internal WidgetBase,
    pub state: &'internal ButtonState,
 }
 
-impl<'internal> ButtonStyleState<'internal> {
+impl<'internal> ButtonStyleData<'internal> {
    #[inline]
    pub fn is_over(&self) -> bool {
       self.base.is_over()
@@ -43,7 +43,7 @@ impl<'internal> ButtonStyleState<'internal> {
    }
 }
 
-pub trait ButtonStyleSheet: for<'data> Style<ButtonStyleState<'data>> {}
+pub trait ButtonStyleSheet: for<'data> Style<ButtonStyleData<'data>> {}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -76,16 +76,16 @@ impl StyleBase for ButtonStyle {
    }
 }
 
-impl Style<ButtonStyleState<'_>> for ButtonStyle {
-   fn rect(&self, data: &ButtonStyleState) -> Rect<f32> {
+impl Style<ButtonStyleData<'_>> for ButtonStyle {
+   fn rect(&self, data: &ButtonStyleData) -> Rect<f32> {
       data.rect()
    }
 
-   fn draw_disabled(&self, theme: &Theme, data: &ButtonStyleState, painter: &mut Painter) {
+   fn draw_disabled(&self, theme: &Theme, data: &ButtonStyleData, painter: &mut Painter) {
       self.draw_enabled(theme, data, painter);
    }
 
-   fn draw_enabled(&self, _theme: &Theme, data: &ButtonStyleState, painter: &mut Painter) {
+   fn draw_enabled(&self, _theme: &Theme, data: &ButtonStyleData, painter: &mut Painter) {
       let rect = data.rect();
       painter.set_brush(Brush::new_color(Rgba::GREEN.with_alpha_mul(0.5)));
 
