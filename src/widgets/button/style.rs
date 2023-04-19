@@ -1,6 +1,6 @@
-use super::{ButtonState, ButtonStateFlags};
 use crate::{
-   core::{Brush, Painter, Pen, WidgetBase},
+   core::{Brush, Painter, Pen},
+   elements::Icon,
    theme::{
       style::{self, Style, StyleBase},
       Theme,
@@ -11,39 +11,18 @@ use std::any::Any;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub struct ButtonStyleData<'internal> {
-   pub base: &'internal WidgetBase,
-   pub state: &'internal ButtonState,
+pub struct ButtonStyleData<'refs> {
+   pub text: Option<&'refs str>,
+   pub icon: Option<&'refs Icon>,
+   pub bounds: Rect<f32>,
+   pub is_hover: bool,
+   pub is_active: bool,
+   pub has_focus: bool,
+   pub toggle_num: u8,
+   pub toggle_curr: u8,
 }
 
-impl<'internal> ButtonStyleData<'internal> {
-   #[inline]
-   pub fn is_over(&self) -> bool {
-      self.base.is_over()
-   }
-
-   #[inline]
-   pub fn is_down(&self) -> bool {
-      self.state.flags.contains(ButtonStateFlags::IS_DOWN)
-   }
-
-   #[inline]
-   pub fn is_enabled(&self) -> bool {
-      unimplemented!()
-   }
-
-   #[inline]
-   pub fn has_focus(&self) -> bool {
-      unimplemented!()
-   }
-
-   #[inline]
-   pub fn rect(&self) -> Rect<f32> {
-      self.base.geometry().rect()
-   }
-}
-
-pub trait ButtonStyleSheet: for<'data> Style<ButtonStyleData<'data>> {}
+pub trait ButtonStyleSheet: for<'refs> Style<ButtonStyleData<'refs>> {}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -78,7 +57,7 @@ impl StyleBase for ButtonStyle {
 
 impl Style<ButtonStyleData<'_>> for ButtonStyle {
    fn rect(&self, data: &ButtonStyleData) -> Rect<f32> {
-      data.rect()
+      data.bounds
    }
 
    fn draw_disabled(&self, theme: &Theme, data: &ButtonStyleData, painter: &mut Painter) {
@@ -86,21 +65,20 @@ impl Style<ButtonStyleData<'_>> for ButtonStyle {
    }
 
    fn draw_enabled(&self, _theme: &Theme, data: &ButtonStyleData, painter: &mut Painter) {
-      let rect = data.rect();
       painter.set_brush(Brush::new_color(Rgba::GREEN.with_alpha_mul(0.5)));
 
-      if data.is_over() {
+      if data.is_hover {
          painter.set_brush(Brush::new_color(Rgba::AMBER));
       }
 
-      if data.is_down() {
+      if data.is_active {
          painter.set_brush(Brush::new_color(Rgba::RED));
       }
 
-      painter.fill(&rect);
+      painter.fill(&data.bounds);
 
       painter.set_pen(Pen::new().with_width(2.0).with_color(Rgba::BLACK));
-      painter.stroke(&rect);
+      painter.stroke(&data.bounds);
 
       // FIXME needs a style system to fix.
       //   if !w.state.label.text().as_ref().is_empty() {

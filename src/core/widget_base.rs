@@ -200,6 +200,11 @@ impl WidgetBase {
 }
 
 impl WidgetBase {
+   pub fn has_focus(&self) -> bool {
+      // FIXME implementation
+      false
+   }
+
    /// Check if widget is visible.
    #[inline]
    pub fn is_visible(&self) -> bool {

@@ -228,18 +228,20 @@ where
    fn on_draw(w: &mut Self, canvas: &mut Painter, _event: &DrawEventCtx) {
       if let Some(style) = &w.style {
          if let Some(runtime) = w.base.runtime() {
+            let style_data = ButtonStyleData {
+               text: w.state.text.as_ref().map(|v| v.as_ref()),
+               icon: w.state.icon.as_ref(),
+               bounds: w.base.geometry().rect(),
+               is_hover: w.base.is_over(),
+               is_active: w.state.flags.contains(ButtonStateFlags::IS_DOWN),
+               has_focus: w.base.has_focus(),
+               toggle_num: w.state.toggle_num,
+               toggle_curr: w.state.toggle,
+            };
             if w.base.is_enabled() {
-               style.draw_enabled(
-                  runtime.theme(),
-                  &ButtonStyleData { state: &w.state, base: &w.base },
-                  canvas,
-               );
+               style.draw_enabled(runtime.theme(), &style_data, canvas);
             } else {
-               style.draw_disabled(
-                  runtime.theme(),
-                  &ButtonStyleData { state: &w.state, base: &w.base },
-                  canvas,
-               );
+               style.draw_disabled(runtime.theme(), &style_data, canvas);
             }
          } else if !w.state.flags.contains(ButtonStateFlags::STYLE_ERROR_PRINTED) {
             w.state.flags.set(ButtonStateFlags::STYLE_ERROR_PRINTED, true);
@@ -416,6 +418,7 @@ mod tests {
    #[test]
    fn sizes() {
       dbg!(std::mem::size_of::<Button<ButtonHandler, ()>>());
+      dbg!(std::mem::size_of::<ButtonStyleData>());
       dbg!(std::mem::size_of::<ButtonStyle>());
    }
 }
