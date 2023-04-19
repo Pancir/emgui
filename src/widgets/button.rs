@@ -21,8 +21,8 @@ use std::{any::Any, mem::MaybeUninit};
 bitflags! {
    #[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
    pub struct ButtonStateFlags: u8 {
-      const HAS_MENU = 1<<0;
-      const DEFAULT = 1<<1;
+      const STYLE_ERROR_PRINTED = 1<<0;
+      const STYLE_CUSTOM = 1<<1;
       const AUTO_DEFAULT = 1<<2;
       const IS_DOWN = 1<<5;
    }
@@ -53,19 +53,23 @@ where
    state: ButtonState,
 }
 
+impl<H, D> Default for Button<H, D>
+where
+   H: Default + IButtonHandler + 'static,
+   D: Default + Any,
+{
+   fn default() -> Self {
+      Self::inherit(|_| (D::default()), |_| {}, H::default())
+   }
+}
+
 impl<H> Button<H, ()>
 where
    H: IButtonHandler + 'static,
 {
    /// Construct new button.
-   pub fn new<T>(handler: H, text: Option<T>, icon: Option<Icon>) -> Self
-   where
-      T: Into<Cow<'static, str>>,
-   {
-      let mut out = Self::inherit(|_| (), |_| {}, handler);
-      out.set_text(text);
-      out.set_icon(icon);
-      out
+   pub fn new(handler: H) -> Self {
+      Self::inherit(|_| (), |_| {}, handler)
    }
 }
 
@@ -156,6 +160,20 @@ where
    pub fn state(&self) -> &ButtonState {
       &self.state
    }
+
+   /// Set a user defined style.
+   #[inline]
+   pub fn set_custom_style(&mut self, style: Rc<dyn ButtonStyleSheet>) {
+      self.style = Some(style);
+      self.state.flags.set(ButtonStateFlags::STYLE_CUSTOM, true);
+      self.state.flags.remove(ButtonStateFlags::STYLE_ERROR_PRINTED);
+   }
+
+   /// Get current style.
+   #[inline]
+   pub fn style(&self) -> Option<Rc<dyn ButtonStyleSheet>> {
+      self.style.clone()
+   }
 }
 
 impl<H, D> Button<H, D>
@@ -166,8 +184,11 @@ where
    fn on_lifecycle(w: &mut Self, event: &LifecycleEventCtx) {
       match event.state {
          LifecycleState::RuntimeSet => {
-            let style = w.base.runtime().unwrap().theme().button.clone();
-            w.style = Some(style)
+            if !w.state.flags.contains(ButtonStateFlags::STYLE_CUSTOM) {
+               let style = w.base.runtime().unwrap().theme().button.clone();
+               w.style = Some(style);
+               w.state.flags.remove(ButtonStateFlags::STYLE_ERROR_PRINTED);
+            }
          }
          _ => {}
       }
@@ -189,10 +210,12 @@ where
                   canvas,
                );
             }
-         } else {
+         } else if !w.state.flags.contains(ButtonStateFlags::STYLE_ERROR_PRINTED) {
+            w.state.flags.set(ButtonStateFlags::STYLE_ERROR_PRINTED, true);
             log::error!("a runtime is not set");
          }
-      } else {
+      } else if !w.state.flags.contains(ButtonStateFlags::STYLE_ERROR_PRINTED) {
+         w.state.flags.set(ButtonStateFlags::STYLE_ERROR_PRINTED, true);
          log::error!("a style is not set");
       }
    }

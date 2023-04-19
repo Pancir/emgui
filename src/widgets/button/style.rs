@@ -7,6 +7,7 @@ use crate::{
    },
 };
 use sim_draw::{color::Rgba, m::Rect};
+use std::any::Any;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -52,6 +53,14 @@ pub struct ButtonStyle {
 }
 
 impl Style<ButtonStyleState<'_>> for ButtonStyle {
+   fn as_any(&self) -> &dyn Any {
+      self
+   }
+
+   fn as_any_mut(&mut self) -> &mut dyn Any {
+      self
+   }
+
    fn name(&self) -> &str {
       "button_default"
    }

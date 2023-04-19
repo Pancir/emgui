@@ -1,5 +1,6 @@
 //! [developer.mozilla.org]<https://developer.mozilla.org/en-US/docs/Learn/CSS>
 
+use super::Theme;
 use crate::core::{Brush, Font, Painter};
 use bitflags::bitflags;
 use sim_draw::{
@@ -7,8 +8,7 @@ use sim_draw::{
    m::{EdgeInsets, Rect},
    TextAlign,
 };
-
-use super::Theme;
+use std::any::Any;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -42,6 +42,11 @@ bitflags! {
 }
 
 pub trait Style<Data> {
+   fn as_any(&self) -> &dyn Any;
+   fn as_any_mut(&mut self) -> &mut dyn Any;
+
+   //---------------------------------------
+
    /// Get the style type name for debugging purposes.
    ///
    /// # Note
