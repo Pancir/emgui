@@ -1,29 +1,39 @@
+//! [developer.mozilla.org]<https://developer.mozilla.org/en-US/docs/Learn/CSS>
+
 use crate::core::{Brush, Font};
-use sim_draw::{color::Rgba, TextAlign};
+use sim_draw::{color::Rgba, m::EdgeInsets, TextAlign};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#[derive(Default)]
-pub struct Margin {
-   pub left: f32,
-   pub right: f32,
-   pub top: f32,
-   pub bottom: f32,
+pub struct Style {
+   pub background: Option<Background>,
+   pub border: Option<Border>,
+   pub edge_insets: EdgeInsets<f32>,
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub struct Text {
    pub font: Font,
+   pub color: Rgba,
    pub align: TextAlign,
-   pub margin: Margin,
+   pub edge_insets: EdgeInsets<f32>,
 }
 
 impl Default for Text {
    fn default() -> Self {
-      Self { font: Font::default(), align: TextAlign::default(), margin: Margin::default() }
+      Self {
+         font: Font::default(),
+         color: Rgba::RED,
+         align: TextAlign::default(),
+         edge_insets: EdgeInsets::ZERO,
+      }
    }
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+pub struct Border {}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -42,6 +52,19 @@ impl Background {
 
    pub const fn brush(&self) -> &Brush {
       &self.brush
+   }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#[cfg(test)]
+mod tests {
+   use super::*;
+
+   #[test]
+   fn sizes() {
+      dbg!(std::mem::size_of::<Text>());
+      dbg!(std::mem::size_of::<Background>());
    }
 }
 
