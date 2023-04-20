@@ -27,6 +27,7 @@ pub struct Theme {
    pub colors: ThemeColors,
    pub fonts: ThemeFonts,
 
+   pub any: ThemeRenderObjects<dyn RenderObjectBase>,
    pub buttons: ThemeRenderObjects<dyn ButtonRenderObject>,
 
    pub extensions: ThemeExtensions,
@@ -34,6 +35,7 @@ pub struct Theme {
 
 impl Default for Theme {
    fn default() -> Self {
+      let any = ThemeRenderObjects::<dyn RenderObjectBase>::new(0);
       let mut buttons = ThemeRenderObjects::<dyn ButtonRenderObject>::new(3);
       buttons
          .register_multi([
@@ -45,6 +47,7 @@ impl Default for Theme {
       Self {
          colors: ThemeColors::default(),
          fonts: ThemeFonts::default(),
+         any,
          buttons,
          extensions: Default::default(),
       }

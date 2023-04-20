@@ -1,8 +1,11 @@
+use std::any::{Any, TypeId};
+
 use crate::{
    elements::Icon,
    render::{Painter, RenderObject, RenderObjectBase},
    theme::Theme,
 };
+use anyhow::bail;
 use m::Box2;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -29,7 +32,30 @@ pub trait ButtonRenderObject: for<'refs> RenderObject<ButtonRenderObjectData<'re
 #[derive(Default)]
 pub struct ButtonRender {}
 
-impl RenderObjectBase for ButtonRender {}
+impl RenderObjectBase for ButtonRender {
+   fn can_render(&self, type_id: TypeId) -> bool {
+      type_id == TypeId::of::<ButtonRenderObjectData>()
+   }
+
+   fn render_any_bounds(&self, theme: &Theme, data: &dyn Any) -> Option<Box2<f32>> {
+      data.downcast_ref::<ButtonRenderObjectData>().map(|data| self.render_bounds(theme, data))
+   }
+
+   fn render_any(
+      &self,
+      theme: &Theme,
+      data: &dyn Any,
+      painter: &mut Painter,
+   ) -> anyhow::Result<()> {
+      if let Some(data) = data.downcast_ref::<ButtonRenderObjectData>() {
+         self.render(theme, data, painter);
+         Ok(())
+      } else {
+         bail!("Render data is not supported by the renderer")
+      }
+   }
+}
+
 impl ButtonRenderObject for ButtonRender {}
 
 impl ButtonRender {
@@ -43,11 +69,11 @@ impl ButtonRender {
 }
 
 impl RenderObject<ButtonRenderObjectData<'_>> for ButtonRender {
-   fn rect(&self, data: &ButtonRenderObjectData) -> Box2<f32> {
+   fn render_bounds(&self, _theme: &Theme, data: &ButtonRenderObjectData) -> Box2<f32> {
       data.bounds
    }
 
-   fn draw(&self, _theme: &Theme, data: &ButtonRenderObjectData, painter: &mut Painter) {
+   fn render(&self, _theme: &Theme, _data: &ButtonRenderObjectData, _painter: &mut Painter) {
       // FIXME draw
 
       // painter.set_brush(Brush::new_color(Rgba::GREEN.with_alpha_mul(0.5)));

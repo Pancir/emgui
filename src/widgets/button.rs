@@ -245,7 +245,7 @@ where
                toggle_num: w.state.toggle_num,
                toggle_curr: w.state.toggle,
             };
-            style.draw(runtime.theme(), &data, canvas);
+            style.render(runtime.theme(), &data, canvas);
          } else if !w.state.flags.contains(ButtonStateFlags::STYLE_ERROR_PRINTED) {
             w.state.flags.set(ButtonStateFlags::STYLE_ERROR_PRINTED, true);
             log::error!("a runtime is not set");

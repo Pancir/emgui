@@ -1,11 +1,20 @@
 use super::Painter;
 use crate::{core::upcast_rc, theme::Theme};
 use m::Box2;
-use std::{any::Any, rc::Rc};
+use std::{
+   any::{Any, TypeId},
+   rc::Rc,
+};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /// Base render object type.
+///
+/// As it is almost imposable to downcast to another trait object in the Rust (in 2023-04-20),
+/// this entity has 3 functions that make it more universal to use.
+/// * [Self::can_render]
+/// * [Self::render_any_bounds]
+/// * [Self::render_any]
 pub trait RenderObjectBase: Any + upcast_rc::Upcast<dyn Any> {
    /// Get the style type name for debugging purposes.
    ///
@@ -33,6 +42,23 @@ pub trait RenderObjectBase: Any + upcast_rc::Upcast<dyn Any> {
    {
       Rc::new(self)
    }
+
+   //-----------------------------------------------
+
+   /// Check whether the specified data type can be rendered by this render object.
+   fn can_render(&self, type_id: TypeId) -> bool;
+
+   /// Render bounds
+   ///
+   /// `None` it input data is not supported.
+   fn render_any_bounds(&self, theme: &Theme, data: &dyn Any) -> Option<Box2<f32>>;
+
+   /// Render data.
+   ///
+   /// # Return
+   /// `Ok` if the specified data is not supported by this render object.
+   fn render_any(&self, theme: &Theme, data: &dyn Any, painter: &mut Painter)
+      -> anyhow::Result<()>;
 }
 
 impl<'a, T: Any + 'a> upcast_rc::UpcastFrom<T> for dyn Any + 'a {
@@ -41,15 +67,17 @@ impl<'a, T: Any + 'a> upcast_rc::UpcastFrom<T> for dyn Any + 'a {
    }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 /// Render object for certain data.
 pub trait RenderObject<Data>: RenderObjectBase {
    /// Return render bounds.
    ///
    /// The render rectangle may actually be greater or less than widget's geometry.
-   fn rect(&self, data: &Data) -> Box2<f32>;
+   fn render_bounds(&self, theme: &Theme, data: &Data) -> Box2<f32>;
 
    /// Draw widget.
-   fn draw(&self, theme: &Theme, data: &Data, painter: &mut Painter);
+   fn render(&self, theme: &Theme, data: &Data, painter: &mut Painter);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
