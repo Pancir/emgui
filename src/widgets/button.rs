@@ -10,7 +10,7 @@ use crate::core::events::{
 use crate::core::input::mouse::MouseState;
 use crate::core::{IWidget, WidgetBase, WidgetVt};
 use crate::elements::Icon;
-use crate::render::{Canvas, RenderObjectBase};
+use crate::render::Canvas;
 use crate::theme::ButtonDefined;
 use anyhow::bail;
 use bitflags::bitflags;

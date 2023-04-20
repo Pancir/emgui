@@ -1,12 +1,35 @@
 use super::{Brush, Pen};
-use crate::theme::TextAlign;
+use crate::{backend, theme::TextAlign};
 use m::{Box2, Point2};
+use std::{any::Any, rc::Rc};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub struct Canvas {
+   user_data: Option<Rc<dyn Any>>,
+   inner: Rc<dyn backend::Canvas>,
    pen: Pen,
    brush: Brush,
+}
+
+impl Canvas {
+   pub fn new<C, U>(canvas: Rc<C>, user_data: Option<Rc<U>>) -> Self
+   where
+      C: backend::Canvas + 'static,
+      U: Any,
+   {
+      let user_data: Option<Rc<dyn Any>> = user_data.map(|p| {
+         let a: Rc<dyn Any> = p;
+         a
+      });
+
+      Self { inner: canvas, user_data, pen: Pen::default(), brush: Brush::default() }
+   }
+
+   #[inline]
+   pub fn user_data(&self) -> &Option<Rc<dyn Any>> {
+      &self.user_data
+   }
 }
 
 impl Canvas {
