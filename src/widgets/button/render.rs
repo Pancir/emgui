@@ -1,7 +1,6 @@
 use crate::{
-   core::Painter,
    elements::Icon,
-   render::{RenderObject, RenderObjectBase},
+   render::{Painter, RenderObject, RenderObjectBase},
    theme::Theme,
 };
 use m::Box2;

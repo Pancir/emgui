@@ -1,7 +1,9 @@
-use super::Painter;
-use crate::core::events::{
-   DrawEventCtx, KeyboardEventCtx, LayoutEventCtx, LifecycleEventCtx, MouseButtonsEventCtx,
-   MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
+use crate::{
+   core::events::{
+      DrawEventCtx, KeyboardEventCtx, LayoutEventCtx, LifecycleEventCtx, MouseButtonsEventCtx,
+      MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
+   },
+   render::Painter,
 };
 use m::Rect;
 

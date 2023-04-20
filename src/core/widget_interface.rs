@@ -1,9 +1,10 @@
-use super::{Painter, WidgetStrongRef};
+use super::WidgetStrongRef;
 use crate::core::events::{
    DrawEventCtx, KeyboardEventCtx, LayoutEventCtx, LifecycleEventCtx, MouseButtonsEventCtx,
    MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
 };
 use crate::core::widget_base::WidgetBase;
+use crate::render::Painter;
 use m::Rect;
 use std::any::Any;
 

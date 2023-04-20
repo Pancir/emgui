@@ -1,7 +1,8 @@
 use super::Widget;
 use crate::core::events::{DrawEventCtx, MouseButtonsEventCtx, MouseMoveEventCtx};
 use crate::core::input::mouse::{MouseButton, MouseState};
-use crate::core::{IWidget, Painter, WidgetStrongRef};
+use crate::core::{IWidget, WidgetStrongRef};
+use crate::render::Painter;
 use m::{Box2, Point2, Rect};
 use std::cell::RefCell;
 use std::ops::Range;

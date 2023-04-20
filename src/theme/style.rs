@@ -1,7 +1,10 @@
 //! [developer.mozilla.org]<https://developer.mozilla.org/en-US/docs/Learn/CSS>
 
 use super::{TextAlign, Theme};
-use crate::core::{Brush, Font, Painter, Rgba};
+use crate::{
+   core::Font,
+   render::{Brush, Painter, Rgba},
+};
 use bitflags::bitflags;
 use m::{EdgeInsets, Rect};
 use std::{any::Any, rc::Rc};

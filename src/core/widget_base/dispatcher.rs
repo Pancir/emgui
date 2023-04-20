@@ -5,7 +5,8 @@ use crate::core::events::{
 };
 use crate::core::input::mouse::MouseState;
 use crate::core::widget_base::runtime::Runtime;
-use crate::core::{AppEnv, IWidget, Painter, WidgetStrongRef};
+use crate::core::{AppEnv, IWidget, WidgetStrongRef};
+use crate::render::Painter;
 use crate::widgets::Widget;
 use std::time::Duration;
 

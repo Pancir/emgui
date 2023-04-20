@@ -8,8 +8,9 @@ use crate::core::events::{
    MouseButtonsEventCtx, MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
 };
 use crate::core::input::mouse::MouseState;
-use crate::core::{IWidget, Painter, WidgetBase, WidgetVt};
+use crate::core::{IWidget, WidgetBase, WidgetVt};
 use crate::elements::Icon;
+use crate::render::Painter;
 use crate::theme::ButtonDefined;
 use anyhow::bail;
 use bitflags::bitflags;

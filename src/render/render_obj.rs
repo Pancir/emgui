@@ -1,4 +1,5 @@
-use crate::{core::Painter, theme::Theme};
+use super::Painter;
+use crate::theme::Theme;
 use m::Box2;
 use std::rc::Rc;
 
@@ -38,7 +39,7 @@ pub trait RenderObjectBase {
 pub trait RenderObject<Data>: RenderObjectBase {
    /// Return render bounds.
    ///
-   /// The render rectangle may actually be greatter or less than widget's geometry.
+   /// The render rectangle may actually be greater or less than widget's geometry.
    fn rect(&self, data: &Data) -> Box2<f32>;
 
    /// Draw enabled widget.

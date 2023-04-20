@@ -2,7 +2,8 @@ use crate::core::events::{
    DrawEventCtx, KeyboardEventCtx, LayoutEventCtx, LifecycleEventCtx, MouseButtonsEventCtx,
    MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
 };
-use crate::core::{IWidget, Painter, Rgba, WidgetBase, WidgetVt};
+use crate::core::{IWidget, WidgetBase, WidgetVt};
+use crate::render::{Painter, Rgba};
 use m::Rect;
 use std::any::Any;
 use std::mem::MaybeUninit;
