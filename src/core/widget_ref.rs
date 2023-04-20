@@ -2,7 +2,7 @@ use super::{
    events::{LifecycleEventCtx, LifecycleState},
    IWidget, StateFlags, WidgetId,
 };
-use sim_draw::m::Rect;
+use m::Rect;
 use std::{
    cell::{BorrowError, BorrowMutError, Ref, RefCell, RefMut},
    rc::{Rc, Weak},

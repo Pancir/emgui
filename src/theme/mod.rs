@@ -2,12 +2,14 @@
 
 pub mod style;
 
+mod text_align;
 mod theme;
 mod theme_colors;
 mod theme_elements;
 mod theme_extensions;
 mod theme_fonts;
 
+pub use text_align::*;
 pub use theme::*;
 pub use theme_colors::*;
 pub use theme_elements::*;

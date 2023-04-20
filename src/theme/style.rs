@@ -1,13 +1,9 @@
 //! [developer.mozilla.org]<https://developer.mozilla.org/en-US/docs/Learn/CSS>
 
-use super::Theme;
-use crate::core::{Brush, Font, Painter};
+use super::{TextAlign, Theme};
+use crate::core::{Brush, Font, Painter, Rgba};
 use bitflags::bitflags;
-use sim_draw::{
-   color::Rgba,
-   m::{EdgeInsets, Rect},
-   TextAlign,
-};
+use m::{EdgeInsets, Rect};
 use std::{any::Any, rc::Rc};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

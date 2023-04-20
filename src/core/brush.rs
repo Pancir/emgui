@@ -1,11 +1,9 @@
-use sim_draw::{color::Rgba, Paint};
+use super::Rgba;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #[derive(Clone, Copy)]
-pub struct Brush {
-   p: Paint,
-}
+pub struct Brush {}
 
 impl Default for Brush {
    fn default() -> Self {
@@ -21,18 +19,12 @@ impl Brush {
 
    #[inline]
    pub const fn new_color(color: Rgba) -> Self {
-      Self { p: Paint::new_color(color) }
+      unimplemented!()
    }
 
    #[inline]
    pub fn set_color(&mut self, color: Rgba) {
       *self = Self::new_color(color);
-   }
-
-   #[inline]
-   // TODO remove when code is ready for it
-   pub const fn raw(&self) -> &Paint {
-      &self.p
    }
 }
 

@@ -4,7 +4,7 @@ use crate::core::events::{
    MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
 };
 use crate::core::widget_base::WidgetBase;
-use sim_draw::m::Rect;
+use m::Rect;
 use std::any::Any;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

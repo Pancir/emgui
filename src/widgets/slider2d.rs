@@ -1,10 +1,8 @@
 use super::Widget;
 use crate::core::events::{DrawEventCtx, MouseButtonsEventCtx, MouseMoveEventCtx};
+use crate::core::input::mouse::{MouseButton, MouseState};
 use crate::core::{IWidget, Painter, WidgetStrongRef};
-use sim_draw::color::Rgba;
-use sim_draw::m::{Box2, Point2, Rect};
-use sim_draw::Paint;
-use sim_input::mouse::{MouseButton, MouseState};
+use m::{Box2, Point2, Rect};
 use std::cell::RefCell;
 use std::ops::Range;
 use std::rc::Rc;
@@ -388,25 +386,27 @@ where
    }
 
    fn on_draw(w: &mut Widget<Self>, canvas: &mut Painter, _event: &DrawEventCtx) {
-      let d = w.inherited_obj();
-      let rect = w.base().geometry().rect();
+      // FIXME draw
 
-      canvas.set_paint(Paint::new_color(Rgba::AMBER));
-      canvas.fill(&rect);
+      // let d = w.inherited_obj();
+      // let rect = w.base().geometry().rect();
 
-      canvas.set_paint(Paint::new_color(Rgba::GRAY));
-      canvas.fill(&d.state.grab_area);
+      // canvas.set_paint(Paint::new_color(Rgba::AMBER));
+      // canvas.fill(&rect);
 
-      // let w_pos = d.state.handle_position + rect.pos();
-      let h_rect = d.state.handle_rect.offset(d.state.handle_position);
-      if d.state.is_handle_down {
-         canvas.set_paint(Paint::new_color(Rgba::CYAN));
-      } else if d.state.is_over_handle {
-         canvas.set_paint(Paint::new_color(Rgba::GREEN.with_alpha_mul(0.9)));
-      } else {
-         canvas.set_paint(Paint::new_color(Rgba::GREEN));
-      }
-      canvas.fill(&h_rect);
+      // canvas.set_paint(Paint::new_color(Rgba::GRAY));
+      // canvas.fill(&d.state.grab_area);
+
+      // // let w_pos = d.state.handle_position + rect.pos();
+      // let h_rect = d.state.handle_rect.offset(d.state.handle_position);
+      // if d.state.is_handle_down {
+      //    canvas.set_paint(Paint::new_color(Rgba::CYAN));
+      // } else if d.state.is_over_handle {
+      //    canvas.set_paint(Paint::new_color(Rgba::GREEN.with_alpha_mul(0.9)));
+      // } else {
+      //    canvas.set_paint(Paint::new_color(Rgba::GREEN));
+      // }
+      // canvas.fill(&h_rect);
    }
 
    pub fn on_mouse_move(w: &mut Widget<Self>, event: &MouseMoveEventCtx) -> bool {

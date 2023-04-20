@@ -1,4 +1,4 @@
-use sim_draw::color::Rgba;
+use crate::core::Rgba;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -6,7 +6,8 @@ use sim_draw::color::Rgba;
 pub struct ThemeColors {
    /// Use your custom enum to access by an [index](Self::user).
    ///
-   /// ```
+   /// // TODO make it run
+   /// ```not_run
    /// use sim_draw::color::Rgba;
    /// use sim_ui::theme::ThemeColors;
    ///

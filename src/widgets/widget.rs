@@ -2,10 +2,8 @@ use crate::core::events::{
    DrawEventCtx, KeyboardEventCtx, LayoutEventCtx, LifecycleEventCtx, MouseButtonsEventCtx,
    MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
 };
-use crate::core::{IWidget, Painter, WidgetBase, WidgetVt};
-use sim_draw::color::Rgba;
-use sim_draw::m::Rect;
-use sim_draw::Paint;
+use crate::core::{IWidget, Painter, Rgba, WidgetBase, WidgetVt};
+use m::Rect;
 use std::any::Any;
 use std::mem::MaybeUninit;
 
@@ -215,12 +213,12 @@ where
 {
    fn on_draw(&mut self, canvas: &mut Painter, _event: &DrawEventCtx) {
       // TODO remove over as it is for testing
-      if self.base.is_over() {
-         canvas.set_paint(Paint::new_color(Rgba::RED.with_alpha_mul(0.2)));
-      } else {
-         canvas.set_paint(Paint::new_color(self.background_color()));
-      }
-      canvas.fill(&self.base.geometry().rect());
+      // if self.base.is_over() {
+      //    canvas.set_paint(Paint::new_color(Rgba::RED.with_alpha_mul(0.2)));
+      // } else {
+      //    canvas.set_paint(Paint::new_color(self.background_color()));
+      // }
+      // canvas.fill(&self.base.geometry().rect());
    }
 }
 

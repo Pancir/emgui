@@ -1,12 +1,12 @@
 use crate::{
-   core::{Brush, Painter, Pen},
+   core::Painter,
    elements::Icon,
    theme::{
       style::{Style, StyleBase},
       Theme,
    },
 };
-use sim_draw::{color::Rgba, m::Rect, TextAlign};
+use m::Rect;
 use std::any::Any;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -64,31 +64,33 @@ impl Style<ButtonStyleData<'_>> for ButtonStyle {
    }
 
    fn draw_enabled(&self, _theme: &Theme, data: &ButtonStyleData, painter: &mut Painter) {
-      painter.set_brush(Brush::new_color(Rgba::GREEN.with_alpha_mul(0.5)));
+      // FIXME draw
 
-      if data.is_hover {
-         painter.set_brush(Brush::new_color(Rgba::AMBER));
-      }
+      // painter.set_brush(Brush::new_color(Rgba::GREEN.with_alpha_mul(0.5)));
 
-      if data.is_active {
-         painter.set_brush(Brush::new_color(Rgba::RED));
-      }
+      // if data.is_hover {
+      //    painter.set_brush(Brush::new_color(Rgba::AMBER));
+      // }
 
-      painter.fill(&data.bounds);
+      // if data.is_active {
+      //    painter.set_brush(Brush::new_color(Rgba::RED));
+      // }
 
-      painter.set_pen(Pen::new().with_width(2.0).with_color(Rgba::BLACK));
-      painter.stroke(&data.bounds);
+      // painter.fill(&data.bounds);
 
-      if let Some(txt) = data.text {
-         // TODO continue
-         painter.set_brush(Brush::new_color(Rgba::BLACK));
-         // painter.set_text_paint(self.paint.clone());
-         painter.fill_text_line(
-            txt,
-            data.bounds.center(),
-            TextAlign::new().center().middle().tight(),
-         );
-      }
+      // painter.set_pen(Pen::new().with_width(2.0).with_color(Rgba::BLACK));
+      // painter.stroke(&data.bounds);
+
+      // if let Some(txt) = data.text {
+      //    // TODO continue
+      //    painter.set_brush(Brush::new_color(Rgba::BLACK));
+      //    // painter.set_text_paint(self.paint.clone());
+      //    painter.fill_text_line(
+      //       txt,
+      //       data.bounds.center(),
+      //       TextAlign::new().center().middle().tight(),
+      //    );
+      // }
    }
 }
 

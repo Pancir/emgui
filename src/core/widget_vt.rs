@@ -3,7 +3,7 @@ use crate::core::events::{
    DrawEventCtx, KeyboardEventCtx, LayoutEventCtx, LifecycleEventCtx, MouseButtonsEventCtx,
    MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
 };
-use sim_draw::m::Rect;
+use m::Rect;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 

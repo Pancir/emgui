@@ -9,7 +9,7 @@ edition = "2021"
 default = []
 # app =["sim_run/app"]
 # Pring id type name it was created from in debug.
-widget-id-type= []
+widget-id-type = []
 trace-dispatcher = ["tracing"]
 trace-widget = ["tracing"]
 
@@ -22,6 +22,5 @@ m = { git = "ssh://git@github.com/Pancir/matry", version = "0.1", package = "mat
 
 tracing = { version = "0.1", optional = true }
 
-# sim_run = { path = "../sim-run", package = "sim_run" }
-# sim_draw = { path = "../sim-draw", package = "sim_draw" }
-# sim_input = { path = "../sim-input", package = "sim_input" }
+[dev-dependencies]
+float_eq = "1.0"

@@ -1,11 +1,12 @@
-use sim_draw::m::{Box2};
-use sim_draw::objects::UvRect;
-use sim_draw::{Canvas, TextureId};
+use m::Box2;
+
+use crate::core::TextureId;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub struct Icon {
-   geom: UvRect,
+   geom: Box2<f32>,
+   uv: Box2<f32>,
    texture: TextureId,
 }
 
@@ -19,20 +20,17 @@ impl Icon {
    #[must_use]
    #[inline]
    pub fn new(uv: Box2<f32>, geom: Box2<f32>, texture: TextureId) -> Self {
-      Self { geom: UvRect { rect: geom, uv }, texture }
+      Self { geom, uv, texture }
    }
 
    #[inline]
-   pub fn geometry(&self) -> &UvRect {
+   pub fn geometry(&self) -> &Box2<f32> {
       &self.geom
    }
-}
 
-impl Icon {
    #[inline]
-   pub fn on_draw(&self, canvas: &mut Canvas) {
-      canvas.set_texture(Some(self.texture));
-      canvas.tris(self.geometry())
+   pub fn uv(&self) -> &Box2<f32> {
+      &self.uv
    }
 }
 

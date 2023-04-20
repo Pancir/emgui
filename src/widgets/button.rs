@@ -7,13 +7,13 @@ use crate::core::events::{
    DrawEventCtx, KeyboardEventCtx, LayoutEventCtx, LifecycleEventCtx, LifecycleState,
    MouseButtonsEventCtx, MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
 };
+use crate::core::input::mouse::MouseState;
 use crate::core::{IWidget, Painter, WidgetBase, WidgetVt};
 use crate::elements::Icon;
 use crate::theme::ButtonDefined;
 use anyhow::bail;
 use bitflags::bitflags;
-use sim_draw::m::Rect;
-use sim_input::mouse::MouseState;
+use m::Rect;
 use std::borrow::Cow;
 use std::rc::Rc;
 use std::{any::Any, mem::MaybeUninit};

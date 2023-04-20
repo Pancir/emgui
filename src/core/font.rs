@@ -1,5 +1,62 @@
-use sim_draw::{FontWeight, SizePolicy};
 use std::{any::Any, borrow::Cow, rc::Rc};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum SizePolicy {
+   Pt,
+
+   /// Size in pixels using full font height.
+   PxFull,
+
+   /// Size in pixels using ascend values only.
+   PxAscend,
+}
+
+/// Font weight.
+#[repr(u16)]
+#[derive(Copy, Clone, PartialOrd, PartialEq, Debug, Default)]
+pub enum FontWeight {
+   /// Hairline (not official)
+   Hairline = 1,
+
+   /// Thin (Hairline)
+   Thin = 100,
+
+   /// Extra Light (Ultra Light)
+   ExtraLight = 200,
+
+   /// Light
+   Light = 300,
+
+   /// Normal (Regular)
+   #[default]
+   Normal = 400,
+
+   /// News (not official)
+   News = 450,
+
+   /// Medium
+   Medium = 500,
+
+   /// Semi Bold (Demi Bold)
+   SemiBold = 600,
+
+   /// Bold
+   Bold = 700,
+
+   /// Extra Bold (Ultra Bold)
+   ExtraBold = 800,
+
+   /// Heavy (not official)
+   Heavy = 850,
+
+   /// Black (Heavy)
+   Black = 900,
+
+   /// Extra Black (Ultra Black) (not official)
+   ExtraBlack = 950,
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
