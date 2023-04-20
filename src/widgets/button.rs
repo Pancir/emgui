@@ -25,7 +25,6 @@ bitflags! {
    pub struct ButtonStateFlags: u8 {
       const STYLE_ERROR_PRINTED = 1<<0;
       const STYLE_CUSTOM = 1<<1;
-      const AUTO_DEFAULT = 1<<2;
       const IS_DOWN = 1<<5;
    }
 }
@@ -234,6 +233,7 @@ where
                bounds: w.base.geometry().rect(),
                is_hover: w.base.is_over(),
                is_active: w.state.flags.contains(ButtonStateFlags::IS_DOWN),
+               has_menu: false,
                has_focus: w.base.has_focus(),
                toggle_num: w.state.toggle_num,
                toggle_curr: w.state.toggle,

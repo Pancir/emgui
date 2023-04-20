@@ -2,11 +2,11 @@ use crate::{
    core::{Brush, Painter, Pen},
    elements::Icon,
    theme::{
-      style::{self, Style, StyleBase},
+      style::{Style, StyleBase},
       Theme,
    },
 };
-use sim_draw::{color::Rgba, m::Rect};
+use sim_draw::{color::Rgba, m::Rect, TextAlign};
 use std::any::Any;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -18,6 +18,7 @@ pub struct ButtonStyleData<'refs> {
    pub is_hover: bool,
    pub is_active: bool,
    pub has_focus: bool,
+   pub has_menu: bool,
    pub toggle_num: u8,
    pub toggle_curr: u8,
 }
@@ -27,9 +28,7 @@ pub trait ButtonStyleSheet: for<'refs> Style<ButtonStyleData<'refs>> {}
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #[derive(Default)]
-pub struct ButtonStyle {
-   pub text: style::Text,
-}
+pub struct ButtonStyle {}
 
 impl ButtonStyle {
    pub fn new_normal() -> Self {
@@ -80,10 +79,16 @@ impl Style<ButtonStyleData<'_>> for ButtonStyle {
       painter.set_pen(Pen::new().with_width(2.0).with_color(Rgba::BLACK));
       painter.stroke(&data.bounds);
 
-      // FIXME needs a style system to fix.
-      //   if !w.state.label.text().as_ref().is_empty() {
-      //      w.state.label.on_draw(canvas);
-      //   }
+      if let Some(txt) = data.text {
+         // TODO continue
+         painter.set_brush(Brush::new_color(Rgba::BLACK));
+         // painter.set_text_paint(self.paint.clone());
+         painter.fill_text_line(
+            txt,
+            data.bounds.center(),
+            TextAlign::new().center().middle().tight(),
+         );
+      }
    }
 }
 
