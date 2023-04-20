@@ -1,7 +1,7 @@
 pub mod handler;
-pub mod style;
+pub mod render;
 
-use self::style::{ButtonStyleData, ButtonStyleSheet};
+use self::render::{ButtonRenderObject, ButtonRenderObjectData};
 use super::handler::IButtonHandler;
 use crate::core::events::{
    DrawEventCtx, KeyboardEventCtx, LayoutEventCtx, LifecycleEventCtx, LifecycleState,
@@ -51,7 +51,7 @@ where
    vtable: WidgetVt<Self>,
    handler: H,
 
-   style: Option<Rc<dyn ButtonStyleSheet>>,
+   render_obj: Option<Rc<dyn ButtonRenderObject>>,
    state: ButtonState,
 }
 
@@ -97,7 +97,7 @@ where
             ..WidgetVt::default()
          },
          handler,
-         style: None,
+         render_obj: None,
          state: ButtonState { style_name: ButtonDefined::Normal.into(), ..ButtonState::default() },
       };
 
@@ -173,7 +173,7 @@ where
       self.state.style_name = name.into();
       if let Some(runtime) = self.base.runtime() {
          if let Some(style) = runtime.theme().buttons.get(self.state.style_name) {
-            self.style = Some(style);
+            self.render_obj = Some(style);
          } else {
             bail!("Style with name <{}> was not found.", self.state.style_name);
          }
@@ -182,18 +182,23 @@ where
       Ok(())
    }
 
+   #[inline]
+   pub fn style(&self) -> &str {
+      self.state.style_name.as_ref()
+   }
+
    /// Set a user defined style.
    #[inline]
-   pub fn set_custom_style(&mut self, style: Rc<dyn ButtonStyleSheet>) {
-      self.style = Some(style);
+   pub fn set_render_obj(&mut self, ro: Rc<dyn ButtonRenderObject>) {
+      self.render_obj = Some(ro);
       self.state.flags.set(ButtonStateFlags::STYLE_CUSTOM, true);
       self.state.flags.remove(ButtonStateFlags::STYLE_ERROR_PRINTED);
    }
 
    /// Get current style.
    #[inline]
-   pub fn style(&self) -> Option<Rc<dyn ButtonStyleSheet>> {
-      self.style.clone()
+   pub fn render_obj(&self) -> Option<Rc<dyn ButtonRenderObject>> {
+      self.render_obj.clone()
    }
 }
 
@@ -209,7 +214,7 @@ where
                if let Some(style) =
                   w.base.runtime().unwrap().theme().buttons.get(w.state.style_name)
                {
-                  w.style = Some(style);
+                  w.render_obj = Some(style);
                   w.state.flags.remove(ButtonStateFlags::STYLE_ERROR_PRINTED);
                } else {
                   w.state.flags.set(ButtonStateFlags::STYLE_ERROR_PRINTED, true);
@@ -225,12 +230,12 @@ where
    }
 
    fn on_draw(w: &mut Self, canvas: &mut Painter, _event: &DrawEventCtx) {
-      if let Some(style) = &w.style {
+      if let Some(style) = &w.render_obj {
          if let Some(runtime) = w.base.runtime() {
-            let style_data = ButtonStyleData {
+            let data = ButtonRenderObjectData {
                text: w.state.text.as_ref().map(|v| v.as_ref()),
                icon: w.state.icon.as_ref(),
-               bounds: w.base.geometry().rect(),
+               bounds: w.base.geometry().rect().into(),
                is_hover: w.base.is_over(),
                is_active: w.state.flags.contains(ButtonStateFlags::IS_DOWN),
                has_menu: false,
@@ -239,9 +244,9 @@ where
                toggle_curr: w.state.toggle,
             };
             if w.base.is_enabled() {
-               style.draw_enabled(runtime.theme(), &style_data, canvas);
+               style.draw_enabled(runtime.theme(), &data, canvas);
             } else {
-               style.draw_disabled(runtime.theme(), &style_data, canvas);
+               style.draw_disabled(runtime.theme(), &data, canvas);
             }
          } else if !w.state.flags.contains(ButtonStateFlags::STYLE_ERROR_PRINTED) {
             w.state.flags.set(ButtonStateFlags::STYLE_ERROR_PRINTED, true);
@@ -413,13 +418,13 @@ where
 #[cfg(test)]
 mod tests {
    use super::*;
-   use crate::widgets::{handler::ButtonHandler, style::ButtonStyle};
+   use crate::widgets::{handler::ButtonHandler, render::ButtonRender};
 
    #[test]
    fn sizes() {
       dbg!(std::mem::size_of::<Button<ButtonHandler, ()>>());
-      dbg!(std::mem::size_of::<ButtonStyleData>());
-      dbg!(std::mem::size_of::<ButtonStyle>());
+      dbg!(std::mem::size_of::<ButtonRenderObjectData>());
+      dbg!(std::mem::size_of::<ButtonRender>());
    }
 }
 

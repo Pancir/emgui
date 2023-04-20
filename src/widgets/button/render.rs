@@ -1,20 +1,18 @@
 use crate::{
    core::Painter,
    elements::Icon,
-   theme::{
-      style::{Style, StyleBase},
-      Theme,
-   },
+   render::{RenderObject, RenderObjectBase},
+   theme::Theme,
 };
-use m::Rect;
-use std::any::Any;
+use m::Box2;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub struct ButtonStyleData<'refs> {
+/// Button render object data.
+pub struct ButtonRenderObjectData<'refs> {
    pub text: Option<&'refs str>,
    pub icon: Option<&'refs Icon>,
-   pub bounds: Rect<f32>,
+   pub bounds: Box2<f32>,
    pub is_hover: bool,
    pub is_active: bool,
    pub has_focus: bool,
@@ -23,47 +21,37 @@ pub struct ButtonStyleData<'refs> {
    pub toggle_curr: u8,
 }
 
-pub trait ButtonStyleSheet: for<'refs> Style<ButtonStyleData<'refs>> {}
+/// Base type for all button render objects.
+pub trait ButtonRenderObject: for<'refs> RenderObject<ButtonRenderObjectData<'refs>> {}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #[derive(Default)]
-pub struct ButtonStyle {}
+pub struct ButtonRender {}
 
-impl ButtonStyle {
+impl RenderObjectBase for ButtonRender {}
+impl ButtonRenderObject for ButtonRender {}
+
+impl ButtonRender {
    pub fn new_normal() -> Self {
-      ButtonStyle::default()
+      ButtonRender::default()
    }
 
    pub fn new_accent() -> Self {
-      ButtonStyle::default()
+      ButtonRender::default()
    }
 }
 
-impl StyleBase for ButtonStyle {
-   fn as_any(&self) -> &dyn Any {
-      self
-   }
-
-   fn as_any_mut(&mut self) -> &mut dyn Any {
-      self
-   }
-
-   fn name(&self) -> &str {
-      "button"
-   }
-}
-
-impl Style<ButtonStyleData<'_>> for ButtonStyle {
-   fn rect(&self, data: &ButtonStyleData) -> Rect<f32> {
+impl RenderObject<ButtonRenderObjectData<'_>> for ButtonRender {
+   fn rect(&self, data: &ButtonRenderObjectData) -> Box2<f32> {
       data.bounds
    }
 
-   fn draw_disabled(&self, theme: &Theme, data: &ButtonStyleData, painter: &mut Painter) {
+   fn draw_disabled(&self, theme: &Theme, data: &ButtonRenderObjectData, painter: &mut Painter) {
       self.draw_enabled(theme, data, painter);
    }
 
-   fn draw_enabled(&self, _theme: &Theme, data: &ButtonStyleData, painter: &mut Painter) {
+   fn draw_enabled(&self, _theme: &Theme, data: &ButtonRenderObjectData, painter: &mut Painter) {
       // FIXME draw
 
       // painter.set_brush(Brush::new_color(Rgba::GREEN.with_alpha_mul(0.5)));
@@ -93,7 +81,5 @@ impl Style<ButtonStyleData<'_>> for ButtonStyle {
       // }
    }
 }
-
-impl ButtonStyleSheet for ButtonStyle {}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

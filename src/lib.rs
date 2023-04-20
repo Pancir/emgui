@@ -15,6 +15,7 @@
 pub mod core;
 pub mod defines;
 pub mod elements;
+pub mod render;
 pub mod theme;
 pub mod widgets;
 

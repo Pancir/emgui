@@ -1,20 +1,19 @@
+use crate::render::RenderObjectBase;
 use anyhow::bail;
 use std::rc::Rc;
 
-use super::style::StyleBase;
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub struct ThemeElements<T>
+pub struct ThemeRenderObjects<T>
 where
-   T: StyleBase + ?Sized,
+   T: RenderObjectBase + ?Sized,
 {
    data: Vec<(&'static str, Rc<T>)>,
 }
 
-impl<T> ThemeElements<T>
+impl<T> ThemeRenderObjects<T>
 where
-   T: StyleBase + ?Sized,
+   T: RenderObjectBase + ?Sized,
 {
    #[inline]
    pub fn new(capacity: usize) -> Self {

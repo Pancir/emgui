@@ -5,14 +5,14 @@ pub mod style;
 mod text_align;
 mod theme;
 mod theme_colors;
-mod theme_elements;
+mod theme_render_objects;
 mod theme_extensions;
 mod theme_fonts;
 
 pub use text_align::*;
 pub use theme::*;
 pub use theme_colors::*;
-pub use theme_elements::*;
+pub use theme_render_objects::*;
 pub use theme_extensions::*;
 pub use theme_fonts::*;
 
