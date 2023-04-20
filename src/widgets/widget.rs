@@ -3,10 +3,11 @@ use crate::core::events::{
    MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
 };
 use crate::core::{IWidget, WidgetBase, WidgetVt};
-use crate::render::{Painter, Rgba};
+use crate::render::{Painter, RenderObjectBase, Rgba};
 use m::Rect;
 use std::any::Any;
 use std::mem::MaybeUninit;
+use std::rc::Rc;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -145,6 +146,16 @@ where
 
    fn set_transparent(&mut self, state: bool) {
       self.base.set_transparent(state)
+   }
+
+   //---------------------------------------
+
+   fn set_style_name(&mut self, _name: &'static str) -> anyhow::Result<()> {
+      unimplemented!()
+   }
+
+   fn style_name(&self) -> &str {
+      unimplemented!()
    }
 
    //---------------------------------------

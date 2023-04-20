@@ -10,7 +10,7 @@ use crate::core::events::{
 use crate::core::input::mouse::MouseState;
 use crate::core::{IWidget, WidgetBase, WidgetVt};
 use crate::elements::Icon;
-use crate::render::Painter;
+use crate::render::{Painter, RenderObjectBase};
 use crate::theme::ButtonDefined;
 use anyhow::bail;
 use bitflags::bitflags;
@@ -348,6 +348,16 @@ where
 
    fn set_transparent(&mut self, state: bool) {
       self.base.set_transparent(state)
+   }
+
+   //---------------------------------------
+
+   fn set_style_name(&mut self, _name: &'static str) -> anyhow::Result<()> {
+      unimplemented!()
+   }
+
+   fn style_name(&self) -> &str {
+      unimplemented!()
    }
 
    //---------------------------------------

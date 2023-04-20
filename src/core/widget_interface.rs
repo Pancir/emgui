@@ -4,9 +4,10 @@ use crate::core::events::{
    MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
 };
 use crate::core::widget_base::WidgetBase;
-use crate::render::Painter;
+use crate::render::{Painter, RenderObjectBase};
 use m::Rect;
 use std::any::Any;
+use std::rc::Rc;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -94,6 +95,16 @@ pub trait IWidget: Any + 'static {
    fn set_visible(&mut self, state: bool);
    fn set_enabled(&mut self, state: bool);
    fn set_transparent(&mut self, state: bool);
+
+   //---------------------------------------
+
+   /// Set a style by its name.
+   ///
+   /// It search the specified style in the current theme.
+   fn set_style_name(&mut self, name: &'static str) -> anyhow::Result<()>;
+
+   /// Get current style name.
+   fn style_name(&self) -> &str;
 
    //---------------------------------------
 
