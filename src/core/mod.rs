@@ -5,6 +5,7 @@ pub mod app;
 
 pub mod events;
 pub mod input;
+pub mod upcast_rc;
 
 mod app_env;
 mod focus_mgr;

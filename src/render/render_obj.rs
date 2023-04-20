@@ -1,12 +1,12 @@
 use super::Painter;
-use crate::theme::Theme;
+use crate::{core::upcast_rc, theme::Theme};
 use m::Box2;
-use std::rc::Rc;
+use std::{any::Any, rc::Rc};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /// Base render object type.
-pub trait RenderObjectBase {
+pub trait RenderObjectBase: Any + upcast_rc::Upcast<dyn Any> {
    /// Get the style type name for debugging purposes.
    ///
    /// # Note
@@ -32,6 +32,12 @@ pub trait RenderObjectBase {
       Self: Sized,
    {
       Rc::new(self)
+   }
+}
+
+impl<'a, T: Any + 'a> upcast_rc::UpcastFrom<T> for dyn Any + 'a {
+   fn up_from_rc(value: Rc<T>) -> Rc<Self> {
+      value
    }
 }
 

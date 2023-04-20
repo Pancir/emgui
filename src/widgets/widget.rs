@@ -3,11 +3,10 @@ use crate::core::events::{
    MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
 };
 use crate::core::{IWidget, WidgetBase, WidgetVt};
-use crate::render::{Painter, RenderObjectBase, Rgba};
+use crate::render::{Painter, Rgba};
 use m::Rect;
 use std::any::Any;
 use std::mem::MaybeUninit;
-use std::rc::Rc;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 

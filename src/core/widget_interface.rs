@@ -7,7 +7,6 @@ use crate::core::widget_base::WidgetBase;
 use crate::render::{Painter, RenderObjectBase};
 use m::Rect;
 use std::any::Any;
-use std::rc::Rc;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
