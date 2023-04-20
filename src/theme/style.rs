@@ -117,7 +117,10 @@ pub struct Background {
 }
 
 impl Background {
-   pub const fn new_color(color: Rgba) -> Self {
+   pub fn new_color<Color>(color: Color) -> Self
+   where
+      Color: Into<Rgba>,
+   {
       Self { brush: Brush::new_color(color) }
    }
 

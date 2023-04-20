@@ -3,7 +3,9 @@ use super::Rgba;
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #[derive(Clone, Copy)]
-pub struct Brush {}
+pub struct Brush {
+   color: Rgba,
+}
 
 impl Default for Brush {
    fn default() -> Self {
@@ -13,18 +15,24 @@ impl Default for Brush {
 
 impl Brush {
    #[inline]
-   pub const fn new() -> Self {
+   pub fn new() -> Self {
       Self::new_color(Rgba::RED)
    }
 
    #[inline]
-   pub const fn new_color(color: Rgba) -> Self {
-      unimplemented!()
+   pub fn new_color<Color>(color: Color) -> Self
+   where
+      Color: Into<Rgba>,
+   {
+      Self { color: color.into() }
    }
 
    #[inline]
-   pub fn set_color(&mut self, color: Rgba) {
-      *self = Self::new_color(color);
+   pub fn set_color<Color>(&mut self, color: Color)
+   where
+      Color: Into<Rgba>,
+   {
+      self.color = color.into()
    }
 }
 

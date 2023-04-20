@@ -16,7 +16,7 @@ impl Default for Pen {
 
 impl Pen {
    #[inline]
-   pub const fn new() -> Self {
+   pub fn new() -> Self {
       Self { width: 2.0, brush: Brush::new() }
    }
 
@@ -37,7 +37,10 @@ impl Pen {
    }
 
    #[inline]
-   pub const fn with_color(mut self, color: Rgba) -> Self {
+   pub fn with_color<Color>(mut self, color: Color) -> Self
+   where
+      Color: Into<Rgba>,
+   {
       self.brush = Brush::new_color(color);
       self
    }
