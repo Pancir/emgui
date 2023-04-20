@@ -16,9 +16,10 @@ trace-widget = ["tracing"]
 [dependencies]
 anyhow = "1.0"
 bitflags = "2.1"
+const_env = "0.1"
 log = "0.4"
-smallvec = "1.10"
 m = { git = "ssh://git@github.com/Pancir/matry", version = "0.1", package = "matry" }
+smallvec = "1.10"
 
 tracing = { version = "0.1", optional = true }
 

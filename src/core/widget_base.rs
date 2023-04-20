@@ -1,74 +1,19 @@
 mod children;
 mod dispatcher;
-
-use self::children::Children;
-pub use dispatcher::*;
-use m::Rect;
+mod state_flags;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+use self::children::Children;
+pub(crate) use self::state_flags::StateFlags;
 use super::{WidgetRef, WidgetStrongRef};
 use crate::core::Runtime;
 use crate::core::{Geometry, WidgetId};
 use crate::defines::{DEFAULT_DOUBLE_CLICK_TIME, DEFAULT_TOOL_TIP_TIME};
-use bitflags::bitflags;
+pub use dispatcher::*;
+use m::Rect;
 use std::cell::Cell;
 use std::time::Duration;
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-bitflags! {
-   /// Control flow for events.
-   #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-   pub(crate) struct StateFlags: u16 {
-      //-----------------------------
-
-      /// Call update for current widget.
-      const SELF_UPDATE     = 1<<0;
-
-      /// Some children need update.
-      const CHILDREN_UPDATE = 1<<1;
-
-      //-----------------------------
-
-      /// Call update for current widget.
-      const SELF_DRAW     = 1<<2;
-
-      /// Some children need update.
-      const CHILDREN_DRAW = 1<<3;
-
-      //-----------------------------
-
-      /// Request to delete this widget.
-      const SELF_DELETE     = 1<<4;
-
-      /// Widget has one or more children to delete.
-      const CHILDREN_DELETE = 1<<5;
-
-      //-----------------------------
-
-      /// Visible state.
-      const IS_VISIBLE = 1<<6;
-
-      /// Set if interaction events are desired like mouse and keyboard ones..
-      const IS_ENABLED = 1<<7;
-
-      /// Set if background has transparent pixels.
-      const IS_TRANSPARENT = 1<<8;
-
-      //-----------------------------
-
-      /// It is set when mouse is over the widgets rectangle.
-      const IS_OVER = 1<<9;
-
-      /// Mouse tracking state.
-      const HAS_MOUSE_TRACKING = 1<<10;
-
-      //-----------------------------
-
-      const INIT = Self::SELF_DRAW.bits()|Self::CHILDREN_DRAW.bits()|Self::SELF_UPDATE.bits()|Self::CHILDREN_UPDATE.bits()|Self::IS_VISIBLE.bits()|Self::IS_ENABLED.bits();
-   }
-}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -136,71 +81,55 @@ impl WidgetBase {
    pub fn geometry_mut(&mut self) -> &mut Geometry {
       &mut self.geometry
    }
-}
 
-impl WidgetBase {
-   /// Request redraw event.
-   pub fn request_draw(&self) {
-      let mut f = self.state_flags.get();
-
-      if !f.contains(StateFlags::SELF_DRAW) {
-         f.set(StateFlags::SELF_DRAW, true);
-         self.state_flags.set(f);
-
-         if let Some(parent) = &self.parent {
-            if let Some(p) = parent.upgrade() {
-               let mut bor = p.widget_mut().unwrap();
-               let internal = bor.base_mut();
-               internal.state_flags.get_mut().set(StateFlags::CHILDREN_DRAW, true);
-            }
-         }
-      }
-   }
-
-   /// Request update event.
-   pub fn request_update(&self) {
-      let mut f = self.state_flags.get();
-
-      if !f.contains(StateFlags::SELF_UPDATE) {
-         f.set(StateFlags::SELF_UPDATE, true);
-         self.state_flags.set(f);
-
-         if let Some(parent) = &self.parent {
-            if let Some(p) = parent.upgrade() {
-               let mut bor = p.widget_mut().unwrap();
-               let internal = bor.base_mut();
-               internal.state_flags.get_mut().set(StateFlags::CHILDREN_UPDATE, true);
-            }
-         }
-      }
-   }
-
-   /// Request to delete the widget.
+   /// Set waiting time for tooltip showing.
    ///
-   /// It schedules widget to delete the library will choose time to do it so,
-   /// it will not be deleted immediately.
-   pub fn request_delete(&self) {
-      let mut f = self.state_flags.get();
+   /// If it is `None` the default is used.
+   #[inline]
+   pub fn set_tool_type_time(&mut self, duration: Option<Duration>) {
+      self.tool_type_time = duration;
+   }
 
-      if !f.contains(StateFlags::SELF_DELETE) {
-         f.set(StateFlags::SELF_DELETE, true);
-         self.state_flags.set(f);
-
-         if let Some(parent) = &self.parent {
-            if let Some(p) = parent.upgrade() {
-               let mut bor = p.widget_mut().unwrap();
-               let internal = bor.base_mut();
-               internal.state_flags.get_mut().set(StateFlags::CHILDREN_DELETE, true);
-            }
-         }
+   /// Waiting time for tooltip showing.
+   pub fn tool_type_time(&self) -> Duration {
+      if let Some(v) = self.tool_type_time {
+         v
+      } else if let Some(r) = &self.runtime {
+         r.tool_type_time()
+      } else {
+         DEFAULT_TOOL_TIP_TIME
       }
    }
-}
 
-impl WidgetBase {
+   /// Set waiting time for double click detection.
+   ///
+   /// If it is `None` the default is used.
+   #[inline]
+   pub fn set_double_click_time(&mut self, duration: Option<Duration>) {
+      self.double_click_time = duration;
+   }
+
+   /// Waiting time for double click detection.
+   pub fn double_click_time(&self) -> Duration {
+      if let Some(v) = self.double_click_time {
+         v
+      } else if let Some(r) = &self.runtime {
+         r.double_click_time()
+      } else {
+         DEFAULT_DOUBLE_CLICK_TIME
+      }
+   }
+
+   /// Check if widget has received focus.
+   #[inline]
    pub fn has_focus(&self) -> bool {
-      // FIXME implementation
-      false
+      self.state_flags.get().contains(StateFlags::HAS_FOCUS)
+   }
+
+   /// Check if any child of the widget children hierarchy has received focus.
+   #[inline]
+   pub fn has_child_focus(&self) -> bool {
+      self.state_flags.get().contains(StateFlags::HAS_CHILD_FOCUS)
    }
 
    /// Check if widget is visible.
@@ -272,14 +201,6 @@ impl WidgetBase {
       self.state_flags.get().contains(StateFlags::IS_OVER)
    }
 
-   /// Set if mouse is over the widget's rectangle geometry.
-   #[inline]
-   pub(crate) fn set_over(&self, state: bool) {
-      let mut f = self.state_flags.get();
-      f.set(StateFlags::IS_OVER, state);
-      self.state_flags.set(f);
-   }
-
    /// Check if the widget wants mouse tracking.
    ///
    /// See [Self::set_mouse_tracking]
@@ -302,18 +223,6 @@ impl WidgetBase {
    }
 
    #[inline]
-   pub(crate) fn add_mouse_btn_num(&self, num: i8) {
-      let res = self.mouse_btn_num() + num;
-      debug_assert!(res > -1, "inconsistent add/remove mouse buttons press in {:?}", self.id);
-      self.number_mouse_buttons_pressed.set(res.max(0));
-   }
-
-   #[inline]
-   pub(crate) fn mouse_btn_num(&self) -> i8 {
-      self.number_mouse_buttons_pressed.get()
-   }
-
-   #[inline]
    pub fn children(&self) -> &Children {
       &self.children
    }
@@ -325,44 +234,105 @@ impl WidgetBase {
 }
 
 impl WidgetBase {
-   /// Set waiting time for tooltip showing.
-   ///
-   /// If it is `None` the default is used.
-   pub fn set_tool_type_time(&mut self, duration: Option<Duration>) {
-      self.tool_type_time = duration;
-   }
+   /// Request redraw event.
+   pub fn request_draw(&self) {
+      let mut f = self.state_flags.get();
 
-   /// Waiting time for tooltip showing.
-   pub fn tool_type_time(&self) -> Duration {
-      if let Some(v) = self.tool_type_time {
-         v
-      } else if let Some(r) = &self.runtime {
-         r.tool_type_time()
-      } else {
-         DEFAULT_TOOL_TIP_TIME
+      if !f.contains(StateFlags::SELF_DRAW) {
+         f.set(StateFlags::SELF_DRAW, true);
+         self.state_flags.set(f);
+
+         if let Some(parent) = &self.parent {
+            if let Some(p) = parent.upgrade() {
+               let mut bor = p.widget_mut().unwrap();
+               let internal = bor.base_mut();
+               internal.state_flags.get_mut().set(StateFlags::CHILDREN_DRAW, true);
+            }
+         }
       }
    }
 
-   /// Set waiting time for double click detection.
-   ///
-   /// If it is `None` the default is used.
-   pub fn set_double_click_time(&mut self, duration: Option<Duration>) {
-      self.double_click_time = duration;
+   /// Request update event.
+   pub fn request_update(&self) {
+      let mut f = self.state_flags.get();
+
+      if !f.contains(StateFlags::SELF_UPDATE) {
+         f.set(StateFlags::SELF_UPDATE, true);
+         self.state_flags.set(f);
+
+         if let Some(parent) = &self.parent {
+            if let Some(p) = parent.upgrade() {
+               let mut bor = p.widget_mut().unwrap();
+               let internal = bor.base_mut();
+               internal.state_flags.get_mut().set(StateFlags::CHILDREN_UPDATE, true);
+            }
+         }
+      }
    }
 
-   /// Waiting time for double click detection.
-   pub fn double_click_time(&self) -> Duration {
-      if let Some(v) = self.double_click_time {
-         v
-      } else if let Some(r) = &self.runtime {
-         r.double_click_time()
-      } else {
-         DEFAULT_DOUBLE_CLICK_TIME
+   /// Request to delete the widget.
+   ///
+   /// It schedules widget to delete the library will choose time to do it so,
+   /// it will not be deleted immediately.
+   pub fn request_delete(&self) {
+      let mut f = self.state_flags.get();
+
+      if !f.contains(StateFlags::SELF_DELETE) {
+         f.set(StateFlags::SELF_DELETE, true);
+         self.state_flags.set(f);
+
+         if let Some(parent) = &self.parent {
+            if let Some(p) = parent.upgrade() {
+               let mut bor = p.widget_mut().unwrap();
+               let internal = bor.base_mut();
+               internal.state_flags.get_mut().set(StateFlags::CHILDREN_DELETE, true);
+            }
+         }
       }
    }
 }
 
 impl WidgetBase {
+   /// Set this widget focused.
+   pub(crate) fn set_focused(&self, state: bool) {
+      let mut f = self.state_flags.get();
+
+      // TODO not completed
+
+      if f.contains(StateFlags::HAS_FOCUS) != state {
+         f.set(StateFlags::HAS_FOCUS, state);
+         self.state_flags.set(f);
+
+         if let Some(parent) = &self.parent {
+            if let Some(p) = parent.upgrade() {
+               let mut bor = p.widget_mut().unwrap();
+               let internal = bor.base_mut();
+               internal.state_flags.get_mut().set(StateFlags::HAS_CHILD_FOCUS, state);
+            }
+         }
+      }
+   }
+
+   /// Set if mouse is over the widget's rectangle geometry.
+   #[inline]
+   pub(crate) fn set_over(&self, state: bool) {
+      let mut f = self.state_flags.get();
+      f.set(StateFlags::IS_OVER, state);
+      self.state_flags.set(f);
+   }
+
+   #[inline]
+   pub(crate) fn add_mouse_btn_num(&self, num: i8) {
+      let res = self.mouse_btn_num() + num;
+      debug_assert!(res > -1, "inconsistent add/remove mouse buttons press in {:?}", self.id);
+      self.number_mouse_buttons_pressed.set(res.max(0));
+   }
+
+   #[inline]
+   pub(crate) fn mouse_btn_num(&self) -> i8 {
+      self.number_mouse_buttons_pressed.get()
+   }
+
    #[inline]
    pub(crate) fn data_for_dispatcher(&self) -> (StateFlags, WidgetId, Rect<f32>, i8, bool) {
       (

@@ -1,15 +1,19 @@
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 use std::time::Duration;
 
-/// Number of widget children that are stored without storage heap allocation.
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/// Number of widget children that are stored without heap allocation.
+///
+/// # Note
+/// This can be setup during compilation.
 ///
 /// In technical term it is [smallvec::SmallVec] number value.
 ///
 /// Example:
 /// ```ascii
-///  SmallVec<[Rc<RefCell<dyn IWidget>>; STATIC_CHILD_NUM]>
+///  SmallVec<[WidgetStrongRef; STATIC_CHILD_NUM]>
 /// ```
+#[const_env::from_env]
 pub const STATIC_CHILD_NUM: usize = 3;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

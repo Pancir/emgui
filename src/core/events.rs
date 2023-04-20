@@ -12,10 +12,21 @@ use std::{fmt::Formatter, time::Duration};
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub enum LifecycleState {
+   /// After widget's focus changed.
+   ///
+   /// The values is the state focused/not focused.
+   FocusChange(bool),
+
+   /// After an widget's child in the children hierarchy focus changed.
+   ///
+   /// The values is the state focused/not focused.
+   ChildFocusChange(bool),
+
    /// After a new runtime set into the [WidgetBase] associated with the widget.
    ///
    /// You can access to the runtime using your base [WidgetBase::runtime] method.
    RuntimeSet,
+
    /// When widget is placed into the heap a reference becomes available.
    ///
    /// You should not use it in the widget while an event is processed,
@@ -41,6 +52,12 @@ impl core::fmt::Debug for LifecycleState {
             f.debug_struct("LifecycleEventCtx::Destroy").field("unexpected", &unexpected).finish()
          }
          Self::RuntimeSet => f.debug_struct("LifecycleEventCtx::RuntimeSet").finish(),
+         Self::FocusChange(state) => {
+            f.debug_struct("LifecycleEventCtx::Destroy").field("state", &state).finish()
+         }
+         Self::ChildFocusChange(state) => {
+            f.debug_struct("LifecycleEventCtx::Destroy").field("state", &state).finish()
+         }
       }
    }
 }
