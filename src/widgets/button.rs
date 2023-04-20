@@ -237,6 +237,7 @@ where
                text: w.state.text.as_ref().map(|v| v.as_ref()),
                icon: w.state.icon.as_ref(),
                bounds: w.base.geometry().rect().into(),
+               is_enabled: w.base.is_enabled(),
                is_hover: w.base.is_over(),
                is_active: w.state.flags.contains(ButtonStateFlags::IS_DOWN),
                has_menu: false,
@@ -244,11 +245,7 @@ where
                toggle_num: w.state.toggle_num,
                toggle_curr: w.state.toggle,
             };
-            if w.base.is_enabled() {
-               style.draw_enabled(runtime.theme(), &data, canvas);
-            } else {
-               style.draw_disabled(runtime.theme(), &data, canvas);
-            }
+            style.draw(runtime.theme(), &data, canvas);
          } else if !w.state.flags.contains(ButtonStateFlags::STYLE_ERROR_PRINTED) {
             w.state.flags.set(ButtonStateFlags::STYLE_ERROR_PRINTED, true);
             log::error!("a runtime is not set");

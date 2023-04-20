@@ -42,11 +42,8 @@ pub trait RenderObject<Data>: RenderObjectBase {
    /// The render rectangle may actually be greater or less than widget's geometry.
    fn rect(&self, data: &Data) -> Box2<f32>;
 
-   /// Draw enabled widget.
-   fn draw_enabled(&self, theme: &Theme, data: &Data, painter: &mut Painter);
-
-   /// Draw disabled widget.
-   fn draw_disabled(&self, theme: &Theme, data: &Data, painter: &mut Painter);
+   /// Draw widget.
+   fn draw(&self, theme: &Theme, data: &Data, painter: &mut Painter);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

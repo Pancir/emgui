@@ -12,6 +12,7 @@ pub struct ButtonRenderObjectData<'refs> {
    pub text: Option<&'refs str>,
    pub icon: Option<&'refs Icon>,
    pub bounds: Box2<f32>,
+   pub is_enabled: bool,
    pub is_hover: bool,
    pub is_active: bool,
    pub has_focus: bool,
@@ -46,11 +47,7 @@ impl RenderObject<ButtonRenderObjectData<'_>> for ButtonRender {
       data.bounds
    }
 
-   fn draw_disabled(&self, theme: &Theme, data: &ButtonRenderObjectData, painter: &mut Painter) {
-      self.draw_enabled(theme, data, painter);
-   }
-
-   fn draw_enabled(&self, _theme: &Theme, data: &ButtonRenderObjectData, painter: &mut Painter) {
+   fn draw(&self, _theme: &Theme, data: &ButtonRenderObjectData, painter: &mut Painter) {
       // FIXME draw
 
       // painter.set_brush(Brush::new_color(Rgba::GREEN.with_alpha_mul(0.5)));
