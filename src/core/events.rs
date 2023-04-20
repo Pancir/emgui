@@ -1,14 +1,13 @@
-use super::WidgetRef;
+use super::{
+   input::{
+      keyboard::KeyboardInput,
+      mouse::{MouseButtonsInput, MouseMoveInput, MouseWheelInput},
+   },
+   WidgetRef,
+};
 use crate::core::AppEnv;
-use sim_draw::m::Rect;
+use m::Rect;
 use std::{fmt::Formatter, time::Duration};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-pub type KeyboardEventCtx = sim_run::KeyboardEvent;
-pub type MouseButtonsEventCtx = sim_run::MouseButtonsEvent;
-pub type MouseMoveEventCtx = sim_run::MouseMoveEvent;
-pub type MouseWheelEventCtx = sim_run::MouseWheelEvent;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -58,7 +57,9 @@ pub struct LayoutEventCtx {}
 
 pub struct UpdateEventCtx<'a> {
    pub env: &'a mut AppEnv,
-   pub data: &'a sim_run::UpdateEvent,
+   pub call_num: usize,
+   pub raw_delta: f64,
+   pub raw_abs_time: f64,
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -67,6 +68,24 @@ pub struct DrawEventCtx<'env> {
    pub abs_time: Duration,
    pub region: Option<Rect<f32>>,
    pub env: &'env mut AppEnv,
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+pub struct KeyboardEventCtx {
+   pub input: KeyboardInput,
+}
+
+pub struct MouseButtonsEventCtx {
+   pub input: MouseButtonsInput,
+}
+
+pub struct MouseMoveEventCtx {
+   pub input: MouseMoveInput,
+}
+
+pub struct MouseWheelEventCtx {
+   pub input: MouseWheelInput,
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

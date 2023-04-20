@@ -3,11 +3,10 @@ use crate::core::events::{
    DrawEventCtx, KeyboardEventCtx, LayoutEventCtx, LifecycleEventCtx, LifecycleState,
    MouseButtonsEventCtx, MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
 };
+use crate::core::input::mouse::MouseState;
 use crate::core::widget_base::runtime::Runtime;
 use crate::core::{AppEnv, IWidget, Painter, WidgetStrongRef};
 use crate::widgets::Widget;
-use sim_input::mouse::MouseState;
-use sim_run::UpdateEvent;
 use std::time::Duration;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -294,8 +293,8 @@ impl Dispatcher {
    /// This event should be called every program loop and actually will
    /// not perform heavy operations if they are not actually needed.
    #[cfg_attr(feature = "trace-dispatcher", tracing::instrument(level = "trace", skip_all))]
-   pub fn emit_tick(&mut self, env: &mut AppEnv, event: &UpdateEvent) {
-      Self::emit_inner_update(&mut self.inner, &self.root, &UpdateEventCtx { env, data: event });
+   pub fn emit_tick(&mut self, env: &mut AppEnv, event: &UpdateEventCtx) {
+      Self::emit_inner_update(&mut self.inner, &self.root, event);
       Self::emit_inner_check_delete(&mut self.inner, &self.root);
    }
 
@@ -898,10 +897,10 @@ impl Dispatcher {
 #[cfg(test)]
 mod tests {
    use super::*;
-   use crate::widgets::Widget;
-   use sim_draw::m::Rect;
-   use sim_input::mouse::MouseMoveInput;
-   use sim_input::{DeviceId, Modifiers};
+   use crate::{
+      core::input::{mouse::MouseMoveInput, DeviceId, Modifiers},
+      widgets::Widget,
+   };
 
    //---------------------------------------------------
 

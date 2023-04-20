@@ -4,6 +4,7 @@
 pub mod app;
 
 pub mod events;
+pub mod input;
 
 mod app_env;
 mod brush;
