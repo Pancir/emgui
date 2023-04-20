@@ -2,7 +2,7 @@ use super::Widget;
 use crate::core::events::{DrawEventCtx, MouseButtonsEventCtx, MouseMoveEventCtx};
 use crate::core::input::mouse::{MouseButton, MouseState};
 use crate::core::{IWidget, WidgetStrongRef};
-use crate::render::Painter;
+use crate::render::Canvas;
 use m::{Box2, Point2, Rect};
 use std::cell::RefCell;
 use std::ops::Range;
@@ -386,7 +386,7 @@ where
       Some(rect)
    }
 
-   fn on_draw(w: &mut Widget<Self>, canvas: &mut Painter, _event: &DrawEventCtx) {
+   fn on_draw(w: &mut Widget<Self>, canvas: &mut Canvas, _event: &DrawEventCtx) {
       // FIXME draw
 
       // let d = w.inherited_obj();

@@ -1,4 +1,4 @@
-use super::Painter;
+use super::Canvas;
 use crate::{core::upcast_rc, theme::Theme};
 use m::Box2;
 use std::{
@@ -57,8 +57,7 @@ pub trait RenderObjectBase: Any + upcast_rc::Upcast<dyn Any> {
    ///
    /// # Return
    /// `Ok` if the specified data is not supported by this render object.
-   fn render_any(&self, theme: &Theme, data: &dyn Any, painter: &mut Painter)
-      -> anyhow::Result<()>;
+   fn render_any(&self, theme: &Theme, data: &dyn Any, canvas: &mut Canvas) -> anyhow::Result<()>;
 }
 
 impl<'a, T: Any + 'a> upcast_rc::UpcastFrom<T> for dyn Any + 'a {
@@ -77,7 +76,7 @@ pub trait RenderObject<Data>: RenderObjectBase {
    fn render_bounds(&self, theme: &Theme, data: &Data) -> Box2<f32>;
 
    /// Draw widget.
-   fn render(&self, theme: &Theme, data: &Data, painter: &mut Painter);
+   fn render(&self, theme: &Theme, data: &Data, canvas: &mut Canvas);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

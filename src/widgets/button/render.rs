@@ -2,7 +2,7 @@ use std::any::{Any, TypeId};
 
 use crate::{
    elements::Icon,
-   render::{Painter, RenderObject, RenderObjectBase},
+   render::{Canvas, RenderObject, RenderObjectBase},
    theme::Theme,
 };
 use anyhow::bail;
@@ -41,14 +41,9 @@ impl RenderObjectBase for ButtonRender {
       data.downcast_ref::<ButtonRenderObjectData>().map(|data| self.render_bounds(theme, data))
    }
 
-   fn render_any(
-      &self,
-      theme: &Theme,
-      data: &dyn Any,
-      painter: &mut Painter,
-   ) -> anyhow::Result<()> {
+   fn render_any(&self, theme: &Theme, data: &dyn Any, canvas: &mut Canvas) -> anyhow::Result<()> {
       if let Some(data) = data.downcast_ref::<ButtonRenderObjectData>() {
-         self.render(theme, data, painter);
+         self.render(theme, data, canvas);
          Ok(())
       } else {
          bail!("Render data is not supported by the renderer")
@@ -73,29 +68,29 @@ impl RenderObject<ButtonRenderObjectData<'_>> for ButtonRender {
       data.bounds
    }
 
-   fn render(&self, _theme: &Theme, _data: &ButtonRenderObjectData, _painter: &mut Painter) {
+   fn render(&self, _theme: &Theme, _data: &ButtonRenderObjectData, _canvas: &mut Canvas) {
       // FIXME draw
 
-      // painter.set_brush(Brush::new_color(Rgba::GREEN.with_alpha_mul(0.5)));
+      // canvas.set_brush(Brush::new_color(Rgba::GREEN.with_alpha_mul(0.5)));
 
       // if data.is_hover {
-      //    painter.set_brush(Brush::new_color(Rgba::AMBER));
+      //    canvas.set_brush(Brush::new_color(Rgba::AMBER));
       // }
 
       // if data.is_active {
-      //    painter.set_brush(Brush::new_color(Rgba::RED));
+      //    canvas.set_brush(Brush::new_color(Rgba::RED));
       // }
 
-      // painter.fill(&data.bounds);
+      // canvas.fill(&data.bounds);
 
-      // painter.set_pen(Pen::new().with_width(2.0).with_color(Rgba::BLACK));
-      // painter.stroke(&data.bounds);
+      // canvas.set_pen(Pen::new().with_width(2.0).with_color(Rgba::BLACK));
+      // canvas.stroke(&data.bounds);
 
       // if let Some(txt) = data.text {
       //    // TODO continue
-      //    painter.set_brush(Brush::new_color(Rgba::BLACK));
-      //    // painter.set_text_paint(self.paint.clone());
-      //    painter.fill_text_line(
+      //    canvas.set_brush(Brush::new_color(Rgba::BLACK));
+      //    // canvas.set_text_paint(self.paint.clone());
+      //    canvas.fill_text_line(
       //       txt,
       //       data.bounds.center(),
       //       TextAlign::new().center().middle().tight(),

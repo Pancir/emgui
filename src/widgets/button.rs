@@ -10,7 +10,7 @@ use crate::core::events::{
 use crate::core::input::mouse::MouseState;
 use crate::core::{IWidget, WidgetBase, WidgetVt};
 use crate::elements::Icon;
-use crate::render::{Painter, RenderObjectBase};
+use crate::render::{Canvas, RenderObjectBase};
 use crate::theme::ButtonDefined;
 use anyhow::bail;
 use bitflags::bitflags;
@@ -230,7 +230,7 @@ where
       }
    }
 
-   fn on_draw(w: &mut Self, canvas: &mut Painter, _event: &DrawEventCtx) {
+   fn on_draw(w: &mut Self, canvas: &mut Canvas, _event: &DrawEventCtx) {
       if let Some(style) = &w.render_obj {
          if let Some(runtime) = w.base.runtime() {
             let data = ButtonRenderObjectData {
@@ -376,7 +376,7 @@ where
 
    #[cfg_attr(feature = "trace-widget",
    tracing::instrument(skip(self, canvas, event), fields(WidgetID = self.base().id().raw(), ret)))]
-   fn on_draw(&mut self, canvas: &mut Painter, event: &DrawEventCtx) {
+   fn on_draw(&mut self, canvas: &mut Canvas, event: &DrawEventCtx) {
       (self.vtable.on_draw)(self, canvas, event);
    }
 

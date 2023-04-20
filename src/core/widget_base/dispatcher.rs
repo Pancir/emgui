@@ -6,7 +6,7 @@ use crate::core::events::{
 use crate::core::input::mouse::MouseState;
 use crate::core::Runtime;
 use crate::core::{AppEnv, IWidget, WidgetStrongRef};
-use crate::render::Painter;
+use crate::render::Canvas;
 use crate::widgets::Widget;
 use std::time::Duration;
 
@@ -365,7 +365,7 @@ impl Dispatcher {
 
 impl Dispatcher {
    #[cfg_attr(feature = "trace-dispatcher", tracing::instrument(level = "trace", skip_all))]
-   pub fn emit_draw(&mut self, env: &mut AppEnv, canvas: &mut Painter, force: bool) {
+   pub fn emit_draw(&mut self, env: &mut AppEnv, canvas: &mut Canvas, force: bool) {
       let ev = DrawEventCtx { env, region: None, abs_time: Duration::new(0, 0) };
       if !force {
          Self::emit_inner_draw(&mut self.inner, &self.root, canvas, &ev);
@@ -385,7 +385,7 @@ impl Dispatcher {
    fn emit_inner_draw(
       dispatcher: &mut InnerDispatcher,
       child: &WidgetStrongRef,
-      canvas: &mut Painter,
+      canvas: &mut Canvas,
       event: &DrawEventCtx,
    ) {
       //--------------------------------------------------
@@ -464,7 +464,7 @@ impl Dispatcher {
    fn emit_inner_draw_full(
       dispatcher: &mut InnerDispatcher,
       input_child: &WidgetStrongRef,
-      canvas: &mut Painter,
+      canvas: &mut Canvas,
       event: &DrawEventCtx,
    ) {
       //--------------------------------------------------

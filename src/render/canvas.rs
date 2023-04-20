@@ -4,12 +4,12 @@ use m::{Box2, Point2};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub struct Painter {
+pub struct Canvas {
    pen: Pen,
    brush: Brush,
 }
 
-impl Painter {
+impl Canvas {
    pub fn set_pen(&mut self, pen: Pen) {
       self.pen = pen;
    }
@@ -35,7 +35,7 @@ impl Painter {
    }
 }
 
-impl Painter {
+impl Canvas {
    pub fn fill_text_line(&mut self, text: &str, pos: Point2<f32>, align: TextAlign) -> Box2<f32> {
       unimplemented!()
    }

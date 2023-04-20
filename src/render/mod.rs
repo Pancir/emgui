@@ -1,17 +1,17 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 mod brush;
+mod canvas;
 mod color;
 mod color_defs;
-mod painter;
 mod pen;
 mod render_obj;
 mod texture_id;
 
 pub use brush::*;
+pub use canvas::*;
 pub use color::*;
 pub use color_defs::*;
-pub use painter::*;
 pub use pen::*;
 pub use render_obj::*;
 pub use texture_id::*;

@@ -3,7 +3,7 @@
 use super::{TextAlign, Theme};
 use crate::{
    core::Font,
-   render::{Brush, Painter, Rgba},
+   render::{Brush, Canvas, Rgba},
 };
 use bitflags::bitflags;
 use m::{EdgeInsets, Rect};
@@ -77,8 +77,8 @@ pub trait StyleBase: Any {
 
 pub trait Style<Data>: StyleBase {
    fn rect(&self, data: &Data) -> Rect<f32>;
-   fn draw_enabled(&self, theme: &Theme, data: &Data, painter: &mut Painter);
-   fn draw_disabled(&self, theme: &Theme, data: &Data, painter: &mut Painter);
+   fn draw_enabled(&self, theme: &Theme, data: &Data, canvas: &mut Canvas);
+   fn draw_disabled(&self, theme: &Theme, data: &Data, canvas: &mut Canvas);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
