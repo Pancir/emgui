@@ -1,6 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 mod brush;
+mod cache_id;
 mod canvas;
 mod color;
 mod color_defs;
@@ -9,6 +10,7 @@ mod render_obj;
 mod texture_id;
 
 pub use brush::*;
+pub use cache_id::*;
 pub use canvas::*;
 pub use color::*;
 pub use color_defs::*;

@@ -10,6 +10,7 @@ use super::{WidgetRef, WidgetStrongRef};
 use crate::core::Runtime;
 use crate::core::{Geometry, WidgetId};
 use crate::defines::{DEFAULT_DOUBLE_CLICK_TIME, DEFAULT_TOOL_TIP_TIME};
+use crate::render::CacheId;
 pub use dispatcher::*;
 use m::Rect;
 use std::cell::Cell;
@@ -33,6 +34,7 @@ pub struct WidgetBase {
    //--------------------
    children: Children,
    //--------------------
+   render_cache_id: Cell<CacheId>,
 }
 
 impl WidgetBase {
@@ -51,6 +53,8 @@ impl WidgetBase {
          number_mouse_buttons_pressed: Cell::new(0),
          //--------------------
          children: Children::default(),
+         //--------------------
+         render_cache_id: Cell::new(CacheId::INVALID),
       }
    }
 
@@ -230,6 +234,16 @@ impl WidgetBase {
    #[inline]
    pub fn children_mut(&mut self) -> &mut Children {
       &mut self.children
+   }
+
+   #[inline]
+   pub fn set_render_cache_id(&self, id: CacheId) {
+      self.render_cache_id.set(id);
+   }
+
+   #[inline]
+   pub fn render_cache_id(&self) -> CacheId {
+      self.render_cache_id.get()
    }
 }
 
