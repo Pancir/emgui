@@ -5,17 +5,17 @@ mod cache_id;
 mod canvas;
 mod color;
 mod color_defs;
+mod image_id;
 mod pen;
 mod render_obj;
-mod texture_id;
 
 pub use brush::*;
 pub use cache_id::*;
 pub use canvas::*;
 pub use color::*;
 pub use color_defs::*;
+pub use image_id::*;
 pub use pen::*;
 pub use render_obj::*;
-pub use texture_id::*;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

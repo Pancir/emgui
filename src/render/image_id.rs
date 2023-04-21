@@ -3,15 +3,15 @@
 /// Texture ID allocated in a backend.
 #[repr(transparent)]
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
-pub struct TextureId(i32);
+pub struct ImageId(i32);
 
-impl Default for TextureId {
+impl Default for ImageId {
    fn default() -> Self {
       Self::INVALID
    }
 }
 
-impl TextureId {
+impl ImageId {
    pub const INVALID: Self = Self::from_raw(-1);
 
    pub const fn raw(&self) -> i32 {

@@ -1,4 +1,4 @@
-use crate::render::TextureId;
+use crate::render::ImageId;
 use m::Box2;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -6,19 +6,19 @@ use m::Box2;
 pub struct Icon {
    geom: Box2<f32>,
    uv: Box2<f32>,
-   texture: TextureId,
+   texture: ImageId,
 }
 
 impl Default for Icon {
    fn default() -> Self {
-      Self::new(Box2::UV_MAX, Box2::UV_MAX, TextureId::INVALID)
+      Self::new(Box2::UV_MAX, Box2::UV_MAX, ImageId::INVALID)
    }
 }
 
 impl Icon {
    #[must_use]
    #[inline]
-   pub fn new(uv: Box2<f32>, geom: Box2<f32>, texture: TextureId) -> Self {
+   pub fn new(uv: Box2<f32>, geom: Box2<f32>, texture: ImageId) -> Self {
       Self { geom, uv, texture }
    }
 
