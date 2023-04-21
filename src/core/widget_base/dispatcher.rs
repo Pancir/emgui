@@ -4,7 +4,7 @@ use crate::core::events::{
    MouseButtonsEventCtx, MouseMoveEventCtx, MouseWheelEventCtx, UpdateEventCtx,
 };
 use crate::core::input::mouse::MouseState;
-use crate::core::Runtime;
+use crate::core::SharedData;
 use crate::core::{AppEnv, IWidget, WidgetStrongRef};
 use crate::render::Canvas;
 use crate::widgets::Widget;
@@ -15,7 +15,7 @@ use std::time::Duration;
 pub struct InnerDispatcher {
    widget_mouse_over: Option<WidgetRef>,
    widget_mouse_button: Option<WidgetRef>,
-   runtime: Runtime,
+   runtime: SharedData,
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -28,7 +28,7 @@ pub struct Dispatcher {
 
 impl Dispatcher {
    #[inline]
-   pub fn new(root: Option<WidgetStrongRef>, runtime: Runtime) -> Self {
+   pub fn new(root: Option<WidgetStrongRef>, runtime: SharedData) -> Self {
       let mut out = Self {
          inner: InnerDispatcher { runtime, widget_mouse_over: None, widget_mouse_button: None },
          root: root.unwrap_or_else(|| Widget::inherit(|_| (), |_| ()).to_ref()),
@@ -111,13 +111,13 @@ impl Dispatcher {
       Self::set_runtime_to_widget_inner(self.inner.runtime.clone(), &self.root);
    }
 
-   fn set_runtime_to_widget_inner(runtime: Runtime, child: &WidgetStrongRef) {
+   fn set_runtime_to_widget_inner(runtime: SharedData, child: &WidgetStrongRef) {
       match child.widget_mut() {
          Ok(mut bor) => {
             let mut internal = bor.base_mut();
             let id = internal.id;
 
-            internal.runtime = Some(runtime.clone());
+            internal.shared_data = Some(runtime.clone());
 
             let children = internal.children_mut().take_children(id);
             for child in &children {
@@ -972,7 +972,7 @@ mod tests {
       let root = TestWidget::new(Rect::new(0.0, 0.0, 200.0, 200.0));
       let child = TestWidget::new(Rect::new(50.0, 50.0, 100.0, 100.0));
 
-      let mut dispatcher = Dispatcher::new(Some(root.clone()), Runtime::default());
+      let mut dispatcher = Dispatcher::new(Some(root.clone()), SharedData::default());
       dispatcher.widget().add_child(child.clone());
       //----------------------
       dispatcher.emit_mouse_move(&mouse_move_ctx(-10.0, 100.0));

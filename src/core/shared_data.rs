@@ -7,7 +7,7 @@ use std::time::Duration;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-struct InnerRuntime {
+struct SharedDataInner {
    focus: FocusManager,
    theme: Theme,
    tool_type_time: Cell<Duration>,
@@ -18,20 +18,20 @@ struct InnerRuntime {
 
 /// Contains shared data and setting for all widgets.
 #[derive(Clone)]
-pub struct Runtime {
-   inner: Rc<InnerRuntime>,
+pub struct SharedData {
+   inner: Rc<SharedDataInner>,
 }
 
-impl Default for Runtime {
+impl Default for SharedData {
    fn default() -> Self {
       Self::new(Theme::default())
    }
 }
 
-impl Runtime {
+impl SharedData {
    pub fn new(theme: Theme) -> Self {
       Self {
-         inner: Rc::new(InnerRuntime {
+         inner: Rc::new(SharedDataInner {
             theme,
             focus: FocusManager::new(),
             tool_type_time: Cell::new(DEFAULT_TOOL_TIP_TIME),

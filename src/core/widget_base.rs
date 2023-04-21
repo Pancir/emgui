@@ -7,7 +7,7 @@ mod state_flags;
 use self::children::Children;
 pub(crate) use self::state_flags::StateFlags;
 use super::{WidgetRef, WidgetStrongRef};
-use crate::core::Runtime;
+use crate::core::SharedData;
 use crate::core::{Geometry, WidgetId};
 use crate::defines::{DEFAULT_DOUBLE_CLICK_TIME, DEFAULT_TOOL_TIP_TIME};
 use crate::render::CacheId;
@@ -27,7 +27,7 @@ pub struct WidgetBase {
    tool_type_time: Option<Duration>,
    double_click_time: Option<Duration>,
    //--------------------
-   runtime: Option<Runtime>,
+   shared_data: Option<SharedData>,
    //--------------------
    state_flags: Cell<StateFlags>,
    number_mouse_buttons_pressed: Cell<i8>,
@@ -48,7 +48,7 @@ impl WidgetBase {
          tool_type_time: None,
          double_click_time: None,
          //--------------------
-         runtime: None,
+         shared_data: None,
          state_flags: Cell::new(StateFlags::INIT),
          number_mouse_buttons_pressed: Cell::new(0),
          //--------------------
@@ -66,8 +66,8 @@ impl WidgetBase {
 
    /// Get runtime.
    #[inline]
-   pub fn runtime(&self) -> Option<&Runtime> {
-      self.runtime.as_ref()
+   pub fn shared_data(&self) -> Option<&SharedData> {
+      self.shared_data.as_ref()
    }
 
    /// Unique id of the widget.
@@ -98,7 +98,7 @@ impl WidgetBase {
    pub fn tool_type_time(&self) -> Duration {
       if let Some(v) = self.tool_type_time {
          v
-      } else if let Some(r) = &self.runtime {
+      } else if let Some(r) = &self.shared_data {
          r.tool_type_time()
       } else {
          DEFAULT_TOOL_TIP_TIME
@@ -117,7 +117,7 @@ impl WidgetBase {
    pub fn double_click_time(&self) -> Duration {
       if let Some(v) = self.double_click_time {
          v
-      } else if let Some(r) = &self.runtime {
+      } else if let Some(r) = &self.shared_data {
          r.double_click_time()
       } else {
          DEFAULT_DOUBLE_CLICK_TIME

@@ -172,7 +172,7 @@ where
       N: Into<&'static str>,
    {
       self.state.style_name = name.into();
-      if let Some(runtime) = self.base.runtime() {
+      if let Some(runtime) = self.base.shared_data() {
          if let Some(style) = runtime.theme().buttons.get(self.state.style_name) {
             self.render_obj = Some(style);
          } else {
@@ -213,7 +213,7 @@ where
          LifecycleState::RuntimeSet => {
             if !w.state.flags.contains(ButtonStateFlags::STYLE_CUSTOM) {
                if let Some(style) =
-                  w.base.runtime().unwrap().theme().buttons.get(w.state.style_name)
+                  w.base.shared_data().unwrap().theme().buttons.get(w.state.style_name)
                {
                   w.render_obj = Some(style);
                   w.state.flags.remove(ButtonStateFlags::STYLE_ERROR_PRINTED);
@@ -232,7 +232,7 @@ where
 
    fn on_draw(w: &mut Self, canvas: &mut Canvas, _event: &DrawEventCtx) {
       if let Some(style) = &w.render_obj {
-         if let Some(runtime) = w.base.runtime() {
+         if let Some(runtime) = w.base.shared_data() {
             let data = ButtonRenderObjectData {
                text: w.state.text.as_ref().map(|v| v.as_ref()),
                icon: w.state.icon.as_ref(),
