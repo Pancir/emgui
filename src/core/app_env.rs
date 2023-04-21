@@ -12,7 +12,7 @@ use std::any::Any;
 /// you request the one the vector is iterated to find it.
 ///
 /// # Limitation
-/// the struct can hold only one instance of the same type.
+/// The struct can hold only one instance of the same user type.
 pub struct AppEnv {
    // theme: Theme,
    app_data: Box<dyn Any>,
@@ -21,8 +21,8 @@ pub struct AppEnv {
 
 impl AppEnv {
    /// Create a new with a general application data.
-   pub fn new<APP: 'static>(app: APP /*, theme: Theme*/) -> Self {
-      Self { app_data: Box::new(app), user_data: Vec::new() /*theme*/ }
+   pub fn new<APP: 'static>(app: APP) -> Self {
+      Self { app_data: Box::new(app), user_data: Vec::new() }
    }
 }
 
@@ -36,11 +36,6 @@ impl AppEnv {
    pub fn app_data_mut<APP: 'static>(&mut self) -> Option<&mut APP> {
       self.app_data.downcast_mut::<APP>()
    }
-
-   // /// Get application theme data.
-   // pub fn theme(&self) -> &Theme {
-   //    &self.theme
-   // }
 }
 
 impl AppEnv {

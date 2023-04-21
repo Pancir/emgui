@@ -1,4 +1,5 @@
 use super::FocusManager;
+use crate::backend::Resources;
 use crate::defines::{DEFAULT_DOUBLE_CLICK_TIME, DEFAULT_TOOL_TIP_TIME};
 use crate::theme::Theme;
 use std::cell::Cell;
@@ -12,6 +13,7 @@ struct SharedDataInner {
    theme: Theme,
    tool_type_time: Cell<Duration>,
    double_click_time: Cell<Duration>,
+   resources: Box<dyn Resources>,
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -22,20 +24,18 @@ pub struct SharedData {
    inner: Rc<SharedDataInner>,
 }
 
-impl Default for SharedData {
-   fn default() -> Self {
-      Self::new(Theme::default())
-   }
-}
-
 impl SharedData {
-   pub fn new(theme: Theme) -> Self {
+   pub fn new<RES>(theme: Theme, resources: RES) -> Self
+   where
+      RES: Resources + 'static,
+   {
       Self {
          inner: Rc::new(SharedDataInner {
             theme,
             focus: FocusManager::new(),
             tool_type_time: Cell::new(DEFAULT_TOOL_TIP_TIME),
             double_click_time: Cell::new(DEFAULT_DOUBLE_CLICK_TIME),
+            resources: Box::new(resources),
          }),
       }
    }

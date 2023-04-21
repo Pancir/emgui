@@ -35,7 +35,7 @@ impl Dispatcher {
          destroyed: false,
       };
 
-      out.set_runtime_to_widget();
+      out.set_shared_to_widget();
       out
    }
 
@@ -45,7 +45,7 @@ impl Dispatcher {
          self.destroy();
       }
       self.root = root;
-      self.set_runtime_to_widget();
+      self.set_shared_to_widget();
    }
 
    #[inline]
@@ -107,11 +107,11 @@ impl Dispatcher {
 }
 
 impl Dispatcher {
-   fn set_runtime_to_widget(&mut self) {
-      Self::set_runtime_to_widget_inner(self.inner.runtime.clone(), &self.root);
+   fn set_shared_to_widget(&mut self) {
+      Self::set_shared_to_widget_inner(self.inner.runtime.clone(), &self.root);
    }
 
-   fn set_runtime_to_widget_inner(runtime: SharedData, child: &WidgetStrongRef) {
+   fn set_shared_to_widget_inner(runtime: SharedData, child: &WidgetStrongRef) {
       match child.widget_mut() {
          Ok(mut bor) => {
             let mut internal = bor.base_mut();
@@ -121,7 +121,7 @@ impl Dispatcher {
 
             let children = internal.children_mut().take_children(id);
             for child in &children {
-               Self::set_runtime_to_widget_inner(runtime.clone(), child);
+               Self::set_shared_to_widget_inner(runtime.clone(), child);
             }
             internal.children_mut().return_children(children, id)
          }
@@ -294,9 +294,11 @@ impl Dispatcher {
    /// This event should be called every program loop and actually will
    /// not perform heavy operations if they are not actually needed.
    #[cfg_attr(feature = "trace-dispatcher", tracing::instrument(level = "trace", skip_all))]
-   pub fn emit_tick(&mut self, env: &mut AppEnv, event: &UpdateEventCtx) {
+   pub fn emit_tick(&mut self, env: &mut AppEnv, event: &UpdateEventCtx) -> bool {
       Self::emit_inner_update(&mut self.inner, &self.root, event);
       Self::emit_inner_check_delete(&mut self.inner, &self.root);
+      // FIXME return true only if draw is needed
+      true
    }
 
    fn emit_inner_update(
@@ -899,7 +901,9 @@ impl Dispatcher {
 mod tests {
    use super::*;
    use crate::{
+      backend::Resources,
       core::input::{mouse::MouseMoveInput, DeviceId, Modifiers},
+      theme::Theme,
       widgets::Widget,
    };
 
@@ -972,7 +976,12 @@ mod tests {
       let root = TestWidget::new(Rect::new(0.0, 0.0, 200.0, 200.0));
       let child = TestWidget::new(Rect::new(50.0, 50.0, 100.0, 100.0));
 
-      let mut dispatcher = Dispatcher::new(Some(root.clone()), SharedData::default());
+      pub struct ResourcesImpl {}
+
+      impl Resources for ResourcesImpl {}
+
+      let mut dispatcher =
+         Dispatcher::new(Some(root.clone()), SharedData::new(Theme::default(), ResourcesImpl {}));
       dispatcher.widget().add_child(child.clone());
       //----------------------
       dispatcher.emit_mouse_move(&mouse_move_ctx(-10.0, 100.0));
